@@ -728,7 +728,7 @@
     var c = D.stageConfig(n), mech = c.boss ? D.bossMech(c.boss) : null;
     openModal('<h3>第 ' + n + ' 關' + (c.boss ? '<span class="boss-tag">♛ 頭目</span>' : '') + '</h3>' +
       (mech ? '<p><b style="color:var(--red2)">' + esc(c.bossName) + '</b> — ' + esc(mech.name) + '<br><span class="muted small">' + esc(mech.desc) + '</span></p>' : '') +
-      '<p class="muted">' + c.cols + '×' + c.rows + ' 盤面 · ' + c.sets + ' 組 · 限時 ' + c.time + ' 秒<br>失誤上限 ' + c.missLimit + ' · 預覽 ' + c.preview + ' 秒</p>' +
+      '<p class="muted">' + c.cols + '×' + c.rows + ' 盤面 · ' + c.sets + ' 組 · 限時 ' + c.time + ' 秒<br>失誤上限 ' + c.missLimit + '</p>' +
       '<p class="stars" style="font-size:24px">' + starsText(S.stars[n] || 0) + '</p>' +
       '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">出戰 ⚡' + CONFIG.ENERGY_COST + '</button></div>');
     bindModalBtn('m-cancel', closeModal);
@@ -855,7 +855,7 @@
       matched: 0, score: 0, combo: 0, bestCombo: 0, miss: 0, moves: 0,
       missLimit: cfg.missLimit + (use.charm ? 3 : 0) + (relicOn('compass') ? 1 : 0),
       timeMax: Math.round(time), timeLeft: Math.round(time), frozen: 0,
-      preview: cfg.preview > 0 ? cfg.preview + (relicOn('mirror') ? 0.5 : 0) + (use.scroll ? 1.5 : 0) : (use.scroll ? 1.5 : 0),
+      preview: use.scroll ? 1.5 + (relicOn('mirror') ? 0.5 : 0) : 0,  // 開局不預覽，只有預視卷軸才會窺視
       comboMul: (h.skill === 'combo' ? D.skillValue('combo', skillLv) : 1) * (relicOn('ring') ? 1.2 : 1),
       cd: cd, cdLeft: 0, skillCasts: 0, jokerPenalty: (cfg.jokerPenalty || 5) * (relicOn('dice') ? 0.5 : 1),
       carry: carry || null, lowWarned: false, lastTick: 0, raf: 0, timers: []

@@ -162,7 +162,7 @@
   var BOSS_MECHS = [
     { id: 'shuffle', name: '錯位洗牌', desc: '每次失誤，翻錯的牌會與其他牌交換位置' },
     { id: 'joker', name: '小丑陷阱', desc: '場上混入鬼牌，翻到會扣除時間' },
-    { id: 'fast', name: '疾速覆牌', desc: '翻錯時牌面迅速蓋回，且無預覽' },
+    { id: 'fast', name: '疾速覆牌', desc: '翻錯時牌面迅速蓋回' },
     { id: 'fog', name: '迷霧牌面', desc: '部分牌面翻開後很快被霧氣遮蔽' },
     { id: 'triple', name: '三連誓約', desc: '需翻出三張相同的牌才算配對' },
     { id: 'decoy', name: '同點誘餌', desc: '同點數、同色不同花色的牌混雜其中' }
@@ -301,14 +301,14 @@
   var SHOP = {
     consumables: [
       { id: 'hourglass', icon: '⏳', name: '時之沙漏', desc: '下一場戰鬥時間 +10 秒', price: 120 },
-      { id: 'scroll', icon: '📜', name: '預視卷軸', desc: '下一場預覽時間 +1.5 秒', price: 100 },
+      { id: 'scroll', icon: '📜', name: '預視卷軸', desc: '下一場開局窺視全部卡牌 1.5 秒', price: 100 },
       { id: 'charm', icon: '🧿', name: '守護符', desc: '下一場失誤上限 +3', price: 110 },
       { id: 'elixir', icon: '🧪', name: '技能秘藥', desc: '下一場技能冷卻減半', price: 140 },
       { id: 'potion', icon: '⚡', name: '體力藥水', desc: '立即回復 5 點體力', price: 90, instant: true }
     ],
     relics: [
       { id: 'lion', icon: '🦁', name: '金獅徽章', desc: '金幣收益 +15%', price: 800 },
-      { id: 'mirror', icon: '🪞', name: '紫月之鏡', desc: '預覽時間 +0.5 秒', price: 900 },
+      { id: 'mirror', icon: '🪞', name: '紫月之鏡', desc: '使用預視卷軸時窺視 +0.5 秒', price: 900 },
       { id: 'gear', icon: '⚙️', name: '時之齒輪', desc: '戰鬥時間 +6%', price: 1000 },
       { id: 'ring', icon: '💍', name: '誓約之戒', desc: '連擊得分 +20%', price: 900 },
       { id: 'compass', icon: '🧭', name: '參謀羅盤', desc: '失誤上限 +1', price: 1100 },
