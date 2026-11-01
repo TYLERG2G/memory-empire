@@ -6,7 +6,7 @@
 #scr-battle .battle-stage{
   display:block!important;
   --hero-sz:clamp(110px,34vw,128px); --foe-sz:clamp(96px,28vw,112px); --boss-sz:clamp(120px,36vw,148px);
-  --feet:48%;            /* 角色下移、減少上空 */            /* 角色腳底距場景底部（≈ 桌面後緣上方） */
+  --feet:52%;            /* 腳在桌旁地面，勿踩桌緣 */            /* 角色腳底距場景底部（≈ 桌面後緣上方） */
   --k:#b07cff;
   position:absolute;inset:0;z-index:0;
   height:auto;min-height:0;max-height:none;margin:0;padding:0;
@@ -20,7 +20,7 @@
 /* ── 背景：全幅 cover，桌面約落在 50–72% 高 ── */
 #scr-battle .bs-bg{
   position:absolute;inset:0;z-index:0;
-  background-repeat:no-repeat;background-size:cover;background-position:50% 62%;
+  background-repeat:no-repeat;background-size:cover;background-position:50% 55%;
   image-rendering:auto;
   animation:none;transform:none;
 }
@@ -210,15 +210,15 @@
 
 /* ── 尺寸 ── */
 @media (max-height:760px){
-  #scr-battle .battle-stage{--hero-sz:clamp(110px,30vw,120px);--foe-sz:clamp(96px,26vw,108px);--boss-sz:clamp(112px,32vw,128px);--feet:50%}
+  #scr-battle .battle-stage{--hero-sz:clamp(110px,30vw,120px);--foe-sz:clamp(96px,26vw,108px);--boss-sz:clamp(112px,32vw,128px);--feet:52%}
 }
 @media (max-height:680px){
   /* 375 短屏仍 ≥110px 可視高度 */
-  #scr-battle .battle-stage{--hero-sz:118px;--foe-sz:108px;--boss-sz:126px;--feet:44%}
+  #scr-battle .battle-stage{--hero-sz:118px;--foe-sz:108px;--boss-sz:126px;--feet:50%}
   #scr-battle .bs-name{font-size:9px}
 }
 @media (max-height:600px){
-  #scr-battle .battle-stage{--hero-sz:114px;--foe-sz:104px;--boss-sz:120px;--feet:42%}
+  #scr-battle .battle-stage{--hero-sz:114px;--foe-sz:104px;--boss-sz:120px;--feet:48%}
   #scr-battle .battle-stage .foe-name{display:none}
 }
 /* 橫向矮屏：牌面優先，只留背景與 HP */
@@ -227,7 +227,11 @@
   #scr-battle .battle-stage .bs-foe{top:4px;bottom:auto;width:30%}
 }
 @media (min-height:880px){
-  #scr-battle .battle-stage{--hero-sz:124px;--foe-sz:104px;--boss-sz:140px}
+  /* 430×932：角色約 130px，腳踩桌旁地面（提高 --feet＝上移） */
+  #scr-battle .battle-stage{--hero-sz:132px;--foe-sz:118px;--boss-sz:148px;--feet:54%}
+}
+@media (min-height:900px){
+  #scr-battle .battle-stage{--hero-sz:136px;--foe-sz:120px;--boss-sz:152px;--feet:55%}
 }
 
 /* ── 減少動態 ── */

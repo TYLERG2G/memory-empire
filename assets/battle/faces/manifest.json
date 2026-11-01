@@ -1,0 +1,366 @@
+[
+  {
+    "id": "A♠",
+    "file": "spade_A.png",
+    "suit": "♠",
+    "rank": "A",
+    "key": "spade"
+  },
+  {
+    "id": "2♠",
+    "file": "spade_2.png",
+    "suit": "♠",
+    "rank": "2",
+    "key": "spade"
+  },
+  {
+    "id": "3♠",
+    "file": "spade_3.png",
+    "suit": "♠",
+    "rank": "3",
+    "key": "spade"
+  },
+  {
+    "id": "4♠",
+    "file": "spade_4.png",
+    "suit": "♠",
+    "rank": "4",
+    "key": "spade"
+  },
+  {
+    "id": "5♠",
+    "file": "spade_5.png",
+    "suit": "♠",
+    "rank": "5",
+    "key": "spade"
+  },
+  {
+    "id": "6♠",
+    "file": "spade_6.png",
+    "suit": "♠",
+    "rank": "6",
+    "key": "spade"
+  },
+  {
+    "id": "7♠",
+    "file": "spade_7.png",
+    "suit": "♠",
+    "rank": "7",
+    "key": "spade"
+  },
+  {
+    "id": "8♠",
+    "file": "spade_8.png",
+    "suit": "♠",
+    "rank": "8",
+    "key": "spade"
+  },
+  {
+    "id": "9♠",
+    "file": "spade_9.png",
+    "suit": "♠",
+    "rank": "9",
+    "key": "spade"
+  },
+  {
+    "id": "10♠",
+    "file": "spade_10.png",
+    "suit": "♠",
+    "rank": "10",
+    "key": "spade"
+  },
+  {
+    "id": "J♠",
+    "file": "spade_J.png",
+    "suit": "♠",
+    "rank": "J",
+    "key": "spade"
+  },
+  {
+    "id": "Q♠",
+    "file": "spade_Q.png",
+    "suit": "♠",
+    "rank": "Q",
+    "key": "spade"
+  },
+  {
+    "id": "K♠",
+    "file": "spade_K.png",
+    "suit": "♠",
+    "rank": "K",
+    "key": "spade"
+  },
+  {
+    "id": "A♥",
+    "file": "heart_A.png",
+    "suit": "♥",
+    "rank": "A",
+    "key": "heart"
+  },
+  {
+    "id": "2♥",
+    "file": "heart_2.png",
+    "suit": "♥",
+    "rank": "2",
+    "key": "heart"
+  },
+  {
+    "id": "3♥",
+    "file": "heart_3.png",
+    "suit": "♥",
+    "rank": "3",
+    "key": "heart"
+  },
+  {
+    "id": "4♥",
+    "file": "heart_4.png",
+    "suit": "♥",
+    "rank": "4",
+    "key": "heart"
+  },
+  {
+    "id": "5♥",
+    "file": "heart_5.png",
+    "suit": "♥",
+    "rank": "5",
+    "key": "heart"
+  },
+  {
+    "id": "6♥",
+    "file": "heart_6.png",
+    "suit": "♥",
+    "rank": "6",
+    "key": "heart"
+  },
+  {
+    "id": "7♥",
+    "file": "heart_7.png",
+    "suit": "♥",
+    "rank": "7",
+    "key": "heart"
+  },
+  {
+    "id": "8♥",
+    "file": "heart_8.png",
+    "suit": "♥",
+    "rank": "8",
+    "key": "heart"
+  },
+  {
+    "id": "9♥",
+    "file": "heart_9.png",
+    "suit": "♥",
+    "rank": "9",
+    "key": "heart"
+  },
+  {
+    "id": "10♥",
+    "file": "heart_10.png",
+    "suit": "♥",
+    "rank": "10",
+    "key": "heart"
+  },
+  {
+    "id": "J♥",
+    "file": "heart_J.png",
+    "suit": "♥",
+    "rank": "J",
+    "key": "heart"
+  },
+  {
+    "id": "Q♥",
+    "file": "heart_Q.png",
+    "suit": "♥",
+    "rank": "Q",
+    "key": "heart"
+  },
+  {
+    "id": "K♥",
+    "file": "heart_K.png",
+    "suit": "♥",
+    "rank": "K",
+    "key": "heart"
+  },
+  {
+    "id": "A♦",
+    "file": "diamond_A.png",
+    "suit": "♦",
+    "rank": "A",
+    "key": "diamond"
+  },
+  {
+    "id": "2♦",
+    "file": "diamond_2.png",
+    "suit": "♦",
+    "rank": "2",
+    "key": "diamond"
+  },
+  {
+    "id": "3♦",
+    "file": "diamond_3.png",
+    "suit": "♦",
+    "rank": "3",
+    "key": "diamond"
+  },
+  {
+    "id": "4♦",
+    "file": "diamond_4.png",
+    "suit": "♦",
+    "rank": "4",
+    "key": "diamond"
+  },
+  {
+    "id": "5♦",
+    "file": "diamond_5.png",
+    "suit": "♦",
+    "rank": "5",
+    "key": "diamond"
+  },
+  {
+    "id": "6♦",
+    "file": "diamond_6.png",
+    "suit": "♦",
+    "rank": "6",
+    "key": "diamond"
+  },
+  {
+    "id": "7♦",
+    "file": "diamond_7.png",
+    "suit": "♦",
+    "rank": "7",
+    "key": "diamond"
+  },
+  {
+    "id": "8♦",
+    "file": "diamond_8.png",
+    "suit": "♦",
+    "rank": "8",
+    "key": "diamond"
+  },
+  {
+    "id": "9♦",
+    "file": "diamond_9.png",
+    "suit": "♦",
+    "rank": "9",
+    "key": "diamond"
+  },
+  {
+    "id": "10♦",
+    "file": "diamond_10.png",
+    "suit": "♦",
+    "rank": "10",
+    "key": "diamond"
+  },
+  {
+    "id": "J♦",
+    "file": "diamond_J.png",
+    "suit": "♦",
+    "rank": "J",
+    "key": "diamond"
+  },
+  {
+    "id": "Q♦",
+    "file": "diamond_Q.png",
+    "suit": "♦",
+    "rank": "Q",
+    "key": "diamond"
+  },
+  {
+    "id": "K♦",
+    "file": "diamond_K.png",
+    "suit": "♦",
+    "rank": "K",
+    "key": "diamond"
+  },
+  {
+    "id": "A♣",
+    "file": "club_A.png",
+    "suit": "♣",
+    "rank": "A",
+    "key": "club"
+  },
+  {
+    "id": "2♣",
+    "file": "club_2.png",
+    "suit": "♣",
+    "rank": "2",
+    "key": "club"
+  },
+  {
+    "id": "3♣",
+    "file": "club_3.png",
+    "suit": "♣",
+    "rank": "3",
+    "key": "club"
+  },
+  {
+    "id": "4♣",
+    "file": "club_4.png",
+    "suit": "♣",
+    "rank": "4",
+    "key": "club"
+  },
+  {
+    "id": "5♣",
+    "file": "club_5.png",
+    "suit": "♣",
+    "rank": "5",
+    "key": "club"
+  },
+  {
+    "id": "6♣",
+    "file": "club_6.png",
+    "suit": "♣",
+    "rank": "6",
+    "key": "club"
+  },
+  {
+    "id": "7♣",
+    "file": "club_7.png",
+    "suit": "♣",
+    "rank": "7",
+    "key": "club"
+  },
+  {
+    "id": "8♣",
+    "file": "club_8.png",
+    "suit": "♣",
+    "rank": "8",
+    "key": "club"
+  },
+  {
+    "id": "9♣",
+    "file": "club_9.png",
+    "suit": "♣",
+    "rank": "9",
+    "key": "club"
+  },
+  {
+    "id": "10♣",
+    "file": "club_10.png",
+    "suit": "♣",
+    "rank": "10",
+    "key": "club"
+  },
+  {
+    "id": "J♣",
+    "file": "club_J.png",
+    "suit": "♣",
+    "rank": "J",
+    "key": "club"
+  },
+  {
+    "id": "Q♣",
+    "file": "club_Q.png",
+    "suit": "♣",
+    "rank": "Q",
+    "key": "club"
+  },
+  {
+    "id": "K♣",
+    "file": "club_K.png",
+    "suit": "♣",
+    "rank": "K",
+    "key": "club"
+  }
+]

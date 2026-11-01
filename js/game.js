@@ -972,12 +972,20 @@
   }
 
   /* ════════════════ 戰鬥：盤面 ════════════════ */
+  /* 牌面視覺：保留 rank/suit/color／id 語意，只換 HYKE 粉彩像素紋章 */
+  var FACE_SUIT_KEY = { '\u2660': 'spade', '\u2665': 'heart', '\u2666': 'diamond', '\u2663': 'club' };
+  function faceAsset(face) {
+    var sk = FACE_SUIT_KEY[face.suit] || 'spade';
+    var rank = face.rank || 'A';
+    var base = 'assets/battle/faces/' + sk + '_' + rank;
+    return { sk: sk, rank: rank, src: base + '.png', src2: base + '@2x.png' };
+  }
   function pokerFaceHTML(face) {
+    var a = faceAsset(face);
     var color = face.color === 'red' ? 'red' : 'black';
-    return '<div class="poker-face ' + color + '" data-id="' + esc(face.id) + '">' +
-      '<div class="p-corner tl"><span class="p-rank">' + esc(face.rank) + '</span><span class="p-suit">' + face.suit + '</span></div>' +
-      '<div class="p-center">' + face.suit + '</div>' +
-      '<div class="p-corner br"><span class="p-rank">' + esc(face.rank) + '</span><span class="p-suit">' + face.suit + '</span></div></div>';
+    return '<div class="me-face poker-face ' + color + ' suit-' + a.sk + '" data-id="' + esc(face.id) + '" data-rank="' + esc(face.rank) + '" data-suit="' + esc(face.suit) + '">' +
+      '<img class="me-emblem" alt="" draggable="false" src="' + a.src + '" srcset="' + a.src + ' 1x, ' + a.src2 + ' 2x" />' +
+      '</div>';
   }
   function cardClass(c) {
     return 'card' + (c.open || c.matched ? ' open' : '') + (c.matched ? ' matched' : '') + (c.fog ? ' fog-mark' : '') + (c.joker && c.matched ? ' joker-spent' : '');
@@ -1015,7 +1023,7 @@
       el.setAttribute('data-i', String(i));
       el.setAttribute('aria-label', '卡牌 ' + (i + 1));
       el.innerHTML = '<div class="card-inner"><div class="face back"><div class="back-crest">✦</div></div><div class="face front">' +
-        (c.joker ? '<div class="joker-face">🃏<small>JOKER</small></div>' : pokerFaceHTML(c.face)) + '</div></div>';
+        (c.joker ? '<div class="joker-face me-joker"><img alt="JOKER" draggable="false" src="assets/battle/faces/joker.png" srcset="assets/battle/faces/joker.png 1x, assets/battle/faces/joker@2x.png 2x"/><small>JOKER</small></div>' : pokerFaceHTML(c.face)) + '</div></div>';
       el.addEventListener('click', onCard);
       board.appendChild(el);
     });
@@ -1105,7 +1113,8 @@
     if (b.miss === 1 || b.miss % 4 === 0) cheer('miss');
     Fx.shake($('board'));
     bsCall('onMiss', { miss: b.miss, missLimit: b.missLimit });
-    var ml = $('b-miss'); if (ml) Fx.floatText(ml, '失誤', 'crimson');
+    var missAnchor = $('board') || qs('.bs-hero-sprite') || $('b-miss');
+    if (missAnchor) Fx.floatText(missAnchor, '失誤', 'crimson');
     /* 翻開期間標紅，讓錯配牌面可讀（safeRun 路徑不變） */
     idxs.forEach(function (k) {
       safeRun(function () { var el = cardEl(k); if (el) el.classList.add('is-mismatch'); });
@@ -1146,7 +1155,7 @@
       [k, j].forEach(function (x) {
         var el = cardEl(x); if (!el) return;
         var c = b.cards[x];
-        qs('.front', el).innerHTML = c.joker ? '<div class="joker-face">🃏<small>JOKER</small></div>' : pokerFaceHTML(c.face);
+        qs('.front', el).innerHTML = c.joker ? '<div class="joker-face me-joker"><img alt="JOKER" draggable="false" src="assets/battle/faces/joker.png" srcset="assets/battle/faces/joker.png 1x, assets/battle/faces/joker@2x.png 2x"/><small>JOKER</small></div>' : pokerFaceHTML(c.face);
         syncCard(x);
         el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
       });
@@ -1371,7 +1380,11 @@
     var head = r.win ? (r.mode === 'endless' ? '第 ' + r.round + ' 輪突破' : r.boss ? '頭目擊破！' : '勝利') :
       (r.reason === 'miss' ? '失誤過多' : r.reason === 'quit' ? '撤退' : '時間到');
     var winLine = pick(czGet(['battleCheer', h.id, r.win ? 'win' : 'lose'])) || '';
-    var html = '<h2 class="scr-title">' + head + '</h2>';
+    var portraitSrc = 'assets/battle/ui/' + (h && h.id ? h.id : 'verda') + '_portrait.png';
+    var html = '<div class="r-layout' + (r.win ? ' is-win' : ' is-lose') + '">';
+    html += '<div class="r-cutin"><img src="' + portraitSrc + '" alt="" onerror="this.style.display=\'none\'"/></div>';
+    html += '<div class="r-body">';
+    html += '<h2 class="scr-title">' + head + '</h2>';
     if (r.win && r.mode !== 'endless') html += '<div class="stars" id="r-stars"><span>★</span><span>★</span><span>★</span></div>';
     html += '<div class="result-score">' + (r.mode === 'endless' ? r.endlessTotal : r.total) + '</div>';
     html += '<div class="muted center small">基礎 ' + r.base + ' · 時間獎 ' + r.timeBonus + (r.perfect ? ' · 完美 +500' : '') + (r.win && r.boss ? ' · 頭目 +300' : '') +
@@ -1379,7 +1392,7 @@
     html += '<div class="overlay-msg">經驗 +' + r.xp + '　金幣 +' + r.gold + (r.bond ? '　好感 +' + r.bond : '') +
       (r.ups ? '<br>⬆️ 等級提升 ×' + r.ups + '！' : '') + (r.firstClear ? '<br>🗝️ 首次通關' : '') + (r.dailyFirst ? '<br>🗓️ 每日挑戰完成獎勵 +150' : '') +
       (r.mode === 'endless' && !r.win ? '<br>♾️ 已記錄至排行榜' : '') + '</div>';
-    if (winLine) html += '<p class="greet-bubble" style="margin-top:10px">' + esc(h.name) + '：' + esc(winLine) + '</p>';
+    if (winLine) html += '<p class="greet-bubble r-line">' + esc(h.name) + '：' + esc(winLine) + '</p>';
     html += '<div class="btn-row"><button class="btn secondary" id="r-home">回主城</button>';
     if (r.mode === 'campaign') {
       if (r.win && r.n < CAMPAIGN_STAGES) html += '<button class="btn btn-gold" id="r-next">下一關 ⚡' + CONFIG.ENERGY_COST + '</button>';
@@ -1393,6 +1406,7 @@
     }
     html += '</div>';
     if (r.mode === 'endless' && r.win) html += '<button class="btn secondary" id="r-cashout" style="width:100%;margin-top:8px">收手並記錄成績</button>';
+    html += '</div></div>'; /* .r-body .r-layout */
     $('r-box').innerHTML = html;
     go('result');
     if (r.win && r.stars) {
