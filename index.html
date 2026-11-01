@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>記憶帝國：女傑翻牌</title>
+<meta name="description" content="記憶帝國：女傑翻牌 — 翻牌記憶 RPG">
+<meta name="theme-color" content="#1a0a12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="記憶帝國">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-180.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 頂部狀態列 -->
+  <header id="topbar">
+    <div class="tb-lv">
+      <span class="lv-badge">Lv <b id="tb-lv">1</b></span>
+      <div class="xpbar"><div id="tb-xp" class="xpfill"></div></div>
+    </div>
+    <div class="tb-res">
+      <span class="res"><i>🪙</i><b id="tb-gold">0</b></span>
+      <span class="res energy"><i>⚡</i><b id="tb-energy">10</b>/<span id="tb-emax">10</span><small id="tb-etimer"></small></span>
+    </div>
+  </header>
+
+  <main id="screens">
+    <!-- 主畫面 -->
+    <section id="scr-home" class="screen active">
+      <h1 class="game-title">記憶帝國<span>女傑翻牌</span></h1>
+      <div class="hero-stage">
+        <img id="home-hero-img" alt="" src="assets/heroines/verda.webp">
+        <div class="hero-plate">
+          <div id="home-hero-title" class="h-title"></div>
+          <div id="home-hero-name" class="h-name"></div>
+          <div id="home-hero-skill" class="h-skill"></div>
+        </div>
+      </div>
+      <div class="stage-info">
+        <div>目前關卡 <b id="home-stage">1</b></div>
+        <div class="muted" id="home-stage-detail"></div>
+        <div class="muted">連勝 <b id="home-streak">0</b> · 最高關卡 <b id="home-best">1</b></div>
+      </div>
+      <button id="btn-fight" class="btn btn-gold btn-big">⚔️ 出戰 <small>（消耗 ⚡1）</small></button>
+    </section>
+
+    <!-- 戰鬥 -->
+    <section id="scr-battle" class="screen">
+      <div class="battle-head">
+        <button id="btn-pause" class="btn-icon" aria-label="暫停">⏸</button>
+        <div class="bh-stage">第 <b id="b-stage">1</b> 關</div>
+        <div class="bh-score">分數 <b id="b-score">0</b></div>
+      </div>
+      <div class="timebar"><div id="b-timefill" class="timefill"></div><span id="b-time">0</span></div>
+      <div class="battle-sub">
+        <span>配對 <b id="b-pairs">0/0</b></span>
+        <span id="b-combo" class="combo">連擊 x0</span>
+        <span>失誤 <b id="b-miss">0</b></span>
+      </div>
+      <div id="board" class="board"></div>
+      <div class="battle-foot">
+        <img id="b-hero-img" class="b-hero" alt="">
+        <button id="btn-skill" class="btn btn-skill"></button>
+      </div>
+      <div id="b-banner" class="banner hidden"></div>
+    </section>
+
+    <!-- 結算 -->
+    <section id="scr-result" class="screen">
+      <div id="r-box" class="result-box"></div>
+    </section>
+
+    <!-- 女傑名冊 -->
+    <section id="scr-roster" class="screen">
+      <h2 class="scr-title">女傑名冊</h2>
+      <div id="roster-list" class="roster"></div>
+    </section>
+
+    <!-- 成就 -->
+    <section id="scr-ach" class="screen">
+      <h2 class="scr-title">成就</h2>
+      <div id="ach-summary" class="muted center"></div>
+      <div id="ach-list" class="ach-list"></div>
+    </section>
+
+    <!-- 設定 -->
+    <section id="scr-settings" class="screen">
+      <h2 class="scr-title">設定</h2>
+      <div class="set-list">
+        <label class="set-row"><span>🔊 音效</span><input type="checkbox" id="set-sound" class="switch"></label>
+        <label class="set-row"><span>📳 震動回饋</span><input type="checkbox" id="set-vibrate" class="switch"></label>
+        <div class="set-row"><span>📊 統計</span><span id="set-stats" class="muted small"></span></div>
+        <div class="set-row"><span>📱 安裝</span><span class="muted small">於瀏覽器選單選擇「加入主畫面」即可離線遊玩</span></div>
+        <button id="btn-reset" class="btn btn-danger">重置所有進度</button>
+        <p class="muted small center">記憶帝國：女傑翻牌 v1.0</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- 底部導覽 -->
+  <nav id="nav">
+    <button data-go="home" class="active"><i>🏰</i>主畫面</button>
+    <button data-go="roster"><i>👑</i>女傑名冊</button>
+    <button data-go="ach"><i>🏆</i>成就</button>
+    <button data-go="settings"><i>⚙️</i>設定</button>
+  </nav>
+
+  <div id="modal" class="modal hidden"><div class="modal-card" id="modal-card"></div></div>
+  <div id="toasts"></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
