@@ -299,32 +299,32 @@
   /* ───────── 商店 ───────── */
   var SHOP = {
     consumables: [
-      { id: 'hourglass', icon: '⏳', name: '時之沙漏', desc: '下一場戰鬥時間 +10 秒', price: 120 },
-      { id: 'scroll', icon: '📜', name: '預視卷軸', desc: '下一場開局窺視全部卡牌 1.5 秒', price: 100 },
-      { id: 'charm', icon: '🧿', name: '守護符', desc: '下一場失誤上限 +3', price: 110 },
-      { id: 'elixir', icon: '🧪', name: '技能秘藥', desc: '下一場技能冷卻減半', price: 140 },
-      { id: 'potion', icon: '⚡', name: '體力藥水', desc: '立即回復 5 點體力', price: 90, instant: true }
+      { id: 'hourglass', icon: '⏳', img: 'assets/icons/items/hourglass.png', name: '時之沙漏', desc: '下一場戰鬥時間 +10 秒', price: 120 },
+      { id: 'scroll', icon: '📜', img: 'assets/icons/items/scroll.png', name: '預視卷軸', desc: '下一場開局窺視全部卡牌 1.5 秒', price: 100 },
+      { id: 'charm', icon: '🧿', img: 'assets/icons/items/charm.png', name: '守護符', desc: '下一場失誤上限 +3', price: 110 },
+      { id: 'elixir', icon: '🧪', img: 'assets/icons/items/elixir.png', name: '技能秘藥', desc: '下一場技能冷卻減半', price: 140 },
+      { id: 'potion', icon: '⚡', img: 'assets/icons/items/potion.png', name: '體力藥水', desc: '立即回復 5 點體力', price: 90, instant: true }
     ],
     relics: [
-      { id: 'lion', icon: '🦁', name: '金獅徽章', desc: '金幣收益 +15%', price: 800 },
-      { id: 'mirror', icon: '🪞', name: '紫月之鏡', desc: '使用預視卷軸時窺視 +0.5 秒', price: 900 },
-      { id: 'gear', icon: '⚙️', name: '時之齒輪', desc: '戰鬥時間 +6%', price: 1000 },
-      { id: 'ring', icon: '💍', name: '誓約之戒', desc: '連擊得分 +20%', price: 900 },
-      { id: 'compass', icon: '🧭', name: '參謀羅盤', desc: '失誤上限 +1', price: 1100 },
-      { id: 'dice', icon: '🎲', name: '幸運骰', desc: '鬼牌懲罰減半', price: 700 }
+      { id: 'lion', icon: '🦁', img: 'assets/icons/items/lion.png', name: '金獅徽章', desc: '金幣收益 +15%', price: 800 },
+      { id: 'mirror', icon: '🪞', img: 'assets/icons/items/mirror.png', name: '紫月之鏡', desc: '使用預視卷軸時窺視 +0.5 秒', price: 900 },
+      { id: 'gear', icon: '⚙️', img: 'assets/icons/items/gear.png', name: '時之齒輪', desc: '戰鬥時間 +6%', price: 1000 },
+      { id: 'ring', icon: '💍', img: 'assets/icons/items/ring.png', name: '誓約之戒', desc: '連擊得分 +20%', price: 900 },
+      { id: 'compass', icon: '🧭', img: 'assets/icons/items/compass.png', name: '參謀羅盤', desc: '失誤上限 +1', price: 1100 },
+      { id: 'dice', icon: '🎲', img: 'assets/icons/items/dice.png', name: '幸運骰', desc: '鬼牌懲罰減半', price: 700 }
     ],
     gifts: [
-      { id: 'flowers', icon: '💐', name: '白薔薇花束', desc: '清雅的花束', price: 80 },
-      { id: 'tea', icon: '🫖', name: '皇家紅茶', desc: '香氣醇厚的茶葉禮盒', price: 90 },
-      { id: 'book', icon: '📕', name: '古典詩集', desc: '燙金封面的詩集', price: 100 },
-      { id: 'ribbon', icon: '🎀', name: '絲綢緞帶', desc: '可繫於劍柄或髮間', price: 70 },
-      { id: 'bbq', icon: '🍖', name: '慶功烤肉券', desc: '兩人份的慶功宴', price: 90 },
-      { id: 'chess', icon: '♟️', name: '象牙棋組', desc: '精雕細琢的棋盤', price: 140 },
-      { id: 'moonlamp', icon: '🏮', name: '月光提燈', desc: '散發柔光的提燈', price: 120 },
-      { id: 'musicbox', icon: '🎼', name: '八音盒', desc: '演奏帝國古謠', price: 150 }
+      { id: 'flowers', icon: '💐', img: 'assets/icons/items/flowers.png', name: '白薔薇花束', desc: '清雅的花束', price: 80 },
+      { id: 'tea', icon: '🫖', img: 'assets/icons/items/tea.png', name: '皇家紅茶', desc: '香氣醇厚的茶葉禮盒', price: 90 },
+      { id: 'book', icon: '📕', img: 'assets/icons/items/book.png', name: '古典詩集', desc: '燙金封面的詩集', price: 100 },
+      { id: 'ribbon', icon: '🎀', img: 'assets/icons/items/ribbon.png', name: '絲綢緞帶', desc: '可繫於劍柄或髮間', price: 70 },
+      { id: 'bbq', icon: '🍖', img: 'assets/icons/items/bbq.png', name: '慶功烤肉券', desc: '兩人份的慶功宴', price: 90 },
+      { id: 'chess', icon: '♟️', img: 'assets/icons/items/chess.png', name: '象牙棋組', desc: '精雕細琢的棋盤', price: 140 },
+      { id: 'moonlamp', icon: '🏮', img: 'assets/icons/items/moonlamp.png', name: '月光提燈', desc: '散發柔光的提燈', price: 120 },
+      { id: 'musicbox', icon: '🎼', img: 'assets/icons/items/musicbox.png', name: '八音盒', desc: '演奏帝國古謠', price: 150 }
     ],
     outfits: [
-      { id: 'outfit_summer', icon: '👗', name: '夏日洋裝（全員）', desc: '解鎖長裙款夏日洋裝造型', price: 1500 }
+      { id: 'outfit_summer', icon: '👗', img: 'assets/icons/items/outfit_summer.png', name: '夏日洋裝（全員）', desc: '解鎖長裙款夏日洋裝造型', price: 1500 }
     ]
   };
   var GIFT_DAILY_CAP = 3;
@@ -372,44 +372,60 @@
   function anyBondLv(s, lv) { return HEROINES.some(function (h) { return bondLevel(s.bond[h.id]) >= lv; }); }
 
   var ACHIEVEMENTS = [
-    { id: 'first_win', icon: '🏅', name: '初戰告捷', desc: '贏得第一場戰鬥', reward: 50, check: function (s) { return s.stats.wins >= 1; } },
-    { id: 'stage5', icon: '🗡️', name: '帝國先鋒', desc: '通過第 5 關', reward: 100, check: function (s) { return s.maxStage > 5; } },
-    { id: 'stage10', icon: '🏰', name: '攻城名將', desc: '通過第 10 關', reward: 200, check: function (s) { return s.maxStage > 10; } },
-    { id: 'stage20', icon: '🐉', name: '傳奇征服者', desc: '通過第 20 關', reward: 400, check: function (s) { return s.maxStage > 20; } },
-    { id: 'stage30', icon: '❄️', name: '北境行者', desc: '通過第 30 關', reward: 600, check: function (s) { return s.maxStage > 30; } },
-    { id: 'stage50', icon: '👑', name: '帝冠加冕', desc: '完成全部 50 關戰役', reward: 1500, check: function (s) { return s.maxStage > 50; } },
-    { id: 'boss1', icon: '🛡️', name: '首位頭目', desc: '擊敗第一位頭目', reward: 120, check: function (s) { return s.stats.bossWins >= 1; } },
-    { id: 'boss6', icon: '⚔️', name: '機制剋星', desc: '擊敗 6 位頭目', reward: 400, check: function (s) { return s.stats.bossWins >= 6; } },
-    { id: 'perfect1', icon: '✨', name: '完美無瑕', desc: '零失誤通關', reward: 80, check: function (s) { return s.stats.perfects >= 1; } },
-    { id: 'perfect10', icon: '🌟', name: '絕對記憶', desc: '零失誤通關 10 次', reward: 300, check: function (s) { return s.stats.perfects >= 10; } },
-    { id: 'star30', icon: '⭐', name: '星光收集者', desc: '累計 30 顆星', reward: 200, check: function (s) { return sumStars(s) >= 30; } },
-    { id: 'star100', icon: '🌠', name: '滿天星斗', desc: '累計 100 顆星', reward: 600, check: function (s) { return sumStars(s) >= 100; } },
-    { id: 'three10', icon: '💫', name: '三星統帥', desc: '10 個關卡取得三星', reward: 300, check: function (s) { return threeStars(s) >= 10; } },
-    { id: 'combo5', icon: '🔥', name: '連擊高手', desc: '達成 5 連擊', reward: 80, check: function (s) { return s.stats.maxCombo >= 5; } },
-    { id: 'combo8', icon: '💥', name: '連擊之王', desc: '達成 8 連擊', reward: 200, check: function (s) { return s.stats.maxCombo >= 8; } },
-    { id: 'combo12', icon: '☄️', name: '記憶風暴', desc: '達成 12 連擊', reward: 500, check: function (s) { return s.stats.maxCombo >= 12; } },
-    { id: 'lv5', icon: '📈', name: '嶄露頭角', desc: '等級達到 5', reward: 100, check: function (s) { return s.lv >= 5; } },
-    { id: 'lv10', icon: '🎖️', name: '帝國將星', desc: '等級達到 10', reward: 250, check: function (s) { return s.lv >= 10; } },
-    { id: 'lv20', icon: '🏛️', name: '元帥之資', desc: '等級達到 20', reward: 600, check: function (s) { return s.lv >= 20; } },
-    { id: 'streak5', icon: '📅', name: '日日精進', desc: '連續登入遊玩 5 天', reward: 150, check: function (s) { return s.stats.bestStreak >= 5; } },
-    { id: 'daily1', icon: '🗓️', name: '今日之試', desc: '完成一次每日挑戰', reward: 100, check: function (s) { return s.stats.dailyWins >= 1; } },
-    { id: 'daily7', icon: '📆', name: '七日修行', desc: '完成 7 次每日挑戰', reward: 400, check: function (s) { return s.stats.dailyWins >= 7; } },
-    { id: 'endless5', icon: '♾️', name: '無盡之路', desc: '無盡模式達到第 5 輪', reward: 200, check: function (s) { return s.stats.endlessBestRound >= 5; } },
-    { id: 'endless10', icon: '🌀', name: '永恆記憶', desc: '無盡模式達到第 10 輪', reward: 600, check: function (s) { return s.stats.endlessBestRound >= 10; } },
-    { id: 'skill20', icon: '🔮', name: '技能大師', desc: '累計施放技能 20 次', reward: 120, check: function (s) { return s.stats.skillsUsed >= 20; } },
-    { id: 'skill100', icon: '🪄', name: '秘術宗師', desc: '累計施放技能 100 次', reward: 400, check: function (s) { return s.stats.skillsUsed >= 100; } },
-    { id: 'collector', icon: '👑', name: '女傑集結', desc: '解鎖全部五位女傑', reward: 500, check: function (s) { return HEROINES.every(function (h) { return s.unlocked[h.id]; }); } },
-    { id: 'rich', icon: '💰', name: '帝國金庫', desc: '累計獲得 3000 金幣', reward: 300, check: function (s) { return s.stats.goldEarned >= 3000; } },
-    { id: 'shopper', icon: '🛒', name: '御用商客', desc: '在商店購買 10 次', reward: 150, check: function (s) { return s.stats.purchases >= 10; } },
-    { id: 'relic3', icon: '🏺', name: '遺物收藏家', desc: '擁有 3 件遺物', reward: 300, check: function (s) { return cnt(s.relics) >= 3; } },
-    { id: 'gift10', icon: '🎁', name: '心意傳達', desc: '贈送 10 份禮物', reward: 150, check: function (s) { return s.stats.giftsGiven >= 10; } },
-    { id: 'bond3', icon: '💝', name: '心之紐帶', desc: '任一女傑好感達到 3 心', reward: 150, check: function (s) { return anyBondLv(s, 3); } },
-    { id: 'bond5', icon: '💖', name: '摯友之誓', desc: '任一女傑好感達到 5 心', reward: 400, check: function (s) { return anyBondLv(s, 5); } },
-    { id: 'bondall', icon: '🌹', name: '眾望所歸', desc: '全部女傑好感達到 3 心', reward: 800, check: function (s) { return HEROINES.every(function (h) { return bondLevel(s.bond[h.id]) >= 3; }); } }
+    { id: 'first_win', icon: '🏅', img: 'assets/icons/items/first_win.png', name: '初戰告捷', desc: '贏得第一場戰鬥', reward: 50, check: function (s) { return s.stats.wins >= 1; } },
+    { id: 'stage5', icon: '🗡️', img: 'assets/icons/items/stage5.png', name: '帝國先鋒', desc: '通過第 5 關', reward: 100, check: function (s) { return s.maxStage > 5; } },
+    { id: 'stage10', icon: '🏰', img: 'assets/icons/items/stage10.png', name: '攻城名將', desc: '通過第 10 關', reward: 200, check: function (s) { return s.maxStage > 10; } },
+    { id: 'stage20', icon: '🐉', img: 'assets/icons/items/stage20.png', name: '傳奇征服者', desc: '通過第 20 關', reward: 400, check: function (s) { return s.maxStage > 20; } },
+    { id: 'stage30', icon: '❄️', img: 'assets/icons/items/stage30.png', name: '北境行者', desc: '通過第 30 關', reward: 600, check: function (s) { return s.maxStage > 30; } },
+    { id: 'stage50', icon: '👑', img: 'assets/icons/items/stage50.png', name: '帝冠加冕', desc: '完成全部 50 關戰役', reward: 1500, check: function (s) { return s.maxStage > 50; } },
+    { id: 'boss1', icon: '🛡️', img: 'assets/icons/items/boss1.png', name: '首位頭目', desc: '擊敗第一位頭目', reward: 120, check: function (s) { return s.stats.bossWins >= 1; } },
+    { id: 'boss6', icon: '⚔️', img: 'assets/icons/items/boss6.png', name: '機制剋星', desc: '擊敗 6 位頭目', reward: 400, check: function (s) { return s.stats.bossWins >= 6; } },
+    { id: 'perfect1', icon: '✨', img: 'assets/icons/items/perfect1.png', name: '完美無瑕', desc: '零失誤通關', reward: 80, check: function (s) { return s.stats.perfects >= 1; } },
+    { id: 'perfect10', icon: '🌟', img: 'assets/icons/items/perfect10.png', name: '絕對記憶', desc: '零失誤通關 10 次', reward: 300, check: function (s) { return s.stats.perfects >= 10; } },
+    { id: 'star30', icon: '⭐', img: 'assets/icons/items/star30.png', name: '星光收集者', desc: '累計 30 顆星', reward: 200, check: function (s) { return sumStars(s) >= 30; } },
+    { id: 'star100', icon: '🌠', img: 'assets/icons/items/star100.png', name: '滿天星斗', desc: '累計 100 顆星', reward: 600, check: function (s) { return sumStars(s) >= 100; } },
+    { id: 'three10', icon: '💫', img: 'assets/icons/items/three10.png', name: '三星統帥', desc: '10 個關卡取得三星', reward: 300, check: function (s) { return threeStars(s) >= 10; } },
+    { id: 'combo5', icon: '🔥', img: 'assets/icons/items/combo5.png', name: '連擊高手', desc: '達成 5 連擊', reward: 80, check: function (s) { return s.stats.maxCombo >= 5; } },
+    { id: 'combo8', icon: '💥', img: 'assets/icons/items/combo8.png', name: '連擊之王', desc: '達成 8 連擊', reward: 200, check: function (s) { return s.stats.maxCombo >= 8; } },
+    { id: 'combo12', icon: '☄️', img: 'assets/icons/items/combo12.png', name: '記憶風暴', desc: '達成 12 連擊', reward: 500, check: function (s) { return s.stats.maxCombo >= 12; } },
+    { id: 'lv5', icon: '📈', img: 'assets/icons/items/lv5.png', name: '嶄露頭角', desc: '等級達到 5', reward: 100, check: function (s) { return s.lv >= 5; } },
+    { id: 'lv10', icon: '🎖️', img: 'assets/icons/items/lv10.png', name: '帝國將星', desc: '等級達到 10', reward: 250, check: function (s) { return s.lv >= 10; } },
+    { id: 'lv20', icon: '🏛️', img: 'assets/icons/items/lv20.png', name: '元帥之資', desc: '等級達到 20', reward: 600, check: function (s) { return s.lv >= 20; } },
+    { id: 'streak5', icon: '📅', img: 'assets/icons/items/streak5.png', name: '日日精進', desc: '連續登入遊玩 5 天', reward: 150, check: function (s) { return s.stats.bestStreak >= 5; } },
+    { id: 'daily1', icon: '🗓️', img: 'assets/icons/items/daily1.png', name: '今日之試', desc: '完成一次每日挑戰', reward: 100, check: function (s) { return s.stats.dailyWins >= 1; } },
+    { id: 'daily7', icon: '📆', img: 'assets/icons/items/daily7.png', name: '七日修行', desc: '完成 7 次每日挑戰', reward: 400, check: function (s) { return s.stats.dailyWins >= 7; } },
+    { id: 'endless5', icon: '♾️', img: 'assets/icons/items/endless5.png', name: '無盡之路', desc: '無盡模式達到第 5 輪', reward: 200, check: function (s) { return s.stats.endlessBestRound >= 5; } },
+    { id: 'endless10', icon: '🌀', img: 'assets/icons/items/endless10.png', name: '永恆記憶', desc: '無盡模式達到第 10 輪', reward: 600, check: function (s) { return s.stats.endlessBestRound >= 10; } },
+    { id: 'skill20', icon: '🔮', img: 'assets/icons/items/skill20.png', name: '技能大師', desc: '累計施放技能 20 次', reward: 120, check: function (s) { return s.stats.skillsUsed >= 20; } },
+    { id: 'skill100', icon: '🪄', img: 'assets/icons/items/skill100.png', name: '秘術宗師', desc: '累計施放技能 100 次', reward: 400, check: function (s) { return s.stats.skillsUsed >= 100; } },
+    { id: 'collector', icon: '👑', img: 'assets/icons/items/collector.png', name: '女傑集結', desc: '解鎖全部五位女傑', reward: 500, check: function (s) { return HEROINES.every(function (h) { return s.unlocked[h.id]; }); } },
+    { id: 'rich', icon: '💰', img: 'assets/icons/items/rich.png', name: '帝國金庫', desc: '累計獲得 3000 金幣', reward: 300, check: function (s) { return s.stats.goldEarned >= 3000; } },
+    { id: 'shopper', icon: '🛒', img: 'assets/icons/items/shopper.png', name: '御用商客', desc: '在商店購買 10 次', reward: 150, check: function (s) { return s.stats.purchases >= 10; } },
+    { id: 'relic3', icon: '🏺', img: 'assets/icons/items/relic3.png', name: '遺物收藏家', desc: '擁有 3 件遺物', reward: 300, check: function (s) { return cnt(s.relics) >= 3; } },
+    { id: 'gift10', icon: '🎁', img: 'assets/icons/items/gift10.png', name: '心意傳達', desc: '贈送 10 份禮物', reward: 150, check: function (s) { return s.stats.giftsGiven >= 10; } },
+    { id: 'bond3', icon: '💝', img: 'assets/icons/items/bond3.png', name: '心之紐帶', desc: '任一女傑好感達到 3 心', reward: 150, check: function (s) { return anyBondLv(s, 3); } },
+    { id: 'bond5', icon: '💖', img: 'assets/icons/items/bond5.png', name: '摯友之誓', desc: '任一女傑好感達到 5 心', reward: 400, check: function (s) { return anyBondLv(s, 5); } },
+    { id: 'bondall', icon: '🌹', img: 'assets/icons/items/bondall.png', name: '眾望所歸', desc: '全部女傑好感達到 3 心', reward: 800, check: function (s) { return HEROINES.every(function (h) { return bondLevel(s.bond[h.id]) >= 3; }); } }
   ];
+
+
+  /** 物品／成就圖示：優先 PNG，失敗時回落 emoji */
+  function itemIconHTML(it, cls) {
+    if (!it) return '';
+    var emoji = it.icon || '';
+    var src = it.img || (it.id ? ('assets/icons/items/' + it.id + '.png') : '');
+    var c = 'item-ico' + (cls ? (' ' + cls) : '');
+    if (!src) return '<span class="' + c + ' item-ico-emoji">' + emoji + '</span>';
+    var src2 = src.replace(/\.png$/, '@2x.png');
+    return '<span class="item-ico-wrap' + (cls ? (' ' + cls) : '') + '">' +
+      '<img class="item-ico" src="' + src + '" srcset="' + src2 + ' 2x" width="48" height="48" alt="" loading="lazy" decoding="async" ' +
+      'onerror="this.onerror=null;this.style.display=\'none\';var f=this.nextElementSibling;if(f)f.hidden=false;">' +
+      '<span class="item-ico-fb" hidden aria-hidden="true">' + emoji + '</span></span>';
+  }
 
   window.GAME_DATA = {
     VERSION: VERSION,
+    itemIconHTML: itemIconHTML,
     HEROINES: HEROINES, OUTFITS: OUTFITS, ACHIEVEMENTS: ACHIEVEMENTS, CONFIG: CONFIG,
     CHAPTERS: CHAPTERS, STAGES_PER_CHAPTER: STAGES_PER_CHAPTER, CAMPAIGN_STAGES: CAMPAIGN_STAGES,
     BOSS_MECHS: BOSS_MECHS, GRIDS: GRIDS, SHOP: SHOP,

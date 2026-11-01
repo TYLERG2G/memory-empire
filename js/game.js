@@ -383,6 +383,10 @@
   function icoHTML(id, cls) {
     return '<svg class="ico' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#ico-' + id + '"></use></svg>';
   }
+  function itemIco(it, cls) {
+    var fn = (D && D.itemIconHTML) || (window.GAME_DATA && window.GAME_DATA.itemIconHTML);
+    return fn ? fn(it, cls) : (it && it.icon ? it.icon : '');
+  }
 
   function toastNormalize(msg, opts) {
     msg = String(msg == null ? '' : msg);
@@ -786,7 +790,7 @@
     var owned = SHOP.consumables.filter(function (c) { return !c.instant && (S.inv[c.id] || 0) > 0; });
     if (!owned.length) { cb({}); return; }
     var rows = owned.map(function (c) {
-      return '<label class="prep-row"><span>' + c.icon + ' ' + esc(c.name) + ' <small class="muted">×' + S.inv[c.id] + ' · ' + esc(c.desc) + '</small></span><input type="checkbox" class="switch" data-use="' + c.id + '"></label>';
+      return '<label class="prep-row"><span class="prep-ico">' + itemIco(c, 'item-ico-sm') + '</span><span>' + esc(c.name) + ' <small class="muted">×' + S.inv[c.id] + ' · ' + esc(c.desc) + '</small></span><input type="checkbox" class="switch" data-use="' + c.id + '"></label>';
     }).join('');
     openModal('<h3>出戰準備</h3>' + rows + '<div class="btn-row" style="margin-top:12px"><button class="btn secondary" id="m-cancel">取消</button><button class="btn btn-gold" id="m-go">出發</button></div>');
     bindModalBtn('m-cancel', closeModal);
@@ -1672,7 +1676,7 @@
     var html = '<h3>贈禮給 ' + esc(h.name) + '</h3><p class="muted small">今日已贈 ' + used + '/' + CONFIG.GIFT_DAILY_CAP + ' · 喜好：' +
       (h.favGifts || []).map(function (gid) { var g = findItem('gifts', gid); return g ? g.icon + g.name : ''; }).join('、') + '</p>';
     if (!owned.length) html += '<p class="muted">背包中沒有禮物，請至帝國商會購買。</p>';
-    else html += '<div class="gift-grid">' + owned.map(function (g) { return '<button data-gift="' + g.id + '"' + (used >= CONFIG.GIFT_DAILY_CAP ? ' disabled' : '') + '><i>' + g.icon + '</i>' + esc(g.name) + ' ×' + S.inv[g.id] + '</button>'; }).join('') + '</div>';
+    else html += '<div class="gift-grid">' + owned.map(function (g) { return '<button data-gift="' + g.id + '"' + (used >= CONFIG.GIFT_DAILY_CAP ? ' disabled' : '') + '>' + itemIco(g, 'item-ico-md') + '<span>' + esc(g.name) + ' ×' + S.inv[g.id] + '</span></button>'; }).join('') + '</div>';
     html += '<button class="btn secondary" id="m-cancel" style="width:100%;margin-top:10px">關閉</button>';
     openModal(html);
     bindModalBtn('m-cancel', closeModal);
@@ -1719,7 +1723,7 @@
     (SHOP[shopTab] || []).forEach(function (it) {
       var owned = shopTab === 'relics' ? !!S.relics[it.id] : shopTab === 'outfits' ? !!S.outfitsOwned[outfitIdForShop(it.id)] : 0;
       var count = S.inv[it.id] || 0;
-      html += '<div class="shop-item"><div class="si-ico">' + it.icon + '</div><div class="si-body"><b>' + esc(it.name) + '</b><div class="muted small">' + esc(it.desc) + '</div>' +
+      html += '<div class="shop-item"><div class="si-ico">' + itemIco(it, 'item-ico-lg') + '</div><div class="si-body"><b>' + esc(it.name) + '</b><div class="muted small">' + esc(it.desc) + '</div>' +
         (shopTab === 'consumables' || shopTab === 'gifts' ? (count ? '<div class="owned">持有 ×' + count + '</div>' : '') : (owned ? '<div class="owned">已擁有</div>' : '')) + '</div>' +
         '<button class="btn btn-sm btn-gold" data-buy="' + it.id + '"' + (owned || S.gold < it.price ? ' disabled' : '') + '>' + (owned ? '✓' : '🪙' + it.price) + '</button></div>';
     });
@@ -1768,7 +1772,7 @@
     var list = $('ach-list'); if (!list) return;
     list.innerHTML = ACHIEVEMENTS.map(function (a) {
       var ok = !!S.achievements[a.id];
-      return '<div class="ach-item' + (ok ? '' : ' locked') + '"><div class="ach-ico">' + icoHTML(achIco(a.id)) + '</div><div><b>' + esc(a.name) + '</b><div class="muted small">' + esc(a.desc) + (ok ? ' <span class="ach-ok">' + icoHTML('check') + '</span>' : ' · 獎 ' + a.reward + ' 金') + '</div></div></div>';
+      return '<div class="ach-item' + (ok ? '' : ' locked') + '"><div class="ach-ico">' + itemIco(a, 'item-ico-md') + '</div><div><b>' + esc(a.name) + '</b><div class="muted small">' + esc(a.desc) + (ok ? ' <span class="ach-ok">' + icoHTML('check') + '</span>' : ' · 獎 ' + a.reward + ' 金') + '</div></div></div>';
     }).join('');
   }
   function showLeaderboard() {

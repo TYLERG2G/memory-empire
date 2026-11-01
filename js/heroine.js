@@ -1033,6 +1033,11 @@
   /* ════════════════════════════════════════════════════════════════════════
      7. 精品贈禮抽屜與喜好雙倍回饋 — gift / openGifts / giveGift
      ════════════════════════════════════════════════════════════════════════ */
+  function itemIcoLocal(it, cls) {
+    var GD = getData() || window.GAME_DATA || {};
+    var fn = GD.itemIconHTML;
+    return fn ? fn(it, cls) : (it && it.icon ? ('<i>' + it.icon + '</i>') : '');
+  }
   function lookupGiftReaction(heroineId, giftId, isFav) {
     if (isFav && GIFT_FAV_LINES[heroineId] && GIFT_FAV_LINES[heroineId][giftId]) {
       return GIFT_FAV_LINES[heroineId][giftId];
@@ -1091,7 +1096,7 @@
       return '<button type="button" class="gift-card' + (count > 0 ? ' is-owned' : '') + (isFav ? ' is-fav' : '') +
         '" data-gift="' + esc(g.id) + '"' + (disabled ? ' disabled' : '') + '>' +
         (isFav ? '<span class="gift-fav-tag">♥ 喜愛</span>' : '') +
-        '<i>' + g.icon + '</i><b>' + esc(g.name) + '</b>' +
+        itemIcoLocal(g, 'item-ico-md') + '<b>' + esc(g.name) + '</b>' +
         '<span class="gift-meta">' + (count > 0 ? ('持有 ×' + count + '（直接贈送）') : ('🪙' + g.price + ' 購贈')) + '</span></button>';
     }).join('');
 
