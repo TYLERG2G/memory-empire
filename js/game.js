@@ -955,6 +955,7 @@
     setText('b-miss', b.miss);
     setText('b-misslimit', b.missLimit);
     setText('b-combo', '連擊 x' + b.combo);
+    var ce0 = $('b-combo'); if (ce0) { if (b.combo > 0) ce0.classList.remove('is-zero'); else ce0.classList.add('is-zero'); }
   }
   function updateSkillBtn() {
     var b = battle, btn = $('btn-skill'); if (!b || !btn) return;

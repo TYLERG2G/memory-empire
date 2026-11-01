@@ -15,7 +15,7 @@
   --bb-crimson:#d0465f;
   --bb-mint:#8fcfbf;
   --bb-shadow:0 1px 3px rgba(60,40,50,.18);
-  --bb-board-top:max(46%,200px);
+  --bb-board-top:max(50%,220px);
   --bb-foot-h:92px;
 }
 /* 場景已鋪滿；確保 ui-v4 的「舞台全隱藏」不生效 */
@@ -23,10 +23,23 @@
 #scr-battle.screen.active{position:relative;overflow:hidden;background:#dfe9e4;perspective:1100px;perspective-origin:50% 64%}
 
 /* 戰鬥時頂列改柔光玻璃（不搶場景） */
-body.no-nav:has(#scr-battle.active) #topbar{
-  background:linear-gradient(180deg,rgba(52,38,62,.62),rgba(52,38,62,.28));
-  border-bottom-color:rgba(255,255,255,.18);
+body.no-nav:has(#scr-battle.active) #topbar,
+#scr-battle.screen.active ~ #topbar,
+body:has(#scr-battle.screen.active) #topbar{
+  background:linear-gradient(180deg,rgba(255,252,244,.88),rgba(255,252,244,.55));
+  border-bottom:1px solid rgba(120,96,140,.22);
+  color:#4a3550;
+  box-shadow:0 1px 0 rgba(255,255,255,.7);
 }
+body:has(#scr-battle.screen.active) #topbar .res,
+body:has(#scr-battle.screen.active) #topbar b,
+body:has(#scr-battle.screen.active) #topbar .sep,
+body:has(#scr-battle.screen.active) #topbar small,
+body:has(#scr-battle.screen.active) #topbar .lv{
+  color:#4a3550!important;text-shadow:none;
+}
+body:has(#scr-battle.screen.active) #topbar svg.ico{color:#6a5578;fill:#6a5578;opacity:.9}
+
 
 /* ═════════ HUD：細亮片 ═════════ */
 #scr-battle .battle-head,
@@ -105,17 +118,25 @@ body.no-nav:has(#scr-battle.active) #topbar{
 #scr-battle .battle-sub .stat > span{color:var(--bb-ink-2)}
 #scr-battle .battle-sub .stat:first-child small::before{content:"\25C7";margin-right:2px;font-size:9px;color:var(--bb-accent)}
 #scr-battle .battle-sub .stat:last-child small::before{content:"\25C6";margin-right:2px;font-size:9px;color:var(--bb-crimson)}
+#scr-battle .battle-sub .combo.is-zero{display:none!important;visibility:hidden}
 #scr-battle .battle-sub .combo{
   min-width:64px;text-align:center;font-family:var(--ff-display,inherit);font-size:15px;
   color:#7a4a96;text-shadow:0 0 4px #fff,0 0 2px #fff,0 1px 0 rgba(255,255,255,.9);
 }
 
 /* ═════════ 牌盤：放在桌面上（輕透視，無面板） ═════════ */
+#scr-battle #board.board::before{
+  content:"";position:absolute;z-index:-1;left:-10%;right:-10%;top:-8%;bottom:-14%;
+  border-radius:4px 4px 10px 10px;
+  background:linear-gradient(180deg,rgba(255,250,240,.15),rgba(180,150,120,.18) 40%,rgba(120,90,70,.28));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),0 8px 16px rgba(60,40,30,.2);
+  transform:perspective(600px) rotateX(14deg);transform-origin:50% 0;pointer-events:none;
+}
 #scr-battle #board.board{
   position:absolute;z-index:2;
   top:var(--bb-board-top);
-  bottom:calc(var(--bb-foot-h) + 10px);
-  left:calc(var(--sal,0px) + 28px);right:calc(var(--sar,0px) + 28px);
+  bottom:calc(var(--bb-foot-h) + 28px);
+  left:calc(var(--sal,0px) + 42px);right:calc(var(--sar,0px) + 42px);
   width:auto!important;            /* 蓋掉 inline width:100%，改由 left/right＋max-width 置中 */
   margin:0 auto!important;
   flex:none;padding:4px 2px 2px;
@@ -248,7 +269,14 @@ body.no-nav:has(#scr-battle.active) #topbar{
 }
 @media (orientation:landscape) and (max-height:430px){
   #scr-battle{--bb-foot-h:56px;--bb-board-top:76px}
-  #scr-battle #board.board{bottom:6px;right:calc(var(--sar,0px) + 78px);left:calc(var(--sal,0px) + 14px);rotate:none}
+  #scr-battle #board.board::before{
+  content:"";position:absolute;z-index:-1;left:-10%;right:-10%;top:-8%;bottom:-14%;
+  border-radius:4px 4px 10px 10px;
+  background:linear-gradient(180deg,rgba(255,250,240,.15),rgba(180,150,120,.18) 40%,rgba(120,90,70,.28));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),0 8px 16px rgba(60,40,30,.2);
+  transform:perspective(600px) rotateX(14deg);transform-origin:50% 0;pointer-events:none;
+}
+#scr-battle #board.board{bottom:6px;right:calc(var(--sar,0px) + 78px);left:calc(var(--sal,0px) + 14px);rotate:none}
   #scr-battle .b-portrait{display:none}
   #app #scr-battle #b-cheer.b-cheer{display:none}
   #scr-battle .battle-foot{left:auto;width:72px}

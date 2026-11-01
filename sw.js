@@ -1,5 +1,5 @@
-/* 記憶帝國：女傑翻牌 — Service Worker v4f2（stage clip+swap） */
-const CACHE = 'MEMORY_RPG_v4g1';
+/* 記憶帝國：女傑翻牌 — Service Worker v4g2 bright fix */
+const CACHE = 'MEMORY_RPG_v4g2';
 // 核心殼層：缺一即安裝失敗
 const CORE = [
   './',
