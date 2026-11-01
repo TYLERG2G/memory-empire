@@ -1,5 +1,5 @@
 /* 記憶帝國：女傑翻牌 — Service Worker v4h3c SW-fix+home cutout + parchment map + roster cards story/switch WM-training faces+result */
-const CACHE = 'MEMORY_RPG_v4h3c';
+const CACHE = 'MEMORY_RPG_v4h3d';
 // 核心殼層：缺一即安裝失敗
 const CORE = [
   './',

@@ -262,9 +262,13 @@ b{color:var(--sb-ink)}
   margin-bottom:12px;padding:12px;
 }
 #scr-map .chapter.locked{
-  background:linear-gradient(160deg,rgba(245,240,248,.92),rgba(230,224,236,.9))!important;
+  background:linear-gradient(160deg,rgba(255,252,248,.96),rgba(236,230,242,.95))!important;
   border-style:dashed!important;
+  opacity:1!important;filter:none!important;
 }
+#scr-map .chapter.locked .nodes{opacity:.72}
+#scr-map .chapter.locked .node{opacity:1!important}
+
 #scr-map .chapter.locked .chapter-head b{color:var(--sb-ink-2)!important}
 #scr-map .chapter.locked .chapter-head::after{
   content:"未解鎖";margin-left:8px;font-size:11px;color:#8a6080;
