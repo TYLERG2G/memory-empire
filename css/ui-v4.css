@@ -211,7 +211,6 @@ body.no-nav #nav.dock{display:flex;transform:translateY(calc(100% + var(--dock-b
   background:rgba(12,4,8,.66);box-shadow:0 0 0 1px rgba(232,194,106,.45),var(--sh-2)}
 #app #scr-home.home-v4 #home-greet.greet-bubble:empty{display:none}
 /* 矮螢幕：泡泡改貼在 home-dock 上方（dock 高 ≈ stage-info 56 + CTA 52 + chips 70 + gaps） */
-@media (max-height:700px){ -webkit-line-clamp:2};-webkit-line-clamp:2} }
 @media (max-height:600px){ #app #scr-home.home-v4 #home-greet.greet-bubble{bottom:154px} #scr-home.home-v4 .h-skill{display:none} }
 .home-dock{position:absolute;left:calc(var(--sal) + 14px);right:calc(var(--sar) + 14px);bottom:12px;z-index:5;
   display:flex;flex-direction:column;gap:var(--sp-2)}
@@ -389,7 +388,7 @@ body.no-nav #nav.dock{display:flex;transform:translateY(calc(100% + var(--dock-b
 }
 
 /* 戰鬥：矮螢幕縮舞台；牌盤吃滿剩餘高度 */
-#scr-battle.screen{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+#scr-battle.screen.active{display:flex;flex-direction:column;min-height:0;overflow:hidden}
 #scr-battle .board{flex:1 1 auto;min-height:0;align-content:center;gap:clamp(4px,1.2vh,8px);
   padding:2px 0;width:100%;max-width:100%}
 #scr-battle .card{width:100%;max-width:100%}
@@ -437,4 +436,107 @@ body.no-nav #screens{padding-bottom:calc(var(--sab) + 8px)}
 }
 @media (max-height:600px),(orientation:landscape) and (max-height:500px){
   #app #scr-home.home-v4 #home-greet.greet-bubble{visibility:hidden!important;pointer-events:none!important}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROP FIX PASS2 — 盤面／氣泡／topbar 補強
+   ═══════════════════════════════════════════════════════════ */
+
+/* 1. 問候泡泡：無內容或只有空白時隱藏 */
+#home-greet.greet-bubble:empty,
+#app #scr-home.home-v4 #home-greet.greet-bubble:empty{
+  display:none!important;
+}
+@supports selector(:blank){
+  #home-greet.greet-bubble:blank,
+  #app #scr-home.home-v4 #home-greet.greet-bubble:blank{
+    display:none!important;
+  }
+}
+
+/* 2. 橫向且 max-height:430px：戰鬥盤面小 gap，卡牌最小寬度不低於 44px */
+@media (orientation:landscape) and (max-height:430px){
+  #scr-battle .board{
+    gap:3px!important;
+    max-width:100%!important;
+    justify-items:stretch;
+    align-content:center;
+  }
+  #scr-battle .board .card,
+  #scr-battle .card{
+    min-width:44px;
+  }
+}
+
+/* 3. 直向戰鬥盤面：grid-template-columns 保持由 JS 控制，只設對齊 */
+@media (orientation:portrait){
+  #scr-battle .board{
+    justify-items:stretch;
+    align-content:center;
+  }
+}
+
+/* 4. 戰鬥底部：.b-cheer 不與技能鈕重疊 */
+.battle-foot{position:relative}
+#app #b-cheer.b-cheer,
+.battle-foot .b-cheer,
+#b-cheer{
+  max-width:min(230px,55vw)!important;
+  z-index:2!important;
+  pointer-events:none;
+}
+.battle-foot .btn-skill{
+  position:relative;
+  z-index:3;
+}
+
+/* 5. topbar 資源條 svg 與文字置中，計時小字 9px 不撐高 */
+#topbar .res,
+.res{
+  display:inline-flex;
+  align-items:center;
+}
+#topbar .res svg.ico,
+.res svg.ico{
+  vertical-align:middle;
+  align-self:center;
+  margin:0;
+}
+#topbar .res b,
+#topbar .res .sep,
+#topbar .res #tb-emax,
+#topbar .res small,
+.res b,
+.res .sep,
+.res #tb-emax,
+.res small{
+  align-self:center;
+}
+#tb-etimer{
+  font-size:9px!important;
+  line-height:1!important;
+  display:inline-block;
+  vertical-align:middle;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   PROP FIX PASS2b（Opus 複審）
+   - 戰鬥 screen 只在 .active 時 flex（原規則壓過 .screen{display:none}，戰鬥 HUD 漏到主城 dock 下）
+   - 問候泡泡依 dock 實高往上推，避免躲在 stage-info 後面透字
+   ═══════════════════════════════════════════════════════════ */
+@media (min-height:761px){
+  #app #scr-home.home-v4 #home-greet.greet-bubble{bottom:calc(8px + 192px + env(safe-area-inset-bottom,0px))!important}
+}
+@media (min-height:701px) and (max-height:760px){
+  #app #scr-home.home-v4 #home-greet.greet-bubble{bottom:calc(8px + 168px + env(safe-area-inset-bottom,0px))!important}
+}
+/* 橫向矮屏：牌盤改「列高驅動」— 各列平分盤面高度，卡牌依 3:4 回推寬度，永不溢出
+   （PASS2 的 max-width:100%!important 覆蓋了 JS 的 100vh 限寬 → 卡牌 110×147 溢出，此處接手） */
+@media (orientation:landscape) and (max-height:430px){
+  #scr-battle .board{grid-auto-rows:minmax(0,1fr)!important;align-content:stretch!important;justify-content:stretch!important}
+  #scr-battle .board .card,#scr-battle .card{min-width:0!important;width:auto!important;height:100%!important;max-height:100%;
+    aspect-ratio:3/4;justify-self:center;align-self:stretch}
+  #scr-battle .battle-head{margin:0}
+  #scr-battle .battle-foot{margin-top:4px}
 }
