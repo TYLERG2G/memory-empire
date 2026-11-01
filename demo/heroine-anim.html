@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Demo・女傑分層動畫 PoC（獨立頁）</title>
+<style>
+  :root { --bg:#0d0408; --panel:#260e17; --gold:#e8c26a; --accent:#ff5e47; --ease:cubic-bezier(.22,1,.36,1); }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100dvh;background:var(--bg);color:#f5e6d0;font-family:"PingFang TC","Noto Sans TC",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:16px}
+  h1{font-size:1.05rem;font-weight:600;color:var(--gold);margin:0 0 6px}
+  .note{font-size:.78rem;opacity:.75;max-width:440px;text-align:center;line-height:1.45;margin-bottom:12px}
+  .mode{display:flex;gap:8px;margin-bottom:10px}
+  .mode button{appearance:none;border:1px solid #9c7a2e;background:var(--panel);color:var(--gold);border-radius:999px;padding:6px 12px;font-size:.78rem;cursor:pointer}
+  .mode button.on{background:#3a1520;box-shadow:0 0 0 1px var(--gold)}
+  .stage-wrap{position:relative;width:min(88vw,340px);aspect-ratio:3/4;border-radius:18px;overflow:hidden;background:radial-gradient(circle at 50% 28%,rgba(255,94,71,.22),transparent 62%),#1a0a12;border:1px solid #9c7a2e;box-shadow:0 0 28px rgba(255,94,71,.22),inset 0 0 40px rgba(0,0,0,.7);perspective:720px}
+  .puppet{position:absolute;inset:0;--look-x:0deg;--look-y:0deg;--hx:0px;--hy:0px}
+  /* FIXED nesting: parallax → breathe (contains eyes) → impulse */
+  .parallax{position:absolute;inset:0;transform:translate3d(var(--hx),var(--hy),0) rotateX(var(--look-y)) rotateY(var(--look-x));transition:transform .18s ease-out;transform-style:preserve-3d}
+  .breathe{position:absolute;inset:0;transform-origin:50% 92%;animation:breathe 5.2s ease-in-out infinite}
+  .impulse{position:absolute;inset:0}
+  .art{position:absolute;inset:0;background:url("../assets/heroines/karena.webp") center top/cover no-repeat}
+  .eye{position:absolute;width:11%;height:3.6%;border-radius:50%;transform:translate(-50%,-50%);overflow:hidden}
+  .eye-l{left:39.2%;top:30.6%}.eye-r{left:51.8%;top:25.4%}
+  .lid{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(28,14,20,.9),rgba(42,22,28,.35) 70%,transparent);transform:scaleY(.08);transform-origin:50% 20%;opacity:0;transition:transform 55ms ease,opacity 55ms ease}
+  .is-blink .lid{transform:scaleY(1);opacity:.95}
+  .glint{position:absolute;left:55%;top:42%;width:22%;height:38%;border-radius:50%;background:radial-gradient(circle,#fff8e8 0%,var(--accent) 55%,transparent 78%);opacity:.55;animation:glint 3.6s ease-in-out infinite}
+  .is-blink .glint{opacity:0}
+  .mouth{position:absolute;left:46%;top:42%;width:8%;height:2.6%;transform:translate(-50%,-50%);border-radius:40% 40% 55% 55%;background:transparent}
+  .is-talk .mouth{animation:mouthTalk .28s ease-in-out infinite;background:rgba(90,28,42,.28)}
+  .is-cheer .impulse{animation:cheerNod .55s var(--ease) 1}
+  /* BROKEN mode mimics current production: blink sibling of scaled art */
+  .broken .breathe{animation:none}
+  .broken .art{transform-origin:50% 92%;animation:breatheBroken 5.2s ease-in-out infinite}
+  .broken .eyes-broken{position:absolute;inset:0;transform:translate3d(var(--hx),var(--hy),0)}
+  .broken .eyes-fixed{display:none}
+  .fixed .eyes-broken{display:none}
+  .hit{position:absolute;z-index:5;border:1px dashed transparent;border-radius:12px;cursor:pointer;background:transparent;padding:0}
+  .hit:hover,.hit:focus-visible{border-color:rgba(232,194,106,.55);background:rgba(232,194,106,.08)}
+  .hit-head{left:28%;top:8%;width:40%;height:26%}
+  .hit-shoulder{left:12%;top:40%;width:70%;height:16%}
+  .hit-hand{left:58%;top:62%;width:30%;height:20%}
+  .controls{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:420px}
+  .controls button{appearance:none;border:1px solid #9c7a2e;background:var(--panel);color:var(--gold);border-radius:999px;padding:8px 14px;font-size:.82rem;cursor:pointer}
+  .log{margin-top:10px;font-size:.75rem;min-height:1.2em;color:#c9b08a;text-align:center}
+  .badge{margin-top:14px;font-size:.7rem;opacity:.55;text-align:center;max-width:440px;line-height:1.4}
+  @keyframes breathe{0%,100%{transform:scale3d(1.01,1.01,1)}50%{transform:translateY(-2px) scale3d(1.022,1.028,1)}}
+  @keyframes breatheBroken{0%,100%{transform:translate3d(var(--hx),var(--hy),0) scale3d(1.01,1.01,1)}50%{transform:translate3d(var(--hx),calc(var(--hy) - 2px),0) scale3d(1.022,1.028,1)}}
+  @keyframes glint{0%,100%{opacity:.3;transform:scale(.9)}50%{opacity:.7;transform:scale(1.15)}}
+  @keyframes mouthTalk{0%,100%{transform:translate(-50%,-50%) scaleY(.55)}50%{transform:translate(-50%,-50%) scaleY(1.15)}}
+  @keyframes cheerNod{0%{transform:translateY(0) rotate(0)}35%{transform:translateY(4px) rotate(-1.2deg)}70%{transform:translateY(-2px) rotate(.8deg)}100%{transform:translateY(0) rotate(0)}}
+  body.anim-paused .breathe,body.anim-paused .art,body.anim-paused .glint{animation-play-state:paused!important}
+</style>
+</head>
+<body class="fixed">
+  <h1>女傑分層動畫 PoC · Karena 打樣</h1>
+  <p class="note">獨立頁（不進主遊戲）。對照「現況問題 vs Phase 0 修法」：眨眼層是否跟著呼吸縮放。立繪 Karena（最乾淨）。典雅互動、非露骨。</p>
+  <div class="mode">
+    <button type="button" id="mode-fixed" class="on">修好後（眨眼在呼吸層內）</button>
+    <button type="button" id="mode-broken">現況問題（眨眼漂移）</button>
+  </div>
+  <div class="stage-wrap" id="stage">
+    <div class="puppet" id="puppet">
+      <div class="parallax">
+        <div class="breathe">
+          <div class="impulse">
+            <div class="art" aria-hidden="true"></div>
+            <div class="eyes-fixed">
+              <span class="eye eye-l"><i class="glint"></i><i class="lid"></i></span>
+              <span class="eye eye-r"><i class="glint"></i><i class="lid"></i></span>
+              <span class="mouth" aria-hidden="true"></span>
+            </div>
+          </div>
+        </div>
+        <div class="eyes-broken" aria-hidden="true">
+          <span class="eye eye-l"><i class="glint"></i><i class="lid"></i></span>
+          <span class="eye eye-r"><i class="glint"></i><i class="lid"></i></span>
+        </div>
+      </div>
+      <button type="button" class="hit hit-head" data-zone="head" aria-label="輕撫髮絲"></button>
+      <button type="button" class="hit hit-shoulder" data-zone="shoulder" aria-label="拍肩鼓勵"></button>
+      <button type="button" class="hit hit-hand" data-zone="hand" aria-label="擊掌致意"></button>
+    </div>
+  </div>
+  <div class="controls">
+    <button type="button" id="btn-blink">強制眨眼</button>
+    <button type="button" id="btn-talk">對話口型 2s</button>
+    <button type="button" id="btn-cheer">Cheer 點頭</button>
+  </div>
+  <div class="log" id="log">移動指標可視線跟隨 · 點頭／肩／手觸區</div>
+  <p class="badge">路徑 demo/heroine-anim.html · 分析見 Page「女主角 2D 動畫製作分析」· Opus 建議：Karena 打樣、3:4、A/B 對照</p>
+<script>
+(function(){
+  'use strict';
+  var puppet=document.getElementById('puppet'), stage=document.getElementById('stage'), log=document.getElementById('log');
+  var blinkTimer=0;
+  function say(t){log.textContent=t}
+  function blinkOnce(){puppet.classList.add('is-blink');setTimeout(function(){puppet.classList.remove('is-blink')},130)}
+  function scheduleBlink(){if(blinkTimer)clearTimeout(blinkTimer);blinkTimer=setTimeout(function(){blinkOnce();if(Math.random()<0.28)setTimeout(blinkOnce,160);scheduleBlink()},2200+Math.random()*3200)}
+  scheduleBlink();
+  stage.addEventListener('pointermove',function(e){var r=stage.getBoundingClientRect();var nx=((e.clientX-r.left)/r.width)*2-1;var ny=((e.clientY-r.top)/r.height)*2-1;puppet.style.setProperty('--look-x',(nx*4).toFixed(2)+'deg');puppet.style.setProperty('--look-y',(-ny*3).toFixed(2)+'deg');puppet.style.setProperty('--hx',(nx*4).toFixed(1)+'px');puppet.style.setProperty('--hy',(ny*3).toFixed(1)+'px')});
+  stage.addEventListener('pointerleave',function(){puppet.style.setProperty('--look-x','0deg');puppet.style.setProperty('--look-y','0deg');puppet.style.setProperty('--hx','0px');puppet.style.setProperty('--hy','0px')});
+  document.querySelectorAll('.hit').forEach(function(btn){btn.addEventListener('click',function(){var z=btn.getAttribute('data-zone');puppet.classList.remove('is-cheer');void puppet.offsetWidth;puppet.classList.add('is-cheer');say({head:'✨ 輕撫髮絲',shoulder:'🤝 拍肩鼓勵',hand:'⚔️ 擊掌致意'}[z]||z);setTimeout(function(){puppet.classList.remove('is-cheer')},600)})});
+  document.getElementById('btn-blink').onclick=function(){blinkOnce();say('眨眼')};
+  document.getElementById('btn-talk').onclick=function(){puppet.classList.add('is-talk');say('對話口型');setTimeout(function(){puppet.classList.remove('is-talk')},2000)};
+  document.getElementById('btn-cheer').onclick=function(){puppet.classList.remove('is-cheer');void puppet.offsetWidth;puppet.classList.add('is-cheer');say('Cheer');setTimeout(function(){puppet.classList.remove('is-cheer')},600)};
+  document.getElementById('mode-fixed').onclick=function(){document.body.className='fixed';this.classList.add('on');document.getElementById('mode-broken').classList.remove('on');say('修好後：眨眼跟著呼吸縮放')};
+  document.getElementById('mode-broken').onclick=function(){document.body.className='broken';this.classList.add('on');document.getElementById('mode-fixed').classList.remove('on');say('現況問題：眨眼層與呼吸脫節（漂移）')};
+  document.addEventListener('visibilitychange',function(){document.body.classList.toggle('anim-paused',document.hidden)});
+})();
+</script>
+</body>
+</html>
