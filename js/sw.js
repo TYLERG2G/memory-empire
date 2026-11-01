@@ -1,5 +1,5 @@
-/* 記憶帝國：女傑翻牌 — Service Worker v4g5 item-icons faces+result */
-const CACHE = 'MEMORY_RPG_v4g5';
+/* 記憶帝國：女傑翻牌 — Service Worker v4h2 shell-bright WM-training faces+result */
+const CACHE = 'MEMORY_RPG_v4h2';
 // 核心殼層：缺一即安裝失敗
 const CORE = [
   './',
@@ -22,6 +22,17 @@ const OPTIONAL = [
   './css/battle-stage.css',
   './css/battle-bright.css',
   './css/item-icons.css',
+  './css/shell-bright.css',
+  './assets/ui/bg/home.jpg',
+  './assets/ui/bg/home@1x.jpg',
+  './assets/ui/bg/map.jpg',
+  './assets/ui/bg/map@1x.jpg',
+  './assets/ui/bg/shop.jpg',
+  './assets/ui/bg/shop@1x.jpg',
+  './assets/ui/bg/title.jpg',
+  './assets/ui/bg/roster.jpg',
+  './assets/ui/bg/ach.jpg',
+  './assets/ui/bg/settings.jpg',
   // item HD icons v4g5
   './assets/icons/items/hourglass.png',
   './assets/icons/items/hourglass@2x.png',
@@ -138,6 +149,7 @@ const OPTIONAL = [
   './js/story.js',
   './js/heroine.js',
   './js/battle-stage.js',
+  './js/training.js',
   './js/vendor/pixelfx/pixelfx.bundle.js',
   './assets/sfx/mouth-pop.ogg',
   './assets/sfx/plop.ogg',

@@ -10,7 +10,7 @@
   /* ───────── 女傑 ───────── */
   var HEROINES = [
     { id: 'verda', name: '薇爾妲·諾克特', title: '冷傲魔女軍官', color: '#9b59ff',
-      skill: 'peek', skillName: '魔眼窺視', reqLv: 1, cost: 0,
+      skill: 'peek', skillName: '魔眼試煉', reqLv: 1, cost: 0,
       favGifts: ['book', 'moonlamp'],
       bio: '統領夜之魔導部隊的女軍官，冷峻的紫瞳能在一瞬間看穿所有偽裝。',
       lines: {
@@ -19,7 +19,7 @@
         2: ['能被你選作出戰，並非偶然。', '魔眼會為你照亮牌面。', '……我偶爾也會期待下一場。'],
         3: ['與你並肩的感覺，並不壞。', '記得回來覆命。', '紫月之下，我會守著你。']
       },
-      cheer: { start: '集中。記住每一張牌。', combo: '漂亮，繼續。', skill: '魔眼，開。', lowtime: '冷靜，記住位置。', miss: '……再看清楚。' }
+      cheer: { start: '集中。記住每一張牌。', combo: '漂亮，繼續。', skill: '魔眼試煉。', lowtime: '冷靜，記住位置。', miss: '……再看清楚。' }
     },
     { id: 'karena', name: '卡蓮娜·緋焰', title: '熱血機甲騎士', color: '#ff4d3a',
       skill: 'freeze', skillName: '緋焰停滯', reqLv: 3, cost: 200,
@@ -46,16 +46,16 @@
       cheer: { start: '深呼吸，優雅地開始吧。', combo: '真是優雅的連擊。', skill: '交給我斡旋吧。', lowtime: '深呼吸，還來得及。', miss: '無妨，從容些。' }
     },
     { id: 'selas', name: '塞拉斯·薇恩', title: '冷酷參謀官', color: '#7fd18b',
-      skill: 'match', skillName: '戰術推演', reqLv: 8, cost: 700,
+      skill: 'match', skillName: '戰術回顧', reqLv: 8, cost: 700,
       favGifts: ['chess', 'book'],
       bio: '算無遺策的參謀官，一眼便能推演出棋盤上的最佳解。',
       lines: {
         0: ['報告。', '別打亂我的推演。', '下一步呢？'],
         1: ['數據顯示你在成長。', '這局可以更乾淨。', '失誤率下降了，很好。'],
-        2: ['你的判斷……越來越接近最優解。', '自動配對交給我。', '偶爾休息也是戰術的一環。'],
+        2: ['你的判斷……越來越接近最優解。', '已知牌面，交給我回顧。', '偶爾休息也是戰術的一環。'],
         3: ['我把後背交給你了。', '計算之外的變數，是你。', '……謝謝。']
       },
-      cheer: { start: '依計劃執行。開始。', combo: '符合推演。', skill: '執行配對。', lowtime: '剩餘時間不多，優先已知位置。', miss: '記錄在案。' }
+      cheer: { start: '依計劃執行。開始。', combo: '符合推演。', skill: '回顧已知。', lowtime: '剩餘時間不多，優先已知位置。', miss: '記錄在案。' }
     },
     { id: 'reina', name: '萊娜·克洛斯', title: '忠誠騎士團長', color: '#ffcf4a',
       skill: 'combo', skillName: '騎士誓約', reqLv: 12, cost: 1200,
@@ -172,9 +172,9 @@
   }
 
   /* ───────── 盤面規格 ───────── */
-  // cols × rows：4×3 → 4×4 → 5×4 → 6×4 → 6×5
-  var GRIDS = [[4, 3], [4, 4], [5, 4], [6, 4], [6, 5]];
-  var GRID_START = [1, 3, 7, 14, 24]; // 該盤面起始關卡
+  // cols × rows：4×3 → 4×4 → 5×4 → 6×4 → 6×5 → 6×6 → 7×6（自適應可升到後兩檔）
+  var GRIDS = [[4, 3], [4, 4], [5, 4], [6, 4], [6, 5], [6, 6], [7, 6]];
+  var GRID_START = [1, 3, 7, 14, 24, 36, 48]; // 故事向參考；實際盤面以 Training.load 為主
 
   function gridTier(n) {
     var t = 0;
@@ -191,7 +191,10 @@
     var isBoss = !!opts.boss || (opts.mode !== 'endless' && n % 5 === 0);
     var tier = gridTier(n);
     if (isBoss && tier < GRIDS.length - 1 && n >= 5) tier = Math.min(GRIDS.length - 1, tier + (n >= 10 ? 1 : 0));
-    var cols = GRIDS[tier][0], rows = GRIDS[tier][1];
+    // 自適應盤面：opts.board = {cols,rows,flipBack,fogBoost,load}
+    var board = opts.board || null;
+    var cols = board && board.cols ? board.cols : GRIDS[tier][0];
+    var rows = board && board.rows ? board.rows : GRIDS[tier][1];
     var mech = null;
     if (isBoss) {
       mech = opts.boss || BOSS_MECHS[((Math.floor(n / 5) - 1) % BOSS_MECHS.length + BOSS_MECHS.length) % BOSS_MECHS.length].id;
@@ -200,20 +203,27 @@
     if (mech === 'triple') {
       // 盤面需為 3 的倍數
       var cells = cols * rows;
-      if (cells % 3 !== 0) { cols = 6; rows = cells > 18 ? 4 : 3; }
+      if (cells % 3 !== 0) {
+        // 優先維持自適應規模，調整成最接近的 3 倍數
+        if ((cols * rows) % 3 !== 0) { cols = 6; rows = rows >= 6 ? 6 : (rows >= 4 ? 3 : 3); }
+      }
     }
     var cells2 = cols * rows;
     var jokers = mech === 'joker' ? 2 : 0;
     var sets = Math.floor((cells2 - jokers) / setSize);
-    // 每組秒數隨關卡縮短
-    var secPer = Math.max(2.5, 5.2 - n * 0.055);
+    // 每組秒數：以記憶為主，不考手速（floor 提到 3.8）
+    var secPer = Math.max(3.8, 6.0 - n * 0.035);
+    if (board && typeof board.load === 'number') secPer = Math.max(3.6, secPer - board.load * 0.05);
     if (setSize === 3) secPer *= 1.35;
-    var time = Math.round(sets * secPer + 6 + (isBoss ? 6 : 0));
+    var time = Math.round(sets * secPer + 8 + (isBoss ? 8 : 0));
     var missLimit = Math.max(sets, Math.round(sets * (1.9 - Math.min(n, 60) * 0.016)));
     if (isBoss) missLimit += 2;
-    var preview = n <= 3 ? 2.5 : n <= 8 ? 1.8 : n <= 16 ? 1.2 : n <= 30 ? 0.9 : 0.6;
-    var flipBack = n <= 10 ? 650 : n <= 30 ? 560 : 480;
-    if (mech === 'fast') { preview = 0; flipBack = 300; }
+    // 開局預覽：戰役預設 0（由卷軸才開）；保留欄位以相容舊呼叫
+    var preview = 0;
+    var flipBack = board && board.flipBack ? board.flipBack : (n <= 10 ? 650 : n <= 30 ? 560 : 480);
+    if (mech === 'fast') { preview = 0; flipBack = Math.min(flipBack, 300); }
+    var fogRatio = mech === 'fog' ? 0.5 : 0;
+    if (board && board.fogBoost && !mech) fogRatio = Math.max(fogRatio, board.fogBoost * 0.35);
     var ch = Math.min(CHAPTERS.length, Math.ceil(n / STAGES_PER_CHAPTER));
     var cidx = ((n - 1) % STAGES_PER_CHAPTER) + 1;
     var bossName = null;
@@ -224,8 +234,9 @@
     return {
       n: n, chapter: ch, chapterIdx: cidx, cols: cols, rows: rows, setSize: setSize,
       sets: sets, jokers: jokers, time: time, missLimit: missLimit, preview: preview,
-      flipBack: flipBack, boss: mech, bossName: bossName, fogRatio: mech === 'fog' ? 0.5 : 0,
-      jokerPenalty: 5
+      flipBack: flipBack, boss: mech, bossName: bossName, fogRatio: fogRatio,
+      jokerPenalty: 5, load: board && typeof board.load === 'number' ? board.load : tier,
+      stageTier: tier
     };
   }
 
@@ -254,13 +265,16 @@
     return cfg;
   }
 
-  /** 1–3 星：剩餘時間比例 + 失誤 + 效率 */
+  /** 1–3 星：回憶正確率為主，時間為輔 */
   function starsFor(r) {
+    if (window.Training && typeof window.Training.starsForTrain === 'function') {
+      return window.Training.starsForTrain(r);
+    }
     var eff = r.sets / Math.max(1, r.sets + r.miss);
     var tr = r.timeLeft / Math.max(1, r.timeMax);
     var s = 1;
-    if (tr >= 0.15 && eff >= 0.5) s = 2;
-    if (tr >= 0.3 && eff >= 0.68) s = 3;
+    if (eff >= 0.7) s = 2;
+    if (eff >= 0.88 && tr >= 0.08) s = 3;
     return s;
   }
 
@@ -270,10 +284,10 @@
   function skillValue(skill, lv) {
     lv = lv || 1;
     switch (skill) {
-      case 'peek': return Math.round((1.2 + (lv - 1) * 0.2) * 100) / 100;
+      case 'peek': return Math.min(4, 2 + Math.floor((lv - 1) / 3)); // 試煉目標張數
       case 'freeze': return 4 + (lv - 1);
       case 'time': return 6 + (lv - 1) * 1.5;
-      case 'match': return 1 + Math.floor((lv - 1) / 4);
+      case 'match': return Math.min(5, 3 + Math.floor((lv - 1) / 3)); // 回顧脈衝可持續翻牌次數
       case 'combo': return Math.round((1.5 + (lv - 1) * 0.15) * 100) / 100;
     }
     return 0;
@@ -285,10 +299,10 @@
   function skillDesc(skill, lv) {
     var v = skillValue(skill, lv);
     switch (skill) {
-      case 'peek': return '窺視全部卡牌 ' + v + ' 秒';
+      case 'peek': return '魔眼試煉：標出 ' + v + ' 張已見過的未配對牌，限時內配對成功可獲獎勵';
       case 'freeze': return '凍結計時 ' + v + ' 秒';
       case 'time': return '戰鬥時間 +' + v + ' 秒';
-      case 'match': return '自動配對 ' + v + ' 組';
+      case 'match': return '戰術回顧：短暫回顧已見過未配對的牌（之後 ' + v + ' 次翻牌不計入訓練指標）';
       case 'combo': return '被動：連擊得分 x' + v;
     }
     return '';
@@ -300,14 +314,14 @@
   var SHOP = {
     consumables: [
       { id: 'hourglass', icon: '⏳', img: 'assets/icons/items/hourglass.png', name: '時之沙漏', desc: '下一場戰鬥時間 +10 秒', price: 120 },
-      { id: 'scroll', icon: '📜', img: 'assets/icons/items/scroll.png', name: '預視卷軸', desc: '下一場開局窺視全部卡牌 1.5 秒', price: 100 },
+      { id: 'scroll', icon: '📜', img: 'assets/icons/items/scroll.png', name: '預視卷軸', desc: '下一場開局窺視全部卡牌 1.5 秒（輔助場，不計入訓練）', price: 100 },
       { id: 'charm', icon: '🧿', img: 'assets/icons/items/charm.png', name: '守護符', desc: '下一場失誤上限 +3', price: 110 },
       { id: 'elixir', icon: '🧪', img: 'assets/icons/items/elixir.png', name: '技能秘藥', desc: '下一場技能冷卻減半', price: 140 },
-      { id: 'potion', icon: '⚡', img: 'assets/icons/items/potion.png', name: '體力藥水', desc: '立即回復 5 點體力', price: 90, instant: true }
+      { id: 'potion', icon: '⚡', img: 'assets/icons/items/potion.png', name: '記憶藥水', desc: '下一場回憶正確率達 80% 時，金幣 +15%', price: 90, instant: false }
     ],
     relics: [
       { id: 'lion', icon: '🦁', img: 'assets/icons/items/lion.png', name: '金獅徽章', desc: '金幣收益 +15%', price: 800 },
-      { id: 'mirror', icon: '🪞', img: 'assets/icons/items/mirror.png', name: '紫月之鏡', desc: '使用預視卷軸時窺視 +0.5 秒', price: 900 },
+      { id: 'mirror', icon: '🪞', img: 'assets/icons/items/mirror.png', name: '紫月之鏡', desc: '使用預視卷軸時窺視 +0.5 秒（輔助）', price: 900 },
       { id: 'gear', icon: '⚙️', img: 'assets/icons/items/gear.png', name: '時之齒輪', desc: '戰鬥時間 +6%', price: 1000 },
       { id: 'ring', icon: '💍', img: 'assets/icons/items/ring.png', name: '誓約之戒', desc: '連擊得分 +20%', price: 900 },
       { id: 'compass', icon: '🧭', img: 'assets/icons/items/compass.png', name: '參謀羅盤', desc: '失誤上限 +1', price: 1100 },
@@ -433,6 +447,7 @@
     mulberry32: mulberry32, hashStr: hashStr, shuffleInPlace: shuffleInPlace,
     dealPairs: dealPairs, dealDecoy: dealDecoy,
     stageConfig: stageConfig, dailyConfig: dailyConfig, endlessConfig: endlessConfig, starsFor: starsFor,
+    gridTier: gridTier,
     bossMech: bossMech,
     skillValue: skillValue, skillDesc: skillDesc, skillCooldown: skillCooldown,
     upgradeCost: upgradeCost, cdUpgradeCost: cdUpgradeCost,

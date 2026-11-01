@@ -75,7 +75,9 @@
       achievements: {},
       settings: { sfx: true, bgm: true, sfxVol: CONFIG.DEFAULT_SFX_VOL, bgmVol: CONFIG.DEFAULT_BGM_VOL, vibrate: true, shake: true },
       stats: { wins: 0, losses: 0, plays: 0, perfects: 0, maxCombo: 0, skillsUsed: 0, goldEarned: 0, bestStreak: 0,
-        clears: 0, bossWins: 0, dailyWins: 0, endlessBestRound: 0, endlessBest: 0, purchases: 0, giftsGiven: 0 }
+        clears: 0, bossWins: 0, dailyWins: 0, endlessBestRound: 0, endlessBest: 0, purchases: 0, giftsGiven: 0 },
+      training: (window.Training && Training.defaultTrainState) ? Training.defaultTrainState() : { load: 0, goodStreak: 0, badStreak: 0, sessionsToday: 0, trainDate: '', trainStreak: 0, lastTrainDate: '', history: [] },
+      potionBuff: false
     };
   }
 
@@ -134,6 +136,8 @@
       s.skillCd[id] = clamp(s.skillCd[id] | 0, 0, CONFIG.CD_MAX);
     });
     ['sfxVol', 'bgmVol'].forEach(function (k) { if (!isNum(s.settings[k])) s.settings[k] = defaultState().settings[k]; s.settings[k] = clamp(s.settings[k], 0, 1); });
+    if (window.Training && Training.ensureTrain) Training.ensureTrain(s);
+    if (typeof s.potionBuff !== 'boolean') s.potionBuff = false;
     return s;
   }
 
@@ -546,10 +550,8 @@
     return Math.floor(s / 60) + ':' + pad2(s % 60);
   }
   function spendEnergy(n) {
+    /* 工作記憶訓練：體力不再阻擋出戰 */
     regenEnergy();
-    if (S.energy < n) { toast('體力不足（需要體力 ' + n + '），請稍候回復'); Snd.play('mismatch'); return false; }
-    if (S.energy >= S.energyMax) S.lastEnergyAt = Date.now();
-    S.energy -= n;
     return true;
   }
   function updateStreakOnPlay() {
@@ -643,6 +645,8 @@
     setText('tb-gold', S.gold);
     setText('tb-energy', S.energy);
     setText('tb-emax', S.energyMax);
+    var energyEl = qs('.res-energy');
+    if (energyEl) energyEl.classList.add('is-hidden'); // 訓練模式隱藏體力
     var eta = energyEta();
     setText('tb-etimer', eta ? ' +' + eta : '');
     var m = $('tb-mute');
@@ -690,15 +694,56 @@
     var L = stageLabel(n), c = L.cfg;
     setText('home-chapter', L.text);
     setText('home-stage', n);
-    setText('home-stage-detail', c.cols + '×' + c.rows + ' · ' + c.sets + ' 組' + (c.setSize === 3 ? '（三張一組）' : '') + ' · 限時 ' + c.time + ' 秒 · 失誤上限 ' + c.missLimit +
-      (c.boss ? ' · ♛ 頭目：' + (c.bossName || '') + '（' + (D.bossMech(c.boss) || {}).name + '）' : '') + (done ? ' · 戰役已全破' : ''));
+    var boardPrev = adaptiveBoardFor(n);
+    var cShow = boardPrev ? D.stageConfig(n, { board: boardPrev }) : c;
+    setText('home-stage-detail', cShow.cols + '×' + cShow.rows + ' · ' + cShow.sets + ' 組' + (cShow.setSize === 3 ? '（三張一組）' : '') + ' · 限時 ' + cShow.time + ' 秒 · 失誤上限 ' + cShow.missLimit +
+      ' · 負荷 Lv.' + ((S.training && S.training.load) || 0) +
+      (cShow.boss ? ' · ♛ 頭目：' + (cShow.bossName || '') + '（' + (D.bossMech(cShow.boss) || {}).name + '）' : '') + (done ? ' · 戰役已全破' : ''));
     setText('home-streak', S.streak);
     setText('home-stars', totalStars());
     var fight = $('btn-fight');
-    if (fight) fight.disabled = S.energy < CONFIG.ENERGY_COST;
+    if (fight) fight.disabled = false;
     var d = S.daily.date === todayStr() && S.daily.done;
-    setText('daily-sub', d ? '今日已完成' : '今日未完成 · 體力' + CONFIG.ENERGY_COST);
-    setText('endless-sub', '體力' + CONFIG.ENDLESS_COST + ' · 最佳第 ' + (S.stats.endlessBestRound || 0) + ' 輪');
+    var load = (S.training && S.training.load) || 0;
+    setText('daily-sub', d ? '今日已完成' : '今日未完成 · 訓練負荷 ' + load);
+    setText('endless-sub', '訓練負荷 ' + load + ' · 最佳第 ' + (S.stats.endlessBestRound || 0) + ' 輪');
+    renderTrainHome();
+  }
+  function renderTrainHome() {
+    var panel = $('home-train-panel');
+    if (!panel) return;
+    var sum = null;
+    try {
+      if (window.Training && typeof Training.summary === 'function') sum = Training.summary(S);
+      else if (window.GameAPI && typeof GameAPI.trainingSummary === 'function') sum = GameAPI.trainingSummary();
+    } catch (e) { sum = null; }
+    if (!sum) { panel.hidden = true; return; }
+    panel.hidden = false;
+    setText('train-streak', sum.streak || 0);
+    setText('train-load', sum.load || 0);
+    var sub = $('train-cta-sub');
+    if (sub) {
+      var sess = sum.sessionsToday || 0;
+      var span = (sum.avgSpan7 != null && isFinite(sum.avgSpan7)) ? ('跨度 ' + (Math.round(sum.avgSpan7 * 10) / 10)) : '建立你的記憶基線';
+      sub.textContent = '今日 ' + sess + ' 場 · 負荷 Lv.' + (sum.load || 0) + ' · ' + span;
+    }
+    var svg = $('train-span-svg');
+    if (svg) {
+      var trend = (sum.spanTrend || []).filter(function (p) { return p && p.span != null && isFinite(p.span); }).slice(-7);
+      if (trend.length < 2) {
+        svg.innerHTML = '<polyline fill="none" stroke="#c9b8d8" stroke-width="2" points="4,28 116,28" /><circle cx="60" cy="28" r="3" fill="#9a6fc4" />';
+      } else {
+        var vals = trend.map(function (p) { return +p.span; });
+        var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+        if (hi <= lo) { hi = lo + 1; }
+        var pts = vals.map(function (v, i) {
+          var x = 4 + i * (112 / Math.max(1, vals.length - 1));
+          var y = 32 - ((v - lo) / (hi - lo)) * 26;
+          return x.toFixed(1) + ',' + y.toFixed(1);
+        }).join(' ');
+        svg.innerHTML = '<polyline fill="none" stroke="#9a6fc4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="' + pts + '" />';
+      }
+    }
   }
   function totalStars() { var t = 0; for (var k in S.stars) t += S.stars[k] || 0; return t; }
 
@@ -736,12 +781,12 @@
     });
   }
   function stagePreviewModal(n) {
-    var c = D.stageConfig(n), mech = c.boss ? D.bossMech(c.boss) : null;
+    var c = D.stageConfig(n, { board: adaptiveBoardFor(n) }), mech = c.boss ? D.bossMech(c.boss) : null;
     openModal('<h3>第 ' + n + ' 關' + (c.boss ? '<span class="boss-tag">♛ 頭目</span>' : '') + '</h3>' +
       (mech ? '<p><b style="color:var(--red2)">' + esc(c.bossName) + '</b> — ' + esc(mech.name) + '<br><span class="muted small">' + esc(mech.desc) + '</span></p>' : '') +
       '<p class="muted">' + c.cols + '×' + c.rows + ' 盤面 · ' + c.sets + ' 組 · 限時 ' + c.time + ' 秒<br>失誤上限 ' + c.missLimit + '</p>' +
       '<p class="stars" style="font-size:24px">' + starsText(S.stars[n] || 0) + '</p>' +
-      '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">出戰 體力' + CONFIG.ENERGY_COST + '</button></div>');
+      '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">出戰</button></div>');
     bindModalBtn('m-cancel', closeModal);
     bindModalBtn('m-go', function () { closeModal(); S.stage = n; save(); beginCampaign(n); });
   }
@@ -802,9 +847,16 @@
     });
   }
 
+  function adaptiveBoardFor(n) {
+    if (!window.Training) return null;
+    Training.ensureTrain(S);
+    var tier = D.gridTier ? D.gridTier(n) : 0;
+    return Training.resolveBoard(tier, S.training.load);
+  }
+
   function beginCampaign(n) {
     n = clamp(n | 0 || S.stage, 1, Math.min(S.maxStage, CAMPAIGN_STAGES));
-    var cfg = D.stageConfig(n);
+    var cfg = D.stageConfig(n, { board: adaptiveBoardFor(n) });
     cfg.mode = 'campaign';
     var go2 = function () {
       prepThen(function (use) {
@@ -819,6 +871,16 @@
     var t = todayStr();
     if (S.daily.date !== t) S.daily = { date: t, done: false, best: 0 };
     var cfg = D.dailyConfig(t);
+    if (window.Training) {
+      var b = adaptiveBoardFor(cfg.n || 12);
+      if (b) { cfg.cols = b.cols; cfg.rows = b.rows; cfg.sets = b.sets - (cfg.jokers ? Math.floor(cfg.jokers / (cfg.setSize || 2)) : 0); cfg.flipBack = b.flipBack; cfg.load = b.load;
+        // 重新用 board 建一份，保留每日 mech
+        var rebuilt = D.stageConfig(cfg.n, { board: b, boss: cfg.boss || undefined, mode: 'daily' });
+        rebuilt.mode = 'daily'; rebuilt.seed = cfg.seed; rebuilt.label = cfg.label;
+        if (!cfg.boss) { rebuilt.boss = null; rebuilt.bossName = null; }
+        cfg = rebuilt;
+      }
+    }
     prepThen(function (use) {
       if (!spendEnergy(CONFIG.ENERGY_COST)) return;
       startBattle(cfg, use);
@@ -826,6 +888,14 @@
   }
   function beginEndless(round, carry) {
     var cfg = D.endlessConfig(round || 1);
+    if (window.Training) {
+      var b = adaptiveBoardFor(cfg.n || (2 + (round || 1) * 3));
+      if (b) {
+        var rebuilt = D.stageConfig(cfg.n, { board: b, boss: cfg.boss || undefined, mode: 'endless' });
+        rebuilt.mode = 'endless'; rebuilt.round = cfg.round; rebuilt.roundBonus = cfg.roundBonus;
+        cfg = rebuilt;
+      }
+    }
     if (!carry) {
       prepThen(function (use) {
         if (!spendEnergy(CONFIG.ENDLESS_COST)) return;
@@ -860,17 +930,23 @@
     if (cfg.mode === 'endless' && carry && isNum(carry.bank)) time += carry.bank;
     var cd = D.skillCooldown(h.skill, S.skillCd[h.id] || 0);
     if (use.elixir) cd = Math.round(cd / 2);
+    var previewSec = use.scroll ? 1.5 + (relicOn('mirror') ? 0.5 : 0) : 0; // 開局不預覽，只有預視卷軸
+    var hardAssist = !!use.scroll; // 預視卷軸／鏡子 → 硬輔助
     battle = {
       cfg: cfg, mode: cfg.mode || 'campaign', n: cfg.n, heroine: h, skillLv: skillLv,
       cards: buildCards(cfg), sel: [], lock: true, running: false, paused: false, over: false,
       matched: 0, score: 0, combo: 0, bestCombo: 0, miss: 0, moves: 0,
       missLimit: cfg.missLimit + (use.charm ? 3 : 0) + (relicOn('compass') ? 1 : 0),
       timeMax: Math.round(time), timeLeft: Math.round(time), frozen: 0,
-      preview: use.scroll ? 1.5 + (relicOn('mirror') ? 0.5 : 0) : 0,  // 開局不預覽，只有預視卷軸才會窺視
+      preview: previewSec,
       comboMul: (h.skill === 'combo' ? D.skillValue('combo', skillLv) : 1) * (relicOn('ring') ? 1.2 : 1),
       cd: cd, cdLeft: 0, skillCasts: 0, jokerPenalty: (cfg.jokerPenalty || 5) * (relicOn('dice') ? 0.5 : 1),
-      carry: carry || null, lowWarned: false, lastTick: 0, raf: 0, timers: []
+      carry: carry || null, lowWarned: false, lastTick: 0, raf: 0, timers: [],
+      train: (window.Training ? Training.createTracker({ assisted: hardAssist }) : null),
+      selKnown: false,
+      potionBuff: !!S.potionBuff
     };
+    if (S.potionBuff) S.potionBuff = false; // 消耗
     var b = battle;
     var title = b.mode === 'daily' ? '每日挑戰' : b.mode === 'endless' ? '無盡・第 ' + cfg.round + ' 輪' : '第 ' + cfg.n + ' 關';
     setText('b-stage', title);
@@ -1051,6 +1127,11 @@
     c.open = true;
     syncCard(i);
     Snd.play('flip'); vibe(8);
+    if (b.train && !c.joker) {
+      // 第一張選牌：在 onReveal 前記下「配對位置是否已知」
+      if (b.sel.length === 0) b.selKnown = Training.partnerKnown(b.train, c.pair, i);
+      Training.onReveal(b.train, i, c.pair);
+    }
 
     if (c.joker) { hitJoker(i); return; }
     if (c.fog) {
@@ -1082,12 +1163,19 @@
     var b = battle, idxs = b.sel.slice();
     b.sel = [];
     b.moves += 1;
+    if (b.train) Training.onResolve(b.train, idxs, b.cards, true, !!b.selKnown);
     idxs.forEach(function (k) { b.cards[k].matched = true; syncCard(k); });
     b.matched += 1;
     b.combo += 1;
     if (b.combo > b.bestCombo) b.bestCombo = b.combo;
     if (b.combo > S.stats.maxCombo) S.stats.maxCombo = b.combo;
     var gain = Math.round(100 * b.combo * b.comboMul * (b.cfg.setSize === 3 ? 1.5 : 1));
+    // 魔眼試煉獎勵
+    if (b.train && Training.checkPeekChallenge(b.train, idxs)) {
+      var bonus = 180 + (b.skillLv || 1) * 20;
+      gain += bonus;
+      banner('試煉達成 +' + bonus, 900);
+    }
     b.score += gain;
     var lastEl = cardEl(idxs[idxs.length - 1]);
     idxs.forEach(function (k) { Fx.pulse(cardEl(k)); });
@@ -1110,6 +1198,7 @@
     b.sel = [];
     b.lock = true;
     b.moves += 1;
+    if (b.train) Training.onResolve(b.train, idxs, b.cards, false, !!b.selKnown);
     b.miss += 1;
     b.combo = 0;
     updateBattleHUD();
@@ -1174,7 +1263,6 @@
     var h = b.heroine;
     if (h.skill === 'combo') return;
     var v = D.skillValue(h.skill, b.skillLv);
-    if (h.skill === 'match' && b.matched >= b.cfg.sets) return;
     b.cdLeft = b.cd;
     b.skillCasts += 1;
     S.stats.skillsUsed += 1;
@@ -1182,48 +1270,58 @@
     cheer('skill');
     bsCall('onSkill', { skill: h.skill, heroine: h });
     if (h.skill === 'peek') {
-      banner('魔眼窺視！');
-      b.lock = true;
-      // 先蓋回已翻開未配對的牌，避免狀態錯亂
+      // 魔眼試煉：從「已見過且未配對」的牌中標出目標，限時配對加分（非全場窺視）
       b.sel.forEach(function (k) { b.cards[k].open = false; syncCard(k); });
       b.sel = [];
-      var board = $('board');
-      board.classList.add('previewing');
-      later(function () { board.classList.remove('previewing'); b.lock = false; }, Math.round(v * 1000));
+      var seenPool = [];
+      if (b.train) {
+        b.cards.forEach(function (c, k) {
+          if (c && !c.joker && !c.matched && b.train.seen[k]) seenPool.push(k);
+        });
+      }
+      var need = Math.min(v, seenPool.length);
+      if (need < 2) {
+        banner('魔眼：先探索更多牌面', 1000);
+      } else {
+        // 洗牌取 need 張
+        for (var i = seenPool.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = seenPool[i]; seenPool[i] = seenPool[j]; seenPool[j] = tmp;
+        }
+        var targets = seenPool.slice(0, need);
+        targets.forEach(function (k) {
+          var el = cardEl(k); if (el) { el.classList.add('train-target'); Fx.pulse(el); }
+        });
+        if (b.train) Training.setPeekChallenge(b.train, targets, 8000 + b.skillLv * 500);
+        banner('魔眼試煉！限時配對標示牌', 1200);
+        later(function () {
+          targets.forEach(function (k) { var el = cardEl(k); if (el) el.classList.remove('train-target'); });
+        }, 1800);
+      }
     } else if (h.skill === 'freeze') {
       b.frozen += v; banner('時間凍結 ' + v + ' 秒！');
     } else if (h.skill === 'time') {
       b.timeLeft += v; b.timeMax = Math.max(b.timeMax, b.timeLeft); banner('時間 +' + v + ' 秒！');
       Fx.floatText($('b-time'), '+' + v + 's');
     } else if (h.skill === 'match') {
-      var groups = {};
+      // 戰術回顧：脈衝已見過未配對的牌（軟輔助，之後 v 次翻牌不計指標）
+      b.sel.forEach(function (k) { b.cards[k].open = false; syncCard(k); });
+      b.sel = [];
+      var reviewed = 0;
       b.cards.forEach(function (c, k) {
-        if (c.matched || c.joker || b.sel.indexOf(k) !== -1) return;
-        if (!groups[c.pair]) groups[c.pair] = [];
-        groups[c.pair].push(k);
-      });
-      // 優先處理已部分翻開的組
-      if (b.sel.length) {
-        var p = b.cards[b.sel[0]].pair;
-        if (groups[p]) groups[p] = b.sel.concat(groups[p]);
-        b.sel.forEach(function (k) { b.cards[k].open = false; });
-        b.sel = [];
-      }
-      var done = 0;
-      Object.keys(groups).sort(function (x, y) { return groups[y].length - groups[x].length; }).forEach(function (pair) {
-        if (done >= v) return;
-        var g = groups[pair];
-        if (g.length >= b.cfg.setSize) {
-          g.slice(0, b.cfg.setSize).forEach(function (k) { b.cards[k].matched = true; b.cards[k].open = true; syncCard(k); Fx.pulse(cardEl(k)); });
-          b.matched += 1; b.combo += 1; done += 1;
-          if (b.combo > b.bestCombo) b.bestCombo = b.combo;
-          b.score += Math.round(100 * b.combo * b.comboMul);
+        if (!c || c.joker || c.matched) return;
+        if (b.train && b.train.seen[k]) {
+          var el = cardEl(k);
+          if (el) { el.classList.add('train-review'); Fx.pulse(el); }
+          reviewed += 1;
         }
       });
-      b.cards.forEach(function (c, k) { syncCard(k); });
-      banner('自動配對 ' + done + ' 組！');
+      if (b.train) Training.armReview(b.train, v);
+      banner(reviewed ? ('戰術回顧 ' + reviewed + ' 張') : '尚無已知牌可回顧', 1100);
+      later(function () {
+        qsa('#board .card.train-review').forEach(function (el) { el.classList.remove('train-review'); });
+      }, 1600);
       updateBattleHUD();
-      if (b.matched >= b.cfg.sets) later(function () { endBattle(true); }, 450);
     }
     updateSkillBtn(); updateTimeUI();
   }
@@ -1271,13 +1369,18 @@
     b.over = true; b.running = false; b.lock = true;
     clearBattleTimers();
     var cfg = b.cfg, mode = b.mode, hid = b.heroine.id;
-    var stars = win ? D.starsFor({ sets: cfg.sets, miss: b.miss, timeLeft: b.timeLeft, timeMax: b.timeMax }) : 0;
+    var metrics = b.train && window.Training ? Training.finalize(b.train) : { recallAcc: null, knownErrors: 0, recallHit: 0, span: null, assisted: false, softAssisted: false, recallEvents: 0 };
+    var stars = win ? D.starsFor({ sets: cfg.sets, miss: b.miss, timeLeft: b.timeLeft, timeMax: b.timeMax, recallAcc: metrics.recallAcc, knownErrors: metrics.knownErrors }) : 0;
     var perfect = win && b.miss === 0;
-    var timeBonus = win ? Math.floor(b.timeLeft) * 10 : 0;
+    // 時間獎權重降低（記憶為主）
+    var timeBonus = win ? Math.floor(b.timeLeft) * 4 : 0;
     var total = b.score + timeBonus + (perfect ? 500 : 0) + (win && cfg.boss ? 300 : 0);
-    var lion = relicOn('lion') ? 1.15 : 1;
+    var loadMul = 1 + 0.08 * ((cfg.load != null ? cfg.load : (S.training && S.training.load)) || 0);
+    var lion = (relicOn('lion') ? 1.15 : 1) * loadMul;
+    if (b.potionBuff && win && isNum(metrics.recallAcc) && metrics.recallAcc >= 0.8) lion *= 1.15;
     var r = { win: win, reason: reason, stars: stars, perfect: perfect, timeBonus: timeBonus, base: b.score, total: total,
-      miss: b.miss, combo: b.bestCombo, gold: 0, xp: 0, ups: 0, firstClear: false, chapterDone: 0, mode: mode, n: cfg.n, boss: !!cfg.boss };
+      miss: b.miss, combo: b.bestCombo, gold: 0, xp: 0, ups: 0, firstClear: false, chapterDone: 0, mode: mode, n: cfg.n, boss: !!cfg.boss,
+      metrics: metrics, load: cfg.load != null ? cfg.load : (S.training && S.training.load) || 0 };
 
     if (win) {
       S.stats.wins += 1; S.stats.clears += 1;
@@ -1327,6 +1430,22 @@
         recordEndless(r.endlessTotal, cfg.round - 1);
       }
     }
+    // 訓練紀錄／自適應（輔助場不進階梯）
+    safeRun(function () {
+      if (!window.Training) return;
+      Training.ensureTrain(S);
+      var stair = Training.applyStaircase(S, metrics, win, reason || (win ? 'win' : 'lose'));
+      r.stair = stair;
+      Training.recordSession(S, {
+        recallAcc: metrics.recallAcc, span: metrics.span, load: S.training.load,
+        win: win, assisted: metrics.assisted, softAssisted: metrics.softAssisted,
+        knownErrors: metrics.knownErrors, recallHit: metrics.recallHit, n: cfg.n, mode: mode
+      });
+      r.delta = Training.deltaVs7Day(S, metrics);
+      r.assisted = metrics.assisted;
+      r.softAssisted = metrics.softAssisted;
+    });
+
     // 先排定結算畫面，再跑音效／特效：任何特效在 iOS Safari 拋錯都不能讓畫面卡死在戰鬥中
     var resultShown = false;
     var toResult = function () { if (resultShown) return; resultShown = true; showResult(r); };
@@ -1389,22 +1508,38 @@
     html += '<div class="r-cutin"><img src="' + portraitSrc + '" alt="" onerror="this.style.display=\'none\'"/></div>';
     html += '<div class="r-body">';
     html += '<h2 class="scr-title">' + head + '</h2>';
+    if (r.assisted || r.softAssisted) html += '<div class="r-assist-tag">' + (r.assisted ? '輔助' : '回顧') + '</div>';
     if (r.win && r.mode !== 'endless') html += '<div class="stars" id="r-stars"><span>★</span><span>★</span><span>★</span></div>';
     html += '<div class="result-score">' + (r.mode === 'endless' ? r.endlessTotal : r.total) + '</div>';
     html += '<div class="muted center small">基礎 ' + r.base + ' · 時間獎 ' + r.timeBonus + (r.perfect ? ' · 完美 +500' : '') + (r.win && r.boss ? ' · 頭目 +300' : '') +
       ' · 失誤 ' + r.miss + ' · 最高連擊 ' + r.combo + '</div>';
+    var m = r.metrics || {};
+    var accPct = (typeof m.recallAcc === 'number') ? Math.round(m.recallAcc * 100) : null;
+    var dlt = r.delta || {};
+    function dltTxt(v, suffix) {
+      if (typeof v !== 'number') return '';
+      var n = suffix === '%' ? Math.round(v * 100) : (Math.round(v * 10) / 10);
+      return ' <span class="r-delta ' + (n >= 0 ? 'up' : 'down') + '">(' + (n >= 0 ? '+' : '') + n + suffix + ' vs 7日)</span>';
+    }
+    html += '<div class="r-train">';
+    html += '<div class="r-train-row"><span>回憶正確率</span><b>' + (accPct == null ? '—' : (accPct + '%')) + '</b>' + dltTxt(dlt.recallAcc, '%') + '</div>';
+    html += '<div class="r-train-row"><span>已知牌失誤</span><b>' + (m.knownErrors == null ? '—' : m.knownErrors) + '</b></div>';
+    html += '<div class="r-train-row"><span>記憶廣度</span><b>' + (m.span == null ? '—' : m.span) + '</b>' + dltTxt(dlt.span, '') + '</div>';
+    html += '<div class="r-train-row"><span>訓練負荷</span><b>Lv.' + (r.load != null ? r.load : 0) + '</b>' +
+      (r.stair && r.stair.changed ? (' <span class="r-delta ' + (r.stair.load > r.stair.prev ? 'up' : 'down') + '">→ Lv.' + r.stair.load + '</span>') : '') + '</div>';
+    html += '</div>';
     html += '<div class="overlay-msg">經驗 +' + r.xp + '　金幣 +' + r.gold + (r.bond ? '　好感 +' + r.bond : '') +
       (r.ups ? '<br>⬆️ 等級提升 ×' + r.ups + '！' : '') + (r.firstClear ? '<br>🗝️ 首次通關' : '') + (r.dailyFirst ? '<br>🗓️ 每日挑戰完成獎勵 +150' : '') +
       (r.mode === 'endless' && !r.win ? '<br>♾️ 已記錄至排行榜' : '') + '</div>';
     if (winLine) html += '<p class="greet-bubble r-line">' + esc(h.name) + '：' + esc(winLine) + '</p>';
     html += '<div class="btn-row"><button class="btn secondary" id="r-home">回主城</button>';
     if (r.mode === 'campaign') {
-      if (r.win && r.n < CAMPAIGN_STAGES) html += '<button class="btn btn-gold" id="r-next">下一關 ⚡' + CONFIG.ENERGY_COST + '</button>';
-      else if (!r.win) html += '<button class="btn btn-gold" id="r-retry">再試一次 ⚡' + CONFIG.ENERGY_COST + '</button>';
+      if (r.win && r.n < CAMPAIGN_STAGES) html += '<button class="btn btn-gold" id="r-next">下一關</button>';
+      else if (!r.win) html += '<button class="btn btn-gold" id="r-retry">再試一次</button>';
     } else if (r.mode === 'endless' && r.win) {
       html += '<button class="btn btn-gold" id="r-endless">下一輪 →</button>';
     } else if (r.mode === 'endless') {
-      html += '<button class="btn btn-gold" id="r-retry">再挑戰 ⚡' + CONFIG.ENDLESS_COST + '</button>';
+      html += '<button class="btn btn-gold" id="r-retry">再挑戰</button>';
     } else if (r.mode === 'daily' && !r.win) {
       html += '<button class="btn btn-gold" id="r-retry">再試一次</button>';
     }
@@ -1674,7 +1809,7 @@
     var used = dc.gift[h.id] || 0;
     var owned = SHOP.gifts.filter(function (g) { return (S.inv[g.id] || 0) > 0; });
     var html = '<h3>贈禮給 ' + esc(h.name) + '</h3><p class="muted small">今日已贈 ' + used + '/' + CONFIG.GIFT_DAILY_CAP + ' · 喜好：' +
-      (h.favGifts || []).map(function (gid) { var g = findItem('gifts', gid); return g ? g.icon + g.name : ''; }).join('、') + '</p>';
+      (h.favGifts || []).map(function (gid) { var g = findItem('gifts', gid); return g ? ('<span class="fav-gift-chip">' + itemIco(g, 'item-ico-xs') + '<span>' + esc(g.name) + '</span></span>') : ''; }).join('') + '</p>';
     if (!owned.length) html += '<p class="muted">背包中沒有禮物，請至帝國商會購買。</p>';
     else html += '<div class="gift-grid">' + owned.map(function (g) { return '<button data-gift="' + g.id + '"' + (used >= CONFIG.GIFT_DAILY_CAP ? ' disabled' : '') + '>' + itemIco(g, 'item-ico-md') + '<span>' + esc(g.name) + ' ×' + S.inv[g.id] + '</span></button>'; }).join('') + '</div>';
     html += '<button class="btn secondary" id="m-cancel" style="width:100%;margin-top:10px">關閉</button>';
@@ -1744,7 +1879,7 @@
     S.stats.purchases += 1;
     if (tab === 'relics') S.relics[id] = true;
     else if (tab === 'outfits') S.outfitsOwned[outfitIdForShop(id)] = true;
-    else if (it.instant && id === 'potion') S.energy = Math.min(S.energy + 5, S.energyMax + 5);
+    else if (id === 'potion') { S.potionBuff = true; toast('記憶藥水已備妥：下一場達標金幣 +15%'); }
     else S.inv[id] = (S.inv[id] || 0) + 1;
     Snd.play('buy'); vibe(12);
     toast(pick(czGet(['shop', 'responses', 'buySuccess'])) || ('購入：' + it.name));
@@ -1815,13 +1950,18 @@
       if (S.maxStage > CAMPAIGN_STAGES && S.stage >= CAMPAIGN_STAGES) { go('map'); toast('戰役已全破！可於地圖重刷關卡衝三星'); return; }
       beginCampaign(S.stage);
     });
+    on('btn-train-cta', 'click', function () {
+      Snd.play('tap');
+      if (S.maxStage > CAMPAIGN_STAGES && S.stage >= CAMPAIGN_STAGES) { go('map'); toast('戰役已全破！可於地圖重刷關卡衝三星'); return; }
+      beginCampaign(S.stage);
+    });
     on('btn-daily', 'click', function () {
       Snd.play('tap');
       var c = D.dailyConfig(todayStr()), mech = c.boss ? D.bossMech(c.boss) : null;
       var done = S.daily.date === todayStr() && S.daily.done;
       openModal('<h3>🗓️ ' + esc(c.label) + '</h3><p class="muted">同一天所有玩家的牌局相同。<br>' + c.cols + '×' + c.rows + ' · ' + c.sets + ' 組 · 限時 ' + c.time + ' 秒 · 失誤上限 ' + c.missLimit +
         (mech ? '<br>♛ 特殊規則：' + esc(mech.name) + '（' + esc(mech.desc) + '）' : '') + '</p><p>' + (done ? '今日已完成 ✓ 最佳 ' + S.daily.best + '（再挑戰獎勵降低）' : '首次通關：🪙+150、經驗+60') + '</p>' +
-        '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">挑戰 體力' + CONFIG.ENERGY_COST + '</button></div>');
+        '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">開始挑戰</button></div>');
       bindModalBtn('m-cancel', closeModal);
       bindModalBtn('m-go', function () { closeModal(); beginDaily(); });
     });
@@ -1829,7 +1969,7 @@
       Snd.play('tap');
       openModal('<h3>♾️ 無盡模式</h3><p class="muted">連續挑戰逐漸變難的牌局，每 3 輪出現頭目機制。剩餘時間的一半會帶入下一輪（最多 15 秒）。失敗或收手時記錄總分。</p>' +
         '<p>最佳：第 ' + (S.stats.endlessBestRound || 0) + ' 輪 · ' + (S.stats.endlessBest || 0) + ' 分</p>' +
-        '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">開始 體力' + CONFIG.ENDLESS_COST + '</button></div>');
+        '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">開始</button></div>');
       bindModalBtn('m-cancel', closeModal);
       bindModalBtn('m-go', function () { closeModal(); beginEndless(1); });
     });
@@ -1970,9 +2110,11 @@
     openGallery: openGallery,
     closeGallery: closeGallery,
     openModal: openModal,
-    closeModal: closeModal
+    closeModal: closeModal,
+    trainingSummary: function () { return window.Training ? Training.summary(S) : null; }
   };
   window.GameAPI = GameAPI;
+  window.Training = window.Training || null;
 
   /* ════════════════ 除錯（?debug=1 或 localStorage.memoryRPG_debug=1） ════════════════ */
   function debugEnabled() {

@@ -467,3 +467,35 @@ body:has(#scr-result.screen.active) #topbar svg.ico{color:#6a5578;fill:#6a5578;f
 @media (prefers-reduced-motion:reduce){
   #scr-battle #board .card.matched .face.front{animation:none;opacity:.5;filter:saturate(.5)}
 }
+
+
+/* ─── v4h1 工作記憶訓練結算／標示 ─── */
+.res-energy.is-hidden{display:none!important}
+#scr-result .r-assist-tag{
+  display:inline-block;margin:0 0 6px;padding:2px 10px;border-radius:999px;
+  background:linear-gradient(180deg,#f7efe8,#efe0d2);border:1px solid #e0c8b0;
+  color:#8a5a3a;font-size:11px;letter-spacing:.12em;font-weight:700;
+}
+#scr-result .r-train{
+  margin:10px 0 4px;padding:10px 12px;border-radius:14px;
+  background:linear-gradient(180deg,rgba(255,252,248,.92),rgba(245,236,226,.88));
+  border:1px solid rgba(200,180,160,.55);box-shadow:0 1px 0 rgba(255,255,255,.7) inset;
+}
+#scr-result .r-train-row{
+  display:flex;align-items:baseline;gap:8px;padding:3px 0;font-size:13px;color:#5a4560;
+}
+#scr-result .r-train-row span{flex:1;min-width:0;opacity:.85}
+#scr-result .r-train-row b{font-variant-numeric:tabular-nums;color:#3a2a45;font-weight:800}
+#scr-result .r-delta{font-size:11px;font-weight:600}
+#scr-result .r-delta.up{color:#2f8f5b}
+#scr-result .r-delta.down{color:#c44a5a}
+#board .card.train-target{
+  box-shadow:0 0 0 2px #c9a24a,0 0 12px rgba(232,190,90,.65)!important;
+  border-radius:8px;
+}
+#board .card.train-review{
+  box-shadow:0 0 0 2px #7eb8e8,0 0 10px rgba(120,180,230,.55)!important;
+}
+/* 大盤面（6×6 / 7×6）在窄機仍可點 */
+#scr-battle .board{gap:clamp(3px,1.2vw,8px)}
+#scr-battle .board .card{min-width:0}
