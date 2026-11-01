@@ -1,4 +1,4 @@
-/* battle-bright.css — v4g1 HYKE 明亮極簡戰鬥畫面
+/* battle-bright.css — v4g3 HYKE 明亮極簡戰鬥畫面
  * 載入順序：ui-v4.css → battle-stage.css → 本檔（最後覆寫）。
  * 只動外觀與擺位；所有 game.js 依賴的 ID 皆保留。
  * 結構：.battle-stage（全幅場景，z0）→ HUD 細亮片（流式置頂，z4）
@@ -15,7 +15,7 @@
   --bb-crimson:#d0465f;
   --bb-mint:#8fcfbf;
   --bb-shadow:0 1px 3px rgba(60,40,50,.18);
-  --bb-board-top:max(50%,220px);
+  --bb-board-top:max(48%,210px);
   --bb-foot-h:92px;
 }
 /* 場景已鋪滿；確保 ui-v4 的「舞台全隱藏」不生效 */
@@ -38,7 +38,30 @@ body:has(#scr-battle.screen.active) #topbar small,
 body:has(#scr-battle.screen.active) #topbar .lv{
   color:#4a3550!important;text-shadow:none;
 }
-body:has(#scr-battle.screen.active) #topbar svg.ico{color:#6a5578;fill:#6a5578;opacity:.9}
+body:has(#scr-battle.screen.active) #topbar svg.ico{color:#6a5578;fill:#6a5578;opacity:.9;filter:none}
+/* 資源膠囊／圓鈕：奶油珍珠，對齊明亮 HUD */
+body:has(#scr-battle.screen.active) #topbar .res{
+  background:linear-gradient(180deg,#fffdf8,#f3e8f0)!important;
+  box-shadow:inset 0 0 0 1px rgba(120,96,140,.32),inset 0 1px 0 #fff,0 1px 2px rgba(60,40,50,.12)!important;
+}
+body:has(#scr-battle.screen.active) #topbar .res b,
+body:has(#scr-battle.screen.active) #topbar .res #tb-emax{color:#4a3550!important}
+body:has(#scr-battle.screen.active) #topbar .res .sep{color:#8a7592!important}
+body:has(#scr-battle.screen.active) #topbar .tb-btn{
+  color:#5a4068!important;
+  background:linear-gradient(180deg,#fffef9,#efe4f2)!important;
+  box-shadow:inset 0 0 0 1px rgba(120,96,140,.35),inset 0 1px 0 #fff,0 1px 3px rgba(60,40,50,.15)!important;
+}
+body:has(#scr-battle.screen.active) #topbar .lv-badge,
+body:has(#scr-battle.screen.active) #topbar .lv{
+  color:#4a3550!important;
+  background:linear-gradient(180deg,#fff8e8,#f0d9a8)!important;
+  box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(60,40,50,.15)!important;
+}
+body:has(#scr-battle.screen.active) #topbar .xpbar{
+  background:rgba(255,252,244,.7)!important;
+  box-shadow:inset 0 0 0 1px rgba(120,96,140,.28)!important;
+}
 
 
 /* ═════════ HUD：細亮片 ═════════ */
@@ -124,58 +147,74 @@ body:has(#scr-battle.screen.active) #topbar svg.ico{color:#6a5578;fill:#6a5578;o
   color:#7a4a96;text-shadow:0 0 4px #fff,0 0 2px #fff,0 1px 0 rgba(255,255,255,.9);
 }
 
-/* ═════════ 牌盤：放在桌面上（輕透視，無面板） ═════════ */
-#scr-battle #board.board::before{
-  content:"";position:absolute;z-index:-1;left:-10%;right:-10%;top:-8%;bottom:-14%;
-  border-radius:4px 4px 10px 10px;
-  background:linear-gradient(180deg,rgba(255,250,240,.15),rgba(180,150,120,.18) 40%,rgba(120,90,70,.28));
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),0 8px 16px rgba(60,40,30,.2);
-  transform:perspective(600px) rotateX(14deg);transform-origin:50% 0;pointer-events:none;
-}
+/* ═════════ 牌盤：貼齊繪製桌面（無玻璃面板） ═════════ */
+#scr-battle #board.board::before,
+#scr-battle #board.board::after{content:none!important;display:none!important;background:none!important}
 #scr-battle #board.board{
   position:absolute;z-index:2;
   top:var(--bb-board-top);
-  bottom:calc(var(--bb-foot-h) + 28px);
-  left:calc(var(--sal,0px) + 42px);right:calc(var(--sar,0px) + 42px);
-  width:auto!important;            /* 蓋掉 inline width:100%，改由 left/right＋max-width 置中 */
+  bottom:calc(var(--bb-foot-h) + 18px);
+  left:calc(var(--sal,0px) + 48px);right:calc(var(--sar,0px) + 48px);
+  width:auto!important;max-width:360px;
   margin:0 auto!important;
-  flex:none;padding:4px 2px 2px;
-  background:none;box-shadow:none;border:0;
-  /* 透視放在父層＋獨立 rotate 屬性：Fx.shake() 動畫 transform 時不會把桌面傾角洗掉 */
-  rotate:x 12deg;transform-origin:50% 85%;
+  flex:none;padding:2px 4px 6px;
+  background:transparent!important;box-shadow:none!important;border:0!important;
+  -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+  /* 輕 3/4 透視對齊桌面；獨立 rotate 以免 Fx.shake 洗掉 */
+  rotate:x 16deg;transform-origin:50% 100%;
+  gap:clamp(3px,1vh,6px)!important;
 }
-#scr-battle #board .card{filter:none}
+#scr-battle #board .card{filter:drop-shadow(0 4px 5px rgba(70,40,55,.38))}
 
-/* 牌背：cardback.png（載入失敗時退回淡紫底＋✦） */
+/* 牌背：高對比粉紫邊＋陰影 */
 #scr-battle #board .card .face.back{
-  border:1px solid rgba(255,255,255,.9);border-radius:7px;
-  background:#e7dcf0 url(../assets/battle/ui/cardback.png) center/100% 100% no-repeat;
+  border:2.5px solid #8e3d72;border-radius:7px;
+  background:#c9a0c4 url(../assets/battle/ui/cardback.png) center/100% 100% no-repeat;
   background-image:image-set(url(../assets/battle/ui/cardback.png) 1x,url(../assets/battle/ui/cardback@2x.png) 2x);
-  box-shadow:inset 0 0 0 1px rgba(150,120,175,.35),0 2px 0 rgba(120,96,110,.25),0 4px 8px rgba(70,50,60,.22);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,240,250,.75),
+    inset 0 0 0 3px rgba(120,60,110,.35),
+    0 2px 0 rgba(90,50,80,.35),
+    0 5px 10px rgba(60,35,50,.32);
   transition:box-shadow .18s ease,filter .18s ease;
 }
 #scr-battle #board .card .back-crest{
-  font-size:clamp(11px,3.6vw,16px);color:#fff;opacity:.4;
-  text-shadow:0 0 6px rgba(170,130,215,.9);
+  font-size:clamp(11px,3.6vw,16px);color:#fff;opacity:.15;
+  text-shadow:none;
 }
 #scr-battle #board .card.fog-mark .face.back{
-  box-shadow:inset 0 0 0 1px rgba(150,120,175,.35),inset 0 0 14px rgba(140,170,255,.75),0 4px 8px rgba(70,50,60,.22);
+  box-shadow:inset 0 0 0 1px rgba(255,240,250,.75),inset 0 0 14px rgba(140,170,255,.75),0 5px 10px rgba(60,35,50,.32);
 }
 @media (hover:hover){
   #scr-battle #board .card:not(.open):not(.matched):hover .face.back{
-    filter:brightness(1.06);
-    box-shadow:0 0 0 2px #fff,0 0 10px rgba(170,130,215,.7),0 4px 10px rgba(70,50,60,.25);
+    filter:brightness(1.05);
+    box-shadow:0 0 0 2px #fff,0 0 10px rgba(170,100,160,.65),0 5px 12px rgba(60,35,50,.35);
   }
 }
-#scr-battle #board .card:not(.open):not(.matched):active .face.back{filter:brightness(1.1)}
+#scr-battle #board .card:not(.open):not(.matched):active .face.back{filter:brightness(1.08)}
 
-/* 牌面：翻開清楚、已配對淡出 */
+/* 牌面：翻開清楚；錯配紅暈；已配對淡出 */
 #scr-battle #board .card .face.front{
-  border:1px solid rgba(255,255,255,.95);border-radius:7px;
-  box-shadow:inset 0 0 0 1px rgba(150,120,175,.3),0 4px 8px rgba(70,50,60,.22);
+  border:2px solid #c9a46a;border-radius:7px;
+  background:linear-gradient(160deg,#fffef8,#f7e8c8);
+  box-shadow:inset 0 0 0 1px rgba(180,140,80,.35),0 4px 8px rgba(70,50,60,.25);
 }
 #scr-battle #board .card.open:not(.matched) .face.front{
-  box-shadow:0 0 0 2px #fff,0 0 10px 2px rgba(170,130,215,.65),0 4px 10px rgba(70,50,60,.25);
+  box-shadow:0 0 0 2px #fff,0 0 12px 2px rgba(170,130,215,.7),0 4px 10px rgba(70,50,60,.28);
+}
+#scr-battle #board .card.open.is-mismatch .face.front,
+#scr-battle #board .card.is-mismatch .face.front{
+  border-color:#d0465f!important;
+  box-shadow:0 0 0 2px #fff,0 0 14px 3px rgba(208,70,95,.75),0 4px 10px rgba(70,50,60,.3)!important;
+  filter:saturate(1.1) brightness(1.02);
+}
+#scr-battle #board .card.shake .card-inner{animation:bb-miss-shake .45s ease}
+@keyframes bb-miss-shake{
+  0%,100%{transform:rotateY(180deg) translateX(0)}
+  20%{transform:rotateY(180deg) translateX(-6px)}
+  40%{transform:rotateY(180deg) translateX(6px)}
+  60%{transform:rotateY(180deg) translateX(-4px)}
+  80%{transform:rotateY(180deg) translateX(3px)}
 }
 #scr-battle #board .card.matched .face.front{animation:bb-matched .6s forwards}
 @keyframes bb-matched{40%{box-shadow:0 0 0 2px #fff,0 0 16px 4px rgba(255,236,170,.9)}100%{opacity:.5;filter:saturate(.5);box-shadow:none}}
@@ -206,15 +245,18 @@ body:has(#scr-battle.screen.active) #topbar svg.ico{color:#6a5578;fill:#6a5578;o
 }
 #scr-battle .b-portrait img:not([src]),#scr-battle .b-portrait img[src=""]{visibility:hidden}
 
-/* 助威：頭像與技能球之間，不壓牌 */
+/* 助威：鎖在底欄內，绝不盖到牌盘 */
 #app #scr-battle #b-cheer.b-cheer{
-  left:96px!important;right:86px;bottom:10px!important;top:auto;
-  max-width:none!important;width:auto;
-  padding:6px 10px;border-radius:2px 10px 10px 2px;
-  font-size:12px;line-height:1.4;color:var(--bb-ink);
-  background:rgba(255,252,244,.9);border:1px solid rgba(255,255,255,.95);
+  position:absolute!important;
+  left:96px!important;right:86px;bottom:8px!important;top:auto!important;
+  max-width:none!important;width:auto;max-height:calc(var(--bb-foot-h) - 12px);
+  padding:5px 9px;border-radius:2px 10px 10px 2px;
+  font-size:12px;line-height:1.35;color:var(--bb-ink);
+  background:rgba(255,252,244,.94);border:1px solid rgba(255,255,255,.95);
   box-shadow:inset 0 0 0 1px rgba(120,96,140,.22),0 3px 10px rgba(60,40,50,.2);
-  pointer-events:none;
+  pointer-events:none;overflow:hidden;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;
+  z-index:2;
 }
 #app #scr-battle #b-cheer.b-cheer.tone-lowtime,
 #app #scr-battle #b-cheer.b-cheer.tone-miss{color:#8e2440;box-shadow:inset 0 0 0 1px rgba(208,70,95,.45),0 3px 10px rgba(60,40,50,.2)}
@@ -253,30 +295,37 @@ body:has(#scr-battle.screen.active) #topbar svg.ico{color:#6a5578;fill:#6a5578;o
 /* 中央橫幅：亮場景上改深字白光 */
 #scr-battle #b-banner.banner{color:#4a3550;text-shadow:0 0 10px #fff,0 0 4px #fff,0 2px 0 rgba(255,255,255,.9)}
 
-/* ═════════ 尺寸 ═════════ */
+/* ═════════ 尺寸：牌貼桌、角色放大、助威不壓牌 ═════════ */
 @media (max-height:760px){
-  #scr-battle{--bb-foot-h:76px;--bb-board-top:max(37%,100px)}
+  #scr-battle{--bb-foot-h:72px;--bb-board-top:max(44%,168px)}
   #scr-battle .b-portrait{width:96px}
   #app #scr-battle #b-cheer.b-cheer{left:84px!important}
+  #scr-battle #board.board{left:calc(var(--sal,0px) + 36px);right:calc(var(--sar,0px) + 36px);rotate:x 14deg}
 }
 @media (max-height:680px){
-  #scr-battle{--bb-foot-h:66px;--bb-board-top:max(35%,96px)}
-  #scr-battle .b-portrait{width:84px}
-  #app #scr-battle #b-cheer.b-cheer{left:72px!important;right:72px;font-size:11px}
-  #scr-battle .battle-foot #btn-skill.btn-skill{width:52px;height:52px;right:8px;bottom:8px}
-  #scr-battle .battle-foot #btn-skill.btn-skill .lbl{width:66px;font-size:9px}
-  #scr-battle .timebar{margin:6px 40px 4px 20px}
+  /* 375×667 等：牌盤落在繪製桌面內，助威縮進底欄 */
+  #scr-battle{--bb-foot-h:56px;--bb-board-top:max(48%,185px)}
+  #scr-battle .b-portrait{width:78px}
+  #app #scr-battle #b-cheer.b-cheer{
+    left:70px!important;right:64px;font-size:10px;line-height:1.25;
+    -webkit-line-clamp:2;padding:4px 7px;bottom:6px!important;
+  }
+  #scr-battle .battle-foot #btn-skill.btn-skill{width:48px;height:48px;right:6px;bottom:6px}
+  #scr-battle .battle-foot #btn-skill.btn-skill .lbl{width:60px;font-size:9px}
+  #scr-battle .timebar{margin:4px 36px 3px 18px}
+  #scr-battle #board.board{
+    left:calc(var(--sal,0px) + 32px);right:calc(var(--sar,0px) + 32px);
+    bottom:calc(var(--bb-foot-h) + 8px);padding:0 2px 2px;rotate:x 18deg;
+    max-height:42vh;
+  }
+}
+@media (max-height:620px){
+  #scr-battle{--bb-board-top:max(40%,132px);--bb-foot-h:54px}
+  #app #scr-battle #b-cheer.b-cheer{-webkit-line-clamp:2;font-size:10px}
 }
 @media (orientation:landscape) and (max-height:430px){
   #scr-battle{--bb-foot-h:56px;--bb-board-top:76px}
-  #scr-battle #board.board::before{
-  content:"";position:absolute;z-index:-1;left:-10%;right:-10%;top:-8%;bottom:-14%;
-  border-radius:4px 4px 10px 10px;
-  background:linear-gradient(180deg,rgba(255,250,240,.15),rgba(180,150,120,.18) 40%,rgba(120,90,70,.28));
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),0 8px 16px rgba(60,40,30,.2);
-  transform:perspective(600px) rotateX(14deg);transform-origin:50% 0;pointer-events:none;
-}
-#scr-battle #board.board{bottom:6px;right:calc(var(--sar,0px) + 78px);left:calc(var(--sal,0px) + 14px);rotate:none}
+  #scr-battle #board.board{bottom:6px;right:calc(var(--sar,0px) + 78px);left:calc(var(--sal,0px) + 14px);rotate:none}
   #scr-battle .b-portrait{display:none}
   #app #scr-battle #b-cheer.b-cheer{display:none}
   #scr-battle .battle-foot{left:auto;width:72px}

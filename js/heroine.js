@@ -1256,9 +1256,10 @@
     var line = pick(pool);
     if (!line && h.cheer && h.cheer[kind]) line = h.cheer[kind];
     if (!line && kind === 'start') {
-      line = pick(cz && cz.battleCheer && cz.battleCheer[h.id] && cz.battleCheer[h.id].combo) || (h.cheer && h.cheer.combo);
+      line = (h.cheer && h.cheer.start) || pick(cz && cz.battleCheer && cz.battleCheer.general && cz.battleCheer.general.start);
     }
     if (!line) line = pick(cz && cz.battleCheer && cz.battleCheer.general && cz.battleCheer.general[kind]);
+    if (!line && kind === 'start') line = '「集中精神，我們開始吧。」';
     return line || '「保持專注，勝利就在眼前！」';
   }
 

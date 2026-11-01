@@ -1106,11 +1106,26 @@
     Fx.shake($('board'));
     bsCall('onMiss', { miss: b.miss, missLimit: b.missLimit });
     var ml = $('b-miss'); if (ml) Fx.floatText(ml, '失誤', 'crimson');
+    /* 翻開期間標紅，讓錯配牌面可讀（safeRun 路徑不變） */
+    idxs.forEach(function (k) {
+      safeRun(function () { var el = cardEl(k); if (el) el.classList.add('is-mismatch'); });
+    });
     var delay = b.cfg.flipBack || 600;
     later(function () {
       idxs.forEach(function (k) {
         var c = b.cards[k];
-        safeRun(function () { if (c && !c.matched) { c.open = false; var el = cardEl(k); if (el) { el.classList.remove('fogged'); el.classList.add('shake'); } syncCard(k); } });
+        safeRun(function () {
+          if (c && !c.matched) {
+            c.open = false;
+            var el = cardEl(k);
+            if (el) {
+              el.classList.remove('fogged');
+              el.classList.remove('is-mismatch');
+              el.classList.add('shake');
+            }
+            syncCard(k);
+          }
+        });
       });
       // 錯位洗牌機制已停用（太難）
       b.lock = false;
@@ -1206,8 +1221,9 @@
     var h = b.heroine;
     var line = pick(czGet(['battleCheer', h.id, kind]));
     if (!line && h.cheer && h.cheer[kind]) line = h.cheer[kind];
-    if (!line && kind === 'start') line = pick(czGet(['battleCheer', h.id, 'combo'])) || h.cheer.combo;
+    if (!line && kind === 'start') line = (h.cheer && h.cheer.start) || pick(czGet(['battleCheer', 'general', 'start']));
     if (!line) line = pick(czGet(['battleCheer', 'general', kind]));
+    if (!line && kind === 'start') line = '「集中精神，我們開始吧。」';
     if (!line) return;
     var r = tryCall(window.HeroineUI, ['cheer', 'battleCheer'], [h.id, kind, line]);
     if (r && r.v === true) return;
