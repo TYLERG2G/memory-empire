@@ -966,6 +966,20 @@
   function cardClass(c) {
     return 'card' + (c.open || c.matched ? ' open' : '') + (c.matched ? ' matched' : '') + (c.fog ? ' fog-mark' : '') + (c.joker && c.matched ? ' joker-spent' : '');
   }
+  // 依 board 實際剩餘高度放大牌盤（維持 3:4、不溢出底欄）
+  function fitBoard() {
+    var board = $('board');
+    if (!battle || !battle.cfg || !board || !board.offsetParent) return;
+    var cols = battle.cfg.cols, rows = battle.cfg.rows;
+    var cs = getComputedStyle(board);
+    var gap = parseFloat(cs.rowGap) || 0, pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    var h = board.clientHeight - pad;
+    if (h <= 0) return;
+    var cardH = (h - gap * (rows - 1)) / rows;
+    var w = Math.floor(cardH * 3 / 4 * cols + (parseFloat(cs.columnGap) || 0) * (cols - 1));
+    board.style.maxWidth = 'min(100%, ' + w + 'px)';
+  }
+  window.addEventListener('resize', function () { requestAnimationFrame(fitBoard); });
   function renderBoard() {
     var b = battle, board = $('board');
     board.innerHTML = '';
@@ -973,7 +987,8 @@
     var cols = b.cfg.cols, rows = b.cfg.rows;
     board.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';
     // 依可用高度限制寬度，避免 6×5 溢出
-    board.style.maxWidth = 'min(100%, calc((100vh - 290px) * ' + (cols * 3 / (rows * 4)).toFixed(3) + '))';
+    board.style.maxWidth = 'min(100%, calc((100vh - 290px) * ' + (cols * 3 / (rows * 4)).toFixed(3) + '))'; // 初值，fitBoard 依實高覆寫
+    requestAnimationFrame(fitBoard);
     board.style.margin = '0 auto';
     board.style.width = '100%';
     board.style.alignItems = 'start'; // 讓 .card 的 aspect-ratio 生效（stretch 會把列高壓成 0）
