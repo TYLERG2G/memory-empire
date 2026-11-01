@@ -536,7 +536,7 @@
   }
   function spendEnergy(n) {
     regenEnergy();
-    if (S.energy < n) { toast('體力不足（需要 ⚡' + n + '），請稍候回復'); Snd.play('mismatch'); return false; }
+    if (S.energy < n) { toast('體力不足（需要體力 ' + n + '），請稍候回復'); Snd.play('mismatch'); return false; }
     if (S.energy >= S.energyMax) S.lastEnergyAt = Date.now();
     S.energy -= n;
     return true;
@@ -686,8 +686,8 @@
     var fight = $('btn-fight');
     if (fight) fight.disabled = S.energy < CONFIG.ENERGY_COST;
     var d = S.daily.date === todayStr() && S.daily.done;
-    setText('daily-sub', d ? '今日已完成 ✓' : '今日未完成 · ⚡' + CONFIG.ENERGY_COST);
-    setText('endless-sub', '⚡' + CONFIG.ENDLESS_COST + ' · 最佳第 ' + (S.stats.endlessBestRound || 0) + ' 輪');
+    setText('daily-sub', d ? '今日已完成' : '今日未完成 · 體力' + CONFIG.ENERGY_COST);
+    setText('endless-sub', '體力' + CONFIG.ENDLESS_COST + ' · 最佳第 ' + (S.stats.endlessBestRound || 0) + ' 輪');
   }
   function totalStars() { var t = 0; for (var k in S.stars) t += S.stars[k] || 0; return t; }
 
@@ -730,7 +730,7 @@
       (mech ? '<p><b style="color:var(--red2)">' + esc(c.bossName) + '</b> — ' + esc(mech.name) + '<br><span class="muted small">' + esc(mech.desc) + '</span></p>' : '') +
       '<p class="muted">' + c.cols + '×' + c.rows + ' 盤面 · ' + c.sets + ' 組 · 限時 ' + c.time + ' 秒<br>失誤上限 ' + c.missLimit + '</p>' +
       '<p class="stars" style="font-size:24px">' + starsText(S.stars[n] || 0) + '</p>' +
-      '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">出戰 ⚡' + CONFIG.ENERGY_COST + '</button></div>');
+      '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">出戰 體力' + CONFIG.ENERGY_COST + '</button></div>');
     bindModalBtn('m-cancel', closeModal);
     bindModalBtn('m-go', function () { closeModal(); S.stage = n; save(); beginCampaign(n); });
   }
@@ -1079,7 +1079,7 @@
         var c = b.cards[k];
         if (c && !c.matched) { c.open = false; var el = cardEl(k); if (el) { el.classList.remove('fogged'); el.classList.add('shake'); } syncCard(k); }
       });
-      if (b.cfg.boss === 'shuffle') shuffleAfterMiss(idxs);
+      // 錯位洗牌機制已停用（太難）
       b.lock = false;
       if (b.miss >= b.missLimit) endBattle(false, 'miss');
     }, delay);
@@ -1298,12 +1298,12 @@
     if (winLine) html += '<p class="greet-bubble" style="margin-top:10px">' + esc(h.name) + '：' + esc(winLine) + '</p>';
     html += '<div class="btn-row"><button class="btn secondary" id="r-home">回主城</button>';
     if (r.mode === 'campaign') {
-      if (r.win && r.n < CAMPAIGN_STAGES) html += '<button class="btn btn-gold" id="r-next">下一關 ⚡' + CONFIG.ENERGY_COST + '</button>';
-      else if (!r.win) html += '<button class="btn btn-gold" id="r-retry">再試一次 ⚡' + CONFIG.ENERGY_COST + '</button>';
+      if (r.win && r.n < CAMPAIGN_STAGES) html += '<button class="btn btn-gold" id="r-next">下一關 體力' + CONFIG.ENERGY_COST + '</button>';
+      else if (!r.win) html += '<button class="btn btn-gold" id="r-retry">再試一次 體力' + CONFIG.ENERGY_COST + '</button>';
     } else if (r.mode === 'endless' && r.win) {
       html += '<button class="btn btn-gold" id="r-endless">下一輪 →</button>';
     } else if (r.mode === 'endless') {
-      html += '<button class="btn btn-gold" id="r-retry">再挑戰 ⚡' + CONFIG.ENDLESS_COST + '</button>';
+      html += '<button class="btn btn-gold" id="r-retry">再挑戰 體力' + CONFIG.ENDLESS_COST + '</button>';
     } else if (r.mode === 'daily' && !r.win) {
       html += '<button class="btn btn-gold" id="r-retry">再試一次</button>';
     }
@@ -1719,7 +1719,7 @@
       var done = S.daily.date === todayStr() && S.daily.done;
       openModal('<h3>🗓️ ' + esc(c.label) + '</h3><p class="muted">同一天所有玩家的牌局相同。<br>' + c.cols + '×' + c.rows + ' · ' + c.sets + ' 組 · 限時 ' + c.time + ' 秒 · 失誤上限 ' + c.missLimit +
         (mech ? '<br>♛ 特殊規則：' + esc(mech.name) + '（' + esc(mech.desc) + '）' : '') + '</p><p>' + (done ? '今日已完成 ✓ 最佳 ' + S.daily.best + '（再挑戰獎勵降低）' : '首次通關：🪙+150、經驗+60') + '</p>' +
-        '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">挑戰 ⚡' + CONFIG.ENERGY_COST + '</button></div>');
+        '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">挑戰 體力' + CONFIG.ENERGY_COST + '</button></div>');
       bindModalBtn('m-cancel', closeModal);
       bindModalBtn('m-go', function () { closeModal(); beginDaily(); });
     });
@@ -1727,7 +1727,7 @@
       Snd.play('tap');
       openModal('<h3>♾️ 無盡模式</h3><p class="muted">連續挑戰逐漸變難的牌局，每 3 輪出現頭目機制。剩餘時間的一半會帶入下一輪（最多 15 秒）。失敗或收手時記錄總分。</p>' +
         '<p>最佳：第 ' + (S.stats.endlessBestRound || 0) + ' 輪 · ' + (S.stats.endlessBest || 0) + ' 分</p>' +
-        '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">開始 ⚡' + CONFIG.ENDLESS_COST + '</button></div>');
+        '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">開始 體力' + CONFIG.ENDLESS_COST + '</button></div>');
       bindModalBtn('m-cancel', closeModal);
       bindModalBtn('m-go', function () { closeModal(); beginEndless(1); });
     });

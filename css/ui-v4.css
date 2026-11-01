@@ -211,7 +211,7 @@ body.no-nav #nav.dock{display:flex;transform:translateY(calc(100% + var(--dock-b
   background:rgba(12,4,8,.66);box-shadow:0 0 0 1px rgba(232,194,106,.45),var(--sh-2)}
 #app #scr-home.home-v4 #home-greet.greet-bubble:empty{display:none}
 /* 矮螢幕：泡泡改貼在 home-dock 上方（dock 高 ≈ stage-info 56 + CTA 52 + chips 70 + gaps） */
-@media (max-height:700px){ #app #scr-home.home-v4 #home-greet.greet-bubble{top:auto;bottom:228px;-webkit-line-clamp:2} }
+@media (max-height:700px){ -webkit-line-clamp:2};-webkit-line-clamp:2} }
 @media (max-height:600px){ #app #scr-home.home-v4 #home-greet.greet-bubble{bottom:154px} #scr-home.home-v4 .h-skill{display:none} }
 .home-dock{position:absolute;left:calc(var(--sal) + 14px);right:calc(var(--sar) + 14px);bottom:12px;z-index:5;
   display:flex;flex-direction:column;gap:var(--sp-2)}
@@ -339,3 +339,102 @@ body.no-nav #nav.dock{display:flex;transform:translateY(calc(100% + var(--dock-b
   background:linear-gradient(#ffe39a,#d7a743);color:#2a0a12;font-weight:800}
 .outfit-rail{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;-webkit-overflow-scrolling:touch;padding-bottom:4px}
 .outfit-rail .outfit-chip{flex:none}
+
+/* ═══════════════════════════════════════════════════════════
+   PROP FIX PASS1 — 錯位／重疊／比例急修（2026-11-01）
+   ═══════════════════════════════════════════════════════════ */
+
+/* 主城：壓縮 home-dock，把立繪讓出來 */
+.home-dock{gap:6px;bottom:8px}
+.home-dock .stage-info{padding:6px 10px;font-size:11px;line-height:1.35}
+.home-dock .stage-info #home-stage{font-size:13px}
+.btn-cta{height:48px;font-size:18px;letter-spacing:3px}
+.btn-cta .cost{right:10px;padding:1px 6px;font-size:11px}
+.mode-chips{gap:6px}
+.chip{padding:5px 2px 4px;gap:1px}
+.chip svg.ico{--ico:18px}
+.chip small{font-size:9px}
+
+/* 問候泡泡：貼在 home-dock 正上方右側，絕不蓋臉 */
+#app #scr-home.home-v4 #home-greet.greet-bubble{
+  top:auto!important;
+  bottom:calc(12px + 118px + env(safe-area-inset-bottom,0px))!important;
+  right:calc(var(--sar) + 12px)!important;left:auto!important;
+  max-width:min(52%,220px)!important;
+  font-size:12px!important;-webkit-line-clamp:2!important;padding:0 10px!important;
+  border-width:6px!important;transform:none!important}
+#scr-home.home-v4 .hero-plate{top:calc(var(--sat) + 44px);max-width:55%}
+#scr-home.home-v4 .h-name{font-size:22px}
+#scr-home.home-v4 .h-skill{font-size:10px;max-width:52vw;-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.game-title--float{top:calc(var(--sat) + 4px);font-size:13px}
+#app #scr-home.home-v4 .hero-stage > img{object-position:50% 8%}
+#scr-home.home-v4::after{height:48%}
+
+@media (max-height:760px){
+  .home-dock .stage-info #home-stage-detail{display:none}
+  .btn-cta{height:46px}
+  #app #scr-home.home-v4 #home-greet.greet-bubble{bottom:calc(136px + env(safe-area-inset-bottom,0px));max-width:46%}
+}
+@media (max-height:700px){
+  .home-dock .stage-info{display:none}
+  .chip small{display:none}
+  .btn-cta{height:44px;font-size:16px}
+  #app #scr-home.home-v4 #home-greet.greet-bubble{bottom:calc(110px + env(safe-area-inset-bottom,0px));-webkit-line-clamp:1}
+  #scr-home.home-v4 .h-skill{display:none}
+}
+@media (max-height:600px){
+  .mode-chips{grid-template-columns:repeat(4,1fr)}
+  .chip{padding:4px 1px}
+  #app #scr-home.home-v4 #home-greet.greet-bubble{display:none}
+}
+
+/* 戰鬥：矮螢幕縮舞台；牌盤吃滿剩餘高度 */
+#scr-battle.screen{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+#scr-battle .board{flex:1 1 auto;min-height:0;align-content:center;gap:clamp(4px,1.2vh,8px);
+  padding:2px 0;width:100%;max-width:100%}
+#scr-battle .card{width:100%;max-width:100%}
+#scr-battle .battle-foot{flex:none;margin-top:6px}
+#scr-battle .battle-head,#scr-battle .timebar,#scr-battle .battle-sub{flex:none}
+.battle-stage{min-height:64px;max-height:88px;margin-bottom:4px;padding:6px 8px}
+.battle-stage .bs-label{font-size:9px;opacity:.55}
+@media (max-height:760px){
+  .battle-stage{min-height:48px;max-height:64px}
+  .battle-stage .bs-label{display:none}
+}
+@media (max-height:680px){
+  .battle-stage{display:none} /* 矮機先藏預留舞台，牌面優先 */
+}
+/* 橫向：牌太小是致命 — 藏舞台、壓縮 HUD */
+@media (orientation:landscape) and (max-height:430px){
+  .battle-stage{display:none}
+  #scr-battle .battle-sub .stat small{display:none}
+  #scr-battle .timebar{height:14px;margin:4px 0}
+  #scr-battle .board{gap:4px}
+  #app #scr-home.home-v4 #home-greet.greet-bubble{display:none}
+  .home-dock .stage-info{display:none}
+  .chip small{display:none}
+  .btn-cta{height:40px;font-size:15px}
+  #scr-home.home-v4 .h-name{font-size:18px}
+  #scr-home.home-v4 .hero-plate{top:calc(var(--sat) + 36px)}
+}
+
+/* dock 不吃 content：保證 screens 底部 padding 足夠 */
+#screens{padding-bottom:calc(var(--dock-bottom) + var(--navh) + 10px)}
+body.no-nav #screens{padding-bottom:calc(var(--sab) + 8px)}
+
+/* topbar 資源數字垂直對齊 */
+.res{display:inline-flex;align-items:center}
+.res b,.res .sep,#tb-emax{line-height:1}
+.tb-res{flex-wrap:nowrap}
+
+/* 鑑賞關閉鈕不被 notch 切 */
+.hg-close,.hui-close{top:calc(var(--sat) + 8px)!important}
+
+/* 桌面維持電話欄，勿拉滿 */
+#app{max-width:480px;margin:0 auto}
+@media (max-height:700px){
+  #app #scr-home.home-v4 #home-greet.greet-bubble{bottom:calc(12px + 96px + env(safe-area-inset-bottom,0px))!important;-webkit-line-clamp:1!important}
+}
+@media (max-height:600px),(orientation:landscape) and (max-height:500px){
+  #app #scr-home.home-v4 #home-greet.greet-bubble{visibility:hidden!important;pointer-events:none!important}
+}
