@@ -126,6 +126,7 @@ img.outfit-yukata{filter:saturate(1.1) sepia(.12)}
 <!-- UI v4 覆寫層：放在 heroine.css 與 v3-shell-css 之後，確保同權重時覆寫生效 -->
 <link rel="stylesheet" href="css/ui-v4.css">
 <link rel="stylesheet" href="css/battle-stage.css">
+<link rel="stylesheet" href="css/battle-bright.css">
 </head>
 <body>
 <!-- UI v4：圖示 sprite（由 assets/icons/icons.svg 注入，保留 defs 使 #ico-* 與漸層位於同一文件） -->
@@ -238,6 +239,7 @@ img.outfit-yukata{filter:saturate(1.1) sepia(.12)}
       <div id="board" class="board"></div>
       <div class="battle-foot">
         <div id="b-cheer" class="b-cheer"></div>
+        <div class="b-portrait" aria-hidden="true"><div class="b-portrait-in"><img class="bs-portrait" alt=""></div></div>
         <img id="b-hero-img" class="b-hero" alt="">
         <button id="btn-skill" class="btn btn-skill"><span class="cdfill" id="b-cdfill"></span><span class="lbl" id="b-skill-lbl"></span></button>
       </div>

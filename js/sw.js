@@ -1,5 +1,5 @@
 /* 記憶帝國：女傑翻牌 — Service Worker v4f2（stage clip+swap） */
-const CACHE = 'MEMORY_RPG_v4f2';
+const CACHE = 'MEMORY_RPG_v4g1';
 // 核心殼層：缺一即安裝失敗
 const CORE = [
   './',
@@ -20,6 +20,7 @@ const OPTIONAL = [
   './css/heroine.css',
   './css/ui-v4.css',
   './css/battle-stage.css',
+  './css/battle-bright.css',
   './assets/icons/icons.svg',
   './js/content_zh.js',
   './js/audio.js',
@@ -47,6 +48,10 @@ const OPTIONAL = [
   './assets/battle/heroines/karena_idle0.png',
   './assets/battle/bg/ch1.png',
   './assets/battle/monsters/ch1_mob_a.png',
+  './assets/battle/monsters/ch1_mob_hit.png',
+  './assets/battle/ui/cardback.png',
+  './assets/battle/ui/cardback@2x.png',
+  './assets/battle/ui/verda_portrait.png',
   './assets/battle/monsters/default_mob.png',
   './assets/battle/monsters/default_boss.png',
   './assets/battle/bg/ch1@3x.png',

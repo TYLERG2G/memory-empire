@@ -1,101 +1,111 @@
-/* battle-stage.css — 戰鬥舞台（女傑 vs 怪物）
- * 須在 ui-v4.css 之後載入。覆寫 ui-v4 的「舞台全隱藏」規則；
- * 矮機只縮不藏（最小 64px），牌盤仍以 flex 吃剩餘高度。 */
+/* battle-stage.css — 戰鬥舞台（女傑 vs 怪物）v4g1 BRIGHT
+ * 須在 ui-v4.css 之後載入。舞台＝全幅場景（#scr-battle 內 absolute inset:0），
+ * 角色站在桌後石徑上，牌盤（#board）由 battle-bright.css 擺到桌面上。
+ * HUD／牌背／技能鈕等外框見 battle-bright.css。 */
 
 #scr-battle .battle-stage{
-  display:grid!important;
-  --stage-h:96px; --hero-sz:60px; --foe-sz:56px; --boss-sz:76px;
+  display:block!important;
+  --hero-sz:clamp(110px,34vw,128px); --foe-sz:clamp(96px,28vw,112px); --boss-sz:clamp(120px,36vw,148px);
+  --feet:56%;            /* 角色腳底距場景底部（≈ 桌面後緣上方） */
   --k:#b07cff;
-  position:relative;flex:0 0 auto;
-  height:var(--stage-h);min-height:64px;max-height:110px;
-  margin:0 0 6px;padding:4px 10px 6px;
-  grid-template-columns:1fr minmax(48px,1.3fr) 1fr;
-  grid-template-rows:100%;
-  align-items:end;gap:4px;
-  border-radius:var(--r-md,12px);overflow:hidden!important;pointer-events:none;
+  position:absolute;inset:0;z-index:0;
+  height:auto;min-height:0;max-height:none;margin:0;padding:0;
+  border-radius:0;overflow:hidden!important;pointer-events:none;
   isolation:isolate;contain:layout paint style;
-  background:#120810;
-  box-shadow:inset 0 0 0 1px rgba(232,194,106,.30),0 2px 8px rgba(0,0,0,.45);
+  background:#dfe9e4; /* 背景圖載入前的天光底色 */
+  box-shadow:none;
 }
 #scr-battle .battle-stage .bs-label{display:none!important}
 
-/* ── 背景（視差緩移） ── */
+/* ── 背景：全幅 cover，桌面約落在 50–72% 高 ── */
 #scr-battle .bs-bg{
-  position:absolute;inset:-2px -8%;z-index:0;
-  background-repeat:no-repeat;background-size:cover;background-position:50% 100%;
-  image-rendering:pixelated;
-  animation:bs-pan 22s ease-in-out infinite alternate;
+  position:absolute;inset:0;z-index:0;
+  background-repeat:no-repeat;background-size:cover;background-position:50% 45%;
+  image-rendering:auto;
+  animation:none;transform:none;
 }
-#scr-battle .bs-bg::after{content:"";position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(10,4,8,.05) 40%,rgba(10,4,8,.55))}
+#scr-battle .bs-bg::after{content:"";position:absolute;inset:0;pointer-events:none;
+  /* 上緣淡化讓 HUD 可讀；下緣微暖光收束 */
+  background:linear-gradient(180deg,rgba(255,252,244,.38) 0,rgba(255,252,244,0) 16%,rgba(255,252,244,0) 84%,rgba(255,240,220,.28) 100%)}
 #scr-battle .bs-bg[data-ch="1"]{background-image:url(../assets/battle/bg/ch1.png);
   background-image:image-set(url(../assets/battle/bg/ch1.png) 1x,url(../assets/battle/bg/ch1@3x.png) 3x)}
-#scr-battle .bs-bg[data-ch="2"]{background-image:url(../assets/battle/bg/ch2.png);
+/* ch2–5 仍是舊橫條素材：維持 cover，底部對齊以免露出空白 */
+#scr-battle .bs-bg[data-ch="2"]{background-image:url(../assets/battle/bg/ch2.png);background-position:50% 100%;
   background-image:image-set(url(../assets/battle/bg/ch2.png) 1x,url(../assets/battle/bg/ch2@3x.png) 3x)}
-#scr-battle .bs-bg[data-ch="3"]{background-image:url(../assets/battle/bg/ch3.png);
+#scr-battle .bs-bg[data-ch="3"]{background-image:url(../assets/battle/bg/ch3.png);background-position:50% 100%;
   background-image:image-set(url(../assets/battle/bg/ch3.png) 1x,url(../assets/battle/bg/ch3@3x.png) 3x)}
-#scr-battle .bs-bg[data-ch="4"]{background-image:url(../assets/battle/bg/ch4.png);
+#scr-battle .bs-bg[data-ch="4"]{background-image:url(../assets/battle/bg/ch4.png);background-position:50% 100%;
   background-image:image-set(url(../assets/battle/bg/ch4.png) 1x,url(../assets/battle/bg/ch4@3x.png) 3x)}
-#scr-battle .bs-bg[data-ch="5"]{background-image:url(../assets/battle/bg/ch5.png);
+#scr-battle .bs-bg[data-ch="5"]{background-image:url(../assets/battle/bg/ch5.png);background-position:50% 100%;
   background-image:image-set(url(../assets/battle/bg/ch5.png) 1x,url(../assets/battle/bg/ch5@3x.png) 3x)}
-@keyframes bs-pan{from{transform:translateX(-3%)}to{transform:translateX(3%)}}
 
-/* ── 兩側 ── */
+/* ── 兩側：角色站在桌後（左女傑、右怪物） ── */
 #scr-battle .battle-stage .bs-side{
-  position:relative;z-index:1;height:100%;min-height:0;
-  background:none;box-shadow:none;border-radius:0;
+  position:absolute;z-index:4;bottom:var(--feet);top:auto;
+  width:44%;height:auto;min-height:0;
+  background:none!important;box-shadow:none;border-radius:0;
   display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
 }
-#scr-battle .battle-stage .bs-hero,#scr-battle .battle-stage .bs-foe{background:none}
+#scr-battle .battle-stage .bs-hero{left:2%}
+#scr-battle .battle-stage .bs-foe{right:2%}
+/* 腳下柔影，讓角色「站」在場景裡 */
+#scr-battle .battle-stage .bs-side::after{
+  content:"";position:absolute;left:50%;bottom:-4px;width:58%;height:10px;margin-left:-29%;z-index:-1;
+  border-radius:50%;background:radial-gradient(ellipse at 50% 50%,rgba(70,60,50,.32),rgba(70,60,50,0) 70%);
+}
 
 #scr-battle .bs-sprite{
   flex:none;background-repeat:no-repeat;background-position:50% 100%;background-size:contain;
-  image-rendering:pixelated;image-rendering:crisp-edges;
+  image-rendering:auto; /* 256px 素材縮到 ~110px：平滑縮放勝過 pixelated 掉點 */
   transform-origin:50% 100%;will-change:transform;
-  filter:drop-shadow(0 2px 0 rgba(0,0,0,.55));
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.55)) drop-shadow(0 2px 3px rgba(60,40,50,.25));
 }
 #scr-battle .bs-hero-sprite{
-  width:var(--hero-sz);height:var(--hero-sz);max-height:calc(100% - 12px);aspect-ratio:1;
+  width:var(--hero-sz);height:var(--hero-sz);max-height:none;aspect-ratio:1;
   animation:bs-bob 1s steps(2,end) infinite;
 }
 #scr-battle .bs-name{
-  flex:none;font-size:10px;line-height:12px;letter-spacing:1px;white-space:nowrap;
-  color:#f3e2b0;text-shadow:0 1px 0 #000,0 0 4px rgba(0,0,0,.8);
+  position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);
+  flex:none;font-size:10px;line-height:14px;letter-spacing:1px;white-space:nowrap;
+  padding:0 8px;border-radius:2px;
+  color:#4a3550;background:rgba(255,252,244,.72);box-shadow:inset 0 0 0 1px rgba(120,96,140,.25);
   max-width:100%;overflow:hidden;text-overflow:ellipsis;
 }
 
 #scr-battle .bs-foe-sprite{
-  width:var(--foe-sz);height:var(--foe-sz);max-height:calc(100% - 16px);aspect-ratio:1;
+  width:var(--foe-sz);height:var(--foe-sz);max-height:none;aspect-ratio:1;
   transform:scaleX(1);
   animation:bs-bob 1.2s steps(2,end) infinite;
 }
 #scr-battle .bs-foe-sprite[data-kind="boss"]{width:var(--boss-sz);height:var(--boss-sz)}
 
-.battle-stage .foe-meta{
-  flex:none;width:100%;max-width:92px;display:flex;flex-direction:column;align-items:stretch;gap:1px;
-  margin-bottom:1px;
+/* 怪物名＋HP：細亮條 */
+#scr-battle .battle-stage .foe-meta{
+  flex:none;width:100%;max-width:104px;display:flex;flex-direction:column;align-items:stretch;gap:2px;
+  margin-bottom:4px;
 }
-.battle-stage .foe-name{
-  font-size:9px;line-height:11px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  color:#ffd9a0;text-shadow:0 1px 0 #000;
+#scr-battle .battle-stage .foe-name{
+  font-size:10px;line-height:13px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:#4a3550;text-shadow:0 0 3px rgba(255,255,255,.9),0 0 1px #fff;
 }
 #scr-battle .battle-stage .foe-hp{
   position:relative;left:auto;right:auto;top:auto;
-  height:6px;border-radius:3px;overflow:hidden;
-  background:#1a0a0e;box-shadow:inset 0 0 0 1px rgba(232,194,106,.55),0 1px 0 #000;
+  height:5px;border-radius:0;overflow:hidden;
+  background:rgba(255,252,244,.7);box-shadow:inset 0 0 0 1px rgba(120,96,140,.4),0 1px 2px rgba(60,40,50,.2);
 }
 #scr-battle .battle-stage .foe-hp i{
   display:block;height:100%;width:100%;
-  background:linear-gradient(90deg,#8e1028 0%,#d4243e 45%,#e8c26a 100%);
-  box-shadow:inset 0 1px 0 rgba(255,241,194,.45);
+  background:linear-gradient(90deg,#c0485e 0%,#e07a8a 60%,#f2c48a 100%);
+  box-shadow:none;
   transition:width .28s cubic-bezier(.2,.8,.2,1);
 }
-#scr-battle .battle-stage .foe-hp.low i{background:linear-gradient(90deg,#5a0614,#d4243e)}
-#scr-battle .battle-stage.is-boss .foe-meta{max-width:110px}
-#scr-battle .battle-stage.is-boss .foe-name{color:#ff8a9a;font-weight:700}
+#scr-battle .battle-stage .foe-hp.low i{background:linear-gradient(90deg,#a8283e,#e0526a)}
+#scr-battle .battle-stage.is-boss .foe-meta{max-width:128px}
+#scr-battle .battle-stage.is-boss .foe-name{color:#8e2440;font-weight:700}
 
 /* ── 中央特效欄 ── */
-#scr-battle .bs-fx{position:relative;z-index:2;align-self:stretch;height:100%;overflow:hidden;pointer-events:none}
+#scr-battle .bs-fx{position:absolute;z-index:2;left:26%;right:26%;bottom:calc(var(--feet) + 24px);height:96px;
+  overflow:visible;pointer-events:none}
 
 /* 投射物 */
 .battle-stage .bs-proj{
@@ -198,29 +208,29 @@
 #scr-battle.bs-hitstop .battle-stage *,
 #scr-battle.bs-hitstop .battle-stage *::before{animation-play-state:paused!important;pointer-events:none}
 
-/* ── 尺寸：矮機只縮不藏 ── */
+/* ── 尺寸 ── */
 @media (max-height:760px){
-  #scr-battle .battle-stage{--stage-h:88px;--hero-sz:56px;--foe-sz:52px;--boss-sz:66px}
+  #scr-battle .battle-stage{--hero-sz:clamp(84px,26vw,104px);--foe-sz:clamp(76px,22vw,88px);--boss-sz:clamp(96px,28vw,116px)}
 }
-@media (max-height:700px){
-  #scr-battle .battle-stage{--stage-h:80px;--hero-sz:52px;--foe-sz:48px;--boss-sz:60px;min-height:72px;max-height:88px;margin-bottom:4px}
+@media (max-height:680px){
+  #scr-battle .battle-stage{--hero-sz:76px;--foe-sz:68px;--boss-sz:88px;--feet:64%}
+  #scr-battle .bs-name{display:none}
 }
-@media (max-height:620px){
-  #scr-battle .battle-stage{--stage-h:68px;--hero-sz:44px;--foe-sz:42px;--boss-sz:50px;min-height:64px;padding:2px 8px 3px}
-  #scr-battle .bs-name{font-size:9px;line-height:10px}
-  .battle-stage .foe-name{display:none}
+@media (max-height:600px){
+  #scr-battle .battle-stage{--hero-sz:60px;--foe-sz:56px;--boss-sz:70px}
+  #scr-battle .battle-stage .foe-name{display:none}
 }
+/* 橫向矮屏：牌面優先，只留背景與 HP */
 @media (orientation:landscape) and (max-height:430px){
-  #scr-battle .battle-stage{--stage-h:64px;--hero-sz:42px;--foe-sz:40px;--boss-sz:48px;min-height:64px;max-height:64px;padding:2px 8px}
-  #scr-battle .bs-name,.battle-stage .foe-name{display:none}
+  #scr-battle .bs-sprite,#scr-battle .bs-name,#scr-battle .battle-stage .foe-name{display:none}
+  #scr-battle .battle-stage .bs-foe{top:4px;bottom:auto;width:30%}
 }
 @media (min-height:880px){
-  #scr-battle .battle-stage{--stage-h:108px;--hero-sz:64px;--foe-sz:60px;--boss-sz:84px}
+  #scr-battle .battle-stage{--hero-sz:124px;--foe-sz:104px;--boss-sz:140px}
 }
 
 /* ── 減少動態 ── */
 @media (prefers-reduced-motion:reduce){
-  #scr-battle .bs-bg,
   #scr-battle .bs-hero-sprite,
   #scr-battle .bs-foe-sprite,
   #scr-battle .battle-stage.is-shake,

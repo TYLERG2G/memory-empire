@@ -117,6 +117,28 @@
     node.style.backgroundPosition = 'center bottom';
   }
 
+  /** 左下斜切頭像：assets/battle/ui/{id}_portrait.png，缺圖退回 assets/heroines/{id}-sm.webp */
+  function setPortrait(id) {
+    var img = screenEl && $('.bs-portrait', screenEl);
+    if (!img) return;
+    img.onerror = function () {
+      img.onerror = null;
+      img.src = 'assets/heroines/' + id + '-sm.webp';
+    };
+    img.src = 'assets/battle/ui/' + id + '_portrait.png';
+  }
+  /** 怪物受擊換幀（有 hitUrl 且未被 setFoeArt 覆寫時） */
+  function foeHitFrame(ms) {
+    var n = els.foeSprite;
+    if (!n || !state || state.foeArt || !state.foeHitUrl) return;
+    var st = state;
+    n.style.backgroundImage = 'url("' + st.foeHitUrl + '")';
+    later(function () {
+      if (state !== st || !els.foeSprite || st.hp <= 0) return; // 擊倒時保留受擊幀直到淡出
+      els.foeSprite.style.backgroundImage = 'url("' + st.foeUrl + '")';
+    }, ms);
+  }
+
   function setHeroPose(pose) {
     var node = els.heroSprite;
     if (!node) return;
@@ -285,9 +307,19 @@
       setHeroPose('idle');
     }
     if (els.heroName) els.heroName.textContent = h.name || hid;
+    setPortrait(hid);
     var mk = monsterKey(chapter, boss, state.stageN);
     if (els.foeSprite) {
       var url = 'assets/battle/monsters/' + mk + '.png';
+      state.foeUrl = url;
+      state.foeHitUrl = null;
+      // 受擊幀（目前僅 chN_mob_a 有 chN_mob_hit.png）；預載成功才啟用
+      if (/_mob_a$/.test(mk)) {
+        var hitUrl = 'assets/battle/monsters/' + mk.replace(/_mob_a$/, '_mob_hit') + '.png';
+        var st = state, himg = new Image();
+        himg.onload = function () { if (state === st) st.foeHitUrl = hitUrl; };
+        himg.src = hitUrl;
+      }
       els.foeSprite.style.backgroundImage = 'url("' + url + '")';
       els.foeSprite.setAttribute('data-kind', boss ? 'boss' : 'mob');
       clearFoeAnim();
@@ -334,6 +366,7 @@
       if (!state || seq !== matchSeq) return;
       setFoeAnim(strong ? 'is-hit-lg' : 'is-hit', strong ? 320 : 240);
       state.hp = Math.max(0, state.hp - dmg);
+      foeHitFrame(strong ? 320 : 240);
       updateHp();
       spawnDmg(dmg, strong);
       if (strong) hitstop(combo >= 5 ? 70 : 45);
