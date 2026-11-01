@@ -1076,9 +1076,11 @@
     });
 
     var favNames = (h.favGifts || []).map(function (gid) {
-      for (var i = 0; i < shopGifts.length; i++) if (shopGifts[i].id === gid) return shopGifts[i].icon + shopGifts[i].name;
+      for (var i = 0; i < shopGifts.length; i++) if (shopGifts[i].id === gid) {
+        return '<span class="fav-gift-chip">' + itemIcoLocal(shopGifts[i], 'item-ico-xs') + '<span>' + esc(shopGifts[i].name) + '</span></span>';
+      }
       return '';
-    }).filter(Boolean).join('、');
+    }).filter(Boolean).join('');
 
     var overlay = $('heroine-gift-overlay');
     if (!overlay) {
@@ -1105,7 +1107,7 @@
         '<button type="button" class="ho-close" id="hg-gift-close" aria-label="關閉">✕</button>' +
         '<h3 style="color:var(--h-gold-bright);margin-bottom:4px">🎁 致贈心意予 ' + esc(h.name) + '</h3>' +
         '<p class="muted small">今日已贈 <b>' + used + '/' + cap + '</b> · 持有金幣 <b style="color:var(--h-gold-bright)">🪙' + gold + '</b>' +
-          (favNames ? '<br>鍾愛之物：<span style="color:#ff9eb5">' + esc(favNames) + '</span>' : '') + '</p>' +
+          (favNames ? '<br>鍾愛之物：<span class="fav-gift-row">' + favNames + '</span>' : '') + '</p>' +
         '<div class="gift-grid">' + cardsHtml + '</div>' +
         '<div class="btn-row" style="margin-top:8px">' +
           '<button type="button" class="btn secondary btn-sm" id="hg-goto-shop">🛒 前往帝國商會</button>' +
