@@ -1,5 +1,5 @@
-/* 記憶帝國：女傑翻牌 — Service Worker v4f（battle-stage） */
-const CACHE = 'MEMORY_RPG_v4f';
+/* 記憶帝國：女傑翻牌 — Service Worker v4f2（stage clip+swap） */
+const CACHE = 'MEMORY_RPG_v4f2';
 // 核心殼層：缺一即安裝失敗
 const CORE = [
   './',
@@ -48,7 +48,59 @@ const OPTIONAL = [
   './assets/battle/bg/ch1.png',
   './assets/battle/monsters/ch1_mob_a.png',
   './assets/battle/monsters/default_mob.png',
-  './assets/battle/monsters/default_boss.png'
+  './assets/battle/monsters/default_boss.png',
+  './assets/battle/bg/ch1@3x.png',
+  './assets/battle/bg/ch2.png',
+  './assets/battle/bg/ch2@3x.png',
+  './assets/battle/bg/ch3.png',
+  './assets/battle/bg/ch3@3x.png',
+  './assets/battle/bg/ch4.png',
+  './assets/battle/bg/ch4@3x.png',
+  './assets/battle/bg/ch5.png',
+  './assets/battle/bg/ch5@3x.png',
+  './assets/battle/heroines/elys_attack.png',
+  './assets/battle/heroines/elys_hit.png',
+  './assets/battle/heroines/elys_idle0.png',
+  './assets/battle/heroines/elys_idle1.png',
+  './assets/battle/heroines/elys_victory.png',
+  './assets/battle/heroines/karena_attack.png',
+  './assets/battle/heroines/karena_hit.png',
+  './assets/battle/heroines/karena_idle1.png',
+  './assets/battle/heroines/karena_victory.png',
+  './assets/battle/heroines/reina_attack.png',
+  './assets/battle/heroines/reina_hit.png',
+  './assets/battle/heroines/reina_idle0.png',
+  './assets/battle/heroines/reina_idle1.png',
+  './assets/battle/heroines/reina_victory.png',
+  './assets/battle/heroines/selas_attack.png',
+  './assets/battle/heroines/selas_hit.png',
+  './assets/battle/heroines/selas_idle0.png',
+  './assets/battle/heroines/selas_idle1.png',
+  './assets/battle/heroines/selas_victory.png',
+  './assets/battle/heroines/verda_attack.png',
+  './assets/battle/heroines/verda_hit.png',
+  './assets/battle/heroines/verda_idle1.png',
+  './assets/battle/heroines/verda_victory.png',
+  './assets/battle/monsters/ch1_boss.png',
+  './assets/battle/monsters/ch1_boss@1.5x.png',
+  './assets/battle/monsters/ch1_mob_b.png',
+  './assets/battle/monsters/ch2_boss.png',
+  './assets/battle/monsters/ch2_boss@1.5x.png',
+  './assets/battle/monsters/ch2_mob_a.png',
+  './assets/battle/monsters/ch2_mob_b.png',
+  './assets/battle/monsters/ch3_boss.png',
+  './assets/battle/monsters/ch3_boss@1.5x.png',
+  './assets/battle/monsters/ch3_mob_a.png',
+  './assets/battle/monsters/ch3_mob_b.png',
+  './assets/battle/monsters/ch4_boss.png',
+  './assets/battle/monsters/ch4_boss@1.5x.png',
+  './assets/battle/monsters/ch4_mob_a.png',
+  './assets/battle/monsters/ch4_mob_b.png',
+  './assets/battle/monsters/ch5_boss.png',
+  './assets/battle/monsters/ch5_boss@1.5x.png',
+  './assets/battle/monsters/ch5_mob_a.png',
+  './assets/battle/monsters/ch5_mob_b.png',
+  './assets/battle/monsters/default_boss@1.5x.png'
 ];
 self.addEventListener('install', (e) => {
   e.waitUntil(

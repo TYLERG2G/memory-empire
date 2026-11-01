@@ -12,8 +12,8 @@
   grid-template-columns:1fr minmax(48px,1.3fr) 1fr;
   grid-template-rows:100%;
   align-items:end;gap:4px;
-  border-radius:var(--r-md,12px);overflow:hidden;pointer-events:none;
-  isolation:isolate;contain:layout paint;
+  border-radius:var(--r-md,12px);overflow:hidden!important;pointer-events:none;
+  isolation:isolate;contain:layout paint style;
   background:#120810;
   box-shadow:inset 0 0 0 1px rgba(232,194,106,.30),0 2px 8px rgba(0,0,0,.45);
 }
@@ -95,7 +95,7 @@
 #scr-battle .battle-stage.is-boss .foe-name{color:#ff8a9a;font-weight:700}
 
 /* ── 中央特效欄 ── */
-#scr-battle .bs-fx{position:relative;z-index:2;align-self:stretch;height:100%;overflow:visible}
+#scr-battle .bs-fx{position:relative;z-index:2;align-self:stretch;height:100%;overflow:hidden;pointer-events:none}
 
 /* 投射物 */
 .battle-stage .bs-proj{
@@ -133,7 +133,7 @@
 
 /* 技能閃光 */
 .battle-stage .bs-fx::before{
-  content:"";position:absolute;inset:-20% -40%;opacity:0;pointer-events:none;
+  content:"";position:absolute;inset:0;opacity:0;pointer-events:none;
   background:radial-gradient(ellipse at 50% 60%,var(--k) 0,transparent 65%);
   mix-blend-mode:screen;
 }
@@ -165,10 +165,11 @@
 .battle-stage .bs-hero-sprite[data-pose="victory"]{animation:bs-jump .5s ease-out}
 @keyframes bs-jump{0%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
 
-.battle-stage .bs-foe-sprite.is-hit{animation:bs-hit .24s ease-out}
-.battle-stage .bs-foe-sprite.is-hit-lg{animation:bs-hit-lg .32s ease-out}
-@keyframes bs-hit{0%{filter:brightness(3) saturate(0);transform:translateX(0)}35%{transform:translateX(6px)}100%{filter:none;transform:translateX(0)}}
-@keyframes bs-hit-lg{0%{filter:brightness(4) saturate(0);transform:translateX(0) scale(1.06)}30%{transform:translateX(11px) rotate(4deg)}60%{filter:brightness(1.6) hue-rotate(-20deg)}100%{filter:none;transform:none}}
+.battle-stage .bs-foe-sprite.is-hit{animation:bs-hit .28s ease-out}
+.battle-stage .bs-foe-sprite.is-hit-lg{animation:bs-hit-lg .34s ease-out}
+/* 受擊只做輕閃＋位移，禁止漂白到看不見怪物剪影 */
+@keyframes bs-hit{0%{filter:brightness(1.55) drop-shadow(0 0 4px #fff6);transform:translateX(0)}40%{transform:translateX(5px);filter:brightness(1.25)}100%{filter:none;transform:translateX(0)}}
+@keyframes bs-hit-lg{0%{filter:brightness(1.7) drop-shadow(0 0 6px #ffe8a0);transform:translateX(0) scale(1.04)}35%{transform:translateX(8px);filter:brightness(1.35)}100%{filter:none;transform:none}}
 
 .battle-stage .bs-foe-sprite.is-attack{animation:bs-foe-atk .32s ease-in-out}
 @keyframes bs-foe-atk{0%{transform:none}25%{transform:translateX(4px) rotate(4deg)}55%{transform:translateX(-16px) rotate(-7deg)}100%{transform:none}}
