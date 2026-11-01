@@ -36,7 +36,7 @@
   function pick(arr) { return arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : null; }
   function setText(id, t) { var el = $(id); if (el) el.textContent = t; }
   function warn() { if (window.console && console.warn) console.warn.apply(console, arguments); }
-  function hasFn(obj, name) { return !!obj && typeof obj[name] === 'function'; }
+  function hasFn(obj, name) { try { return !!obj && typeof obj[name] === 'function'; } catch (e) { return false; } }
   /** 依序嘗試 obj 上的方法名稱；成功回傳 {v}，全部不存在或拋錯回傳 null */
   function tryCall(obj, names, args) {
     if (!obj) return null;
@@ -1092,7 +1092,7 @@
     later(function () {
       idxs.forEach(function (k) {
         var c = b.cards[k];
-        if (c && !c.matched) { c.open = false; var el = cardEl(k); if (el) { el.classList.remove('fogged'); el.classList.add('shake'); } syncCard(k); }
+        safeRun(function () { if (c && !c.matched) { c.open = false; var el = cardEl(k); if (el) { el.classList.remove('fogged'); el.classList.add('shake'); } syncCard(k); } });
       });
       // 錯位洗牌機制已停用（太難）
       b.lock = false;
@@ -1279,14 +1279,31 @@
         recordEndless(r.endlessTotal, cfg.round - 1);
       }
     }
-    r.gold = addGold(r.gold);
-    r.ups = addXp(r.xp);
-    checkAchievements();
-    save();
-    Snd.duck(true);
-    if (win) { Snd.play('clear'); vibe([20, 40, 20, 40, 60]); Fx.burst($('board'), 'clear'); Fx.flash('gold'); cheer('win'); }
-    else { Snd.play('fail'); vibe([80]); Fx.flash('crimson'); cheer('lose'); }
-    setTimeout(function () { showResult(r); }, win ? 650 : 500);
+    // 先排定結算畫面，再跑音效／特效：任何特效在 iOS Safari 拋錯都不能讓畫面卡死在戰鬥中
+    var resultShown = false;
+    var toResult = function () { if (resultShown) return; resultShown = true; showResult(r); };
+    setTimeout(toResult, win ? 650 : 500);
+    setTimeout(toResult, 2500); // 保險：主計時器若被吃掉，2.5 秒後一定進結算
+    safeRun(function () { r.gold = addGold(r.gold); });
+    safeRun(function () { r.ups = addXp(r.xp); });
+    safeRun(checkAchievements);
+    safeRun(save);
+    safeRun(function () { Snd.duck(true); });
+    if (win) {
+      safeRun(function () { Snd.play('clear'); });
+      safeRun(function () { vibe([20, 40, 20, 40, 60]); });
+      safeRun(function () { Fx.burst($('board'), 'clear'); Fx.flash('gold'); });
+      safeRun(function () { cheer('win'); });
+    } else {
+      safeRun(function () { Snd.play('fail'); });
+      safeRun(function () { vibe([80]); });
+      safeRun(function () { Fx.flash('crimson'); });
+      safeRun(function () { cheer('lose'); });
+    }
+  }
+
+  function safeRun(fn) {
+    try { return fn(); } catch (e) { if (window.console) console.error('[game] 非致命錯誤', e); }
   }
 
   function recordEndless(score, rounds) {
@@ -1297,6 +1314,21 @@
   }
 
   function showResult(r) {
+    try { showResultInner(r); }
+    catch (e) {
+      if (window.console) console.error('[game] 結算畫面錯誤，改用簡易結算', e);
+      safeRun(function () {
+        $('r-box').innerHTML = '<h2 class="scr-title">' + (r.win ? '勝利' : (r.reason === 'miss' ? '失誤過多' : '時間到')) + '</h2>' +
+          '<div class="overlay-msg">經驗 +' + r.xp + '　金幣 +' + r.gold + '</div>' +
+          '<div class="btn-row"><button class="btn btn-gold" id="r-home">回主城</button></div>';
+      });
+      go('result');
+      var hb = $('r-home');
+      if (hb) hb.onclick = function () { battle = null; safeRun(function () { Snd.duck(false); Snd.bgm('main'); }); go('home'); };
+    }
+  }
+
+  function showResultInner(r) {
     var b = battle;
     var h = b ? b.heroine : heroine(S.selected);
     var head = r.win ? (r.mode === 'endless' ? '第 ' + r.round + ' 輪突破' : r.boss ? '頭目擊破！' : '勝利') :
@@ -1313,12 +1345,12 @@
     if (winLine) html += '<p class="greet-bubble" style="margin-top:10px">' + esc(h.name) + '：' + esc(winLine) + '</p>';
     html += '<div class="btn-row"><button class="btn secondary" id="r-home">回主城</button>';
     if (r.mode === 'campaign') {
-      if (r.win && r.n < CAMPAIGN_STAGES) html += '<button class="btn btn-gold" id="r-next">下一關 體力' + CONFIG.ENERGY_COST + '</button>';
-      else if (!r.win) html += '<button class="btn btn-gold" id="r-retry">再試一次 體力' + CONFIG.ENERGY_COST + '</button>';
+      if (r.win && r.n < CAMPAIGN_STAGES) html += '<button class="btn btn-gold" id="r-next">下一關 ⚡' + CONFIG.ENERGY_COST + '</button>';
+      else if (!r.win) html += '<button class="btn btn-gold" id="r-retry">再試一次 ⚡' + CONFIG.ENERGY_COST + '</button>';
     } else if (r.mode === 'endless' && r.win) {
       html += '<button class="btn btn-gold" id="r-endless">下一輪 →</button>';
     } else if (r.mode === 'endless') {
-      html += '<button class="btn btn-gold" id="r-retry">再挑戰 體力' + CONFIG.ENDLESS_COST + '</button>';
+      html += '<button class="btn btn-gold" id="r-retry">再挑戰 ⚡' + CONFIG.ENDLESS_COST + '</button>';
     } else if (r.mode === 'daily' && !r.win) {
       html += '<button class="btn btn-gold" id="r-retry">再試一次</button>';
     }
@@ -1331,7 +1363,7 @@
         if (k < r.stars) setTimeout(function () { s.classList.add('on'); Snd.play('star'); vibe(10); }, 250 + k * 280);
       });
     }
-    var leave = function () { battle = null; Snd.duck(false); Snd.bgm('main'); };
+    var leave = function () { battle = null; safeRun(function () { Snd.duck(false); Snd.bgm('main'); }); };
     var homeBtn = $('r-home');
     if (homeBtn) homeBtn.onclick = function () {
       Snd.play('tap');
