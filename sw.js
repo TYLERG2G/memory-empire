@@ -1,5 +1,5 @@
-/* 記憶帝國：女傑翻牌 — Service Worker v4h3b home cutout + parchment map + roster cards story/switch WM-training faces+result */
-const CACHE = 'MEMORY_RPG_v4h3b';
+/* 記憶帝國：女傑翻牌 — Service Worker v4h3c SW-fix+home cutout + parchment map + roster cards story/switch WM-training faces+result */
+const CACHE = 'MEMORY_RPG_v4h3c';
 // 核心殼層：缺一即安裝失敗
 const CORE = [
   './',
@@ -156,12 +156,12 @@ const OPTIONAL = [
   './assets/sfx/pop.ogg',
   './assets/sfx/triangle.ogg',
   './assets/sfx/whoosh.ogg',
-  './assets/heroines/verda.webp,
-  ./assets/heroines/cutouts/verda.png,
-  ./assets/heroines/cutouts/karena.png,
-  ./assets/heroines/cutouts/elys.png,
-  ./assets/heroines/cutouts/selas.png,
-  ./assets/heroines/cutouts/reina.png',
+  './assets/heroines/verda.webp',
+  './assets/heroines/cutouts/verda.png',
+  './assets/heroines/cutouts/karena.png',
+  './assets/heroines/cutouts/elys.png',
+  './assets/heroines/cutouts/selas.png',
+  './assets/heroines/cutouts/reina.png',
   './assets/heroines/verda-sm.webp',
   './assets/heroines/karena.webp',
   './assets/heroines/karena-sm.webp',
