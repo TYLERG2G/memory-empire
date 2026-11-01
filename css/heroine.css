@@ -1,0 +1,1214 @@
+/* ==========================================================================
+   記憶帝國：女傑翻牌 — V3 女傑互動、Live2D 風待機、典雅季節服裝與羈絆繪卷樣式
+   File: css/heroine.css
+   內容守則：全原創成年角色、典雅端莊服裝（常服／披風／禮服／長裙洋裝／祭典浴衣等），絕無暴露內容。
+   ========================================================================== */
+
+:root {
+  --h-crimson: #d4243e;
+  --h-crimson-deep: #5c0c1b;
+  --h-gold: #e8c26a;
+  --h-gold-bright: #ffdf8e;
+  --h-gold-dim: #9c7a2e;
+  --h-void: #0d0408;
+  --h-panel: #260e17;
+  --h-panel-hi: #381523;
+  --h-rose: #ff6b8b;
+  --h-accent: #c58aff;
+  --h-accent-soft: rgba(197, 138, 255, 0.28);
+  --h-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --h-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── 各女傑主題色變數 ── */
+[data-hero="verda"] {
+  --h-accent: #b57cff;
+  --h-accent-soft: rgba(181, 124, 255, 0.3);
+}
+[data-hero="karena"] {
+  --h-accent: #ff5e47;
+  --h-accent-soft: rgba(255, 94, 71, 0.3);
+}
+[data-hero="elys"] {
+  --h-accent: #64ccff;
+  --h-accent-soft: rgba(100, 204, 255, 0.3);
+}
+[data-hero="selas"] {
+  --h-accent: #82db92;
+  --h-accent-soft: rgba(130, 219, 146, 0.28);
+}
+[data-hero="reina"] {
+  --h-accent: #ffd257;
+  --h-accent-soft: rgba(255, 210, 87, 0.32);
+}
+
+/* 確保彈窗與提示顯示於女傑鑑賞面板（z-index:70）之上 */
+#app > #modal {
+  z-index: 78;
+}
+#app > #toasts {
+  z-index: 94;
+}
+
+/* ==========================================================================
+   1. Live2D 風待機舞台（呼吸、眨眼微光、三層視差、環境微粒）
+   適用於主城 #home-hero-stage 與鑑賞室 .hg-art-wrap
+   ========================================================================== */
+
+#app .hero-stage,
+#hero-gallery .hg-art-wrap {
+  --hx: 0px;
+  --hy: 0px;
+  --hrx: 0deg;
+  --hry: 0deg;
+  perspective: 720px;
+  isolation: isolate;
+}
+
+#app .hero-stage {
+  border-color: var(--h-gold-dim);
+  box-shadow:
+    0 0 0 3px rgba(13, 4, 8, 0.72),
+    0 12px 32px rgba(0, 0, 0, 0.82),
+    0 0 26px var(--h-accent-soft),
+    inset 0 0 42px rgba(0, 0, 0, 0.85);
+  transition: box-shadow 0.4s ease, border-color 0.35s ease;
+}
+
+/* 後景光暈層（反向視差） */
+.hero-aura-layer {
+  position: absolute;
+  inset: -8%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 28%, var(--h-accent-soft) 0%, transparent 62%),
+    radial-gradient(ellipse at 50% 85%, rgba(232, 194, 106, 0.14) 0%, transparent 65%);
+  transform: translate3d(calc(var(--hx) * -0.55), calc(var(--hy) * -0.55), 0);
+  transition: transform 0.18s ease-out, opacity 0.4s ease;
+  animation: heroineAuraPulse 5.4s ease-in-out infinite;
+}
+
+@keyframes heroineAuraPulse {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
+/* 立繪本體：自然呼吸 + 輕微視差傾角 */
+#app .hero-stage > img,
+#hero-gallery .hg-art {
+  position: relative;
+  z-index: 1;
+  transform-origin: 50% 92%;
+  will-change: transform, filter;
+  animation: heroineLiveBreathe 5.4s ease-in-out infinite;
+  transform:
+    translate3d(var(--hx), var(--hy), 0)
+    rotateX(var(--hrx))
+    rotateY(var(--hry))
+    scale(1.018);
+  transition:
+    filter 0.38s ease,
+    box-shadow 0.38s ease,
+    transform 0.22s ease-out;
+}
+
+#hero-gallery .hg-art.zoomed {
+  animation: none !important;
+  transform: scale(1.42) translateY(2%) !important;
+  cursor: zoom-out;
+}
+
+/* 眨眼瞬間的微點頭與柔和呼吸節律 */
+#app .hero-stage.is-blinking > img,
+#hero-gallery .hg-art-wrap.is-blinking .hg-art:not(.zoomed) {
+  filter: brightness(0.985);
+}
+
+@keyframes heroineLiveBreathe {
+  0%, 100% {
+    transform:
+      translate3d(var(--hx), var(--hy), 0)
+      rotateX(var(--hrx))
+      rotateY(var(--hry))
+      scale3d(1.016, 1.016, 1);
+  }
+  48% {
+    transform:
+      translate3d(var(--hx), calc(var(--hy) - 2.2px), 0)
+      rotateX(var(--hrx))
+      rotateY(var(--hry))
+      scale3d(1.026, 1.031, 1);
+  }
+}
+
+/* 眨眼與眼神高光層（依立繪比例投射眼部微光與柔和眨眼陰影） */
+.hero-blink-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  transform: translate3d(var(--hx), var(--hy), 0);
+  transition: transform 0.2s ease-out;
+}
+
+.hero-eye-node {
+  position: absolute;
+  width: 24px;
+  height: 13px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* 眼眸星芒高光（待機時微閃） */
+.hero-eye-node::before {
+  content: "";
+  position: absolute;
+  left: 52%;
+  top: 44%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255, 250, 235, 0.85) 0%, var(--h-accent) 48%, transparent 78%);
+  opacity: 0.45;
+  animation: heroineEyeGlint 3.8s ease-in-out infinite;
+}
+
+/* 柔和羽化眼瞼遮罩（眨眼時極短暫閉合 140ms） */
+.hero-eye-node::after {
+  content: "";
+  position: absolute;
+  inset: -2px -4px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 48%,
+    rgba(28, 14, 20, 0.76) 0%,
+    rgba(42, 22, 28, 0.42) 52%,
+    transparent 82%
+  );
+  opacity: 0;
+  transform: scaleY(0.12);
+  transform-origin: 50% 42%;
+  transition: opacity 0.055s ease, transform 0.065s ease;
+}
+
+.is-blinking .hero-eye-node::before {
+  opacity: 0 !important;
+}
+
+.is-blinking .hero-eye-node::after {
+  opacity: 0.92;
+  transform: scaleY(1);
+}
+
+@keyframes heroineEyeGlint {
+  0%, 100% { opacity: 0.28; transform: translate(-50%, -50%) scale(0.88); }
+  50% { opacity: 0.68; transform: translate(-50%, -50%) scale(1.16); }
+}
+
+/* 前景漂浮光塵層（正向加強視差） */
+.hero-motes-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  transform: translate3d(calc(var(--hx) * 1.35), calc(var(--hy) * 1.35), 0);
+  transition: transform 0.16s ease-out;
+}
+
+.hero-mote {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff7dd 0%, var(--h-gold-bright) 48%, transparent 76%);
+  box-shadow: 0 0 8px var(--h-accent);
+  opacity: 0;
+  animation: heroineMoteFloat var(--mote-dur, 6.5s) ease-in-out var(--mote-delay, 0s) infinite;
+}
+
+@keyframes heroineMoteFloat {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.55);
+  }
+  25% {
+    opacity: 0.72;
+  }
+  75% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--mote-drift, 12px), -48px, 0) scale(1.05);
+  }
+}
+
+/* ==========================================================================
+   2. 典雅服裝與季節造型 CSS（絕無暴露，以光影色調、禮裝紋飾、氛圍濾鏡呈現）
+   ========================================================================== */
+
+/* 常服 (default) */
+#app img.outfit-default {
+  filter: contrast(1.02) saturate(1.03);
+}
+
+/* 夜宴披風 (cape) — 紫夜絲絨與星輝銀邊 */
+#app img.outfit-cape {
+  filter: saturate(1.12) contrast(1.07) brightness(0.98) hue-rotate(-8deg);
+}
+#app .hero-stage[data-outfit="cape"],
+#hero-gallery .hg-art-wrap[data-outfit="cape"] {
+  box-shadow:
+    inset 0 0 65px rgba(108, 44, 188, 0.46),
+    0 0 24px rgba(155, 89, 255, 0.28);
+}
+#app .hero-stage[data-outfit="cape"]::after,
+#hero-gallery .hg-art-wrap[data-outfit="cape"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(168, 108, 255, 0.24) 0%, transparent 58%),
+    linear-gradient(180deg, transparent 60%, rgba(44, 14, 78, 0.36) 100%);
+  box-shadow: inset 0 0 0 2px rgba(197, 155, 255, 0.45);
+}
+
+/* 帝國禮服 (formal) — 皇室金箔與水晶吊燈柔光 */
+#app img.outfit-formal {
+  filter: saturate(1.16) brightness(1.06) contrast(1.04);
+}
+#app .hero-stage[data-outfit="formal"],
+#hero-gallery .hg-art-wrap[data-outfit="formal"] {
+  box-shadow:
+    inset 0 0 64px rgba(255, 218, 128, 0.36),
+    0 0 28px rgba(232, 194, 106, 0.35);
+}
+#app .hero-stage[data-outfit="formal"]::after,
+#hero-gallery .hg-art-wrap[data-outfit="formal"]::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  z-index: 2;
+  pointer-events: none;
+  border: 1px solid rgba(255, 232, 166, 0.62);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(255, 240, 194, 0.26) 0%, transparent 52%),
+    linear-gradient(125deg, rgba(255, 235, 175, 0.14) 0%, transparent 42%, rgba(255, 215, 115, 0.14) 100%);
+  box-shadow: inset 0 0 22px rgba(232, 194, 106, 0.28);
+}
+
+/* 夏日洋裝 (summer) — 長裙款連身洋裝、午後暖陽微風光暈 */
+#app img.outfit-summer {
+  filter: saturate(1.18) brightness(1.08) sepia(0.06) hue-rotate(-9deg);
+}
+#app .hero-stage[data-outfit="summer"],
+#hero-gallery .hg-art-wrap[data-outfit="summer"] {
+  box-shadow:
+    inset 0 0 64px rgba(255, 214, 122, 0.34),
+    0 0 24px rgba(255, 204, 112, 0.26);
+}
+#app .hero-stage[data-outfit="summer"]::after,
+#hero-gallery .hg-art-wrap[data-outfit="summer"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 246, 208, 0.34) 0%, rgba(255, 210, 125, 0.12) 36%, transparent 64%),
+    linear-gradient(180deg, transparent 58%, rgba(120, 206, 245, 0.16) 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 238, 190, 0.46);
+}
+
+/* 祭典浴衣 (yukata) — 星祭長街靛藍夜色與暖燈籠光 */
+#app img.outfit-yukata {
+  filter: saturate(1.14) contrast(1.04) sepia(0.09) hue-rotate(5deg);
+}
+#app .hero-stage[data-outfit="yukata"],
+#hero-gallery .hg-art-wrap[data-outfit="yukata"] {
+  box-shadow:
+    inset 0 0 64px rgba(90, 122, 255, 0.34),
+    0 0 24px rgba(255, 166, 77, 0.24);
+}
+#app .hero-stage[data-outfit="yukata"]::after,
+#hero-gallery .hg-art-wrap[data-outfit="yukata"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 4%, rgba(88, 128, 255, 0.28) 0%, transparent 55%),
+    radial-gradient(circle at 82% 86%, rgba(255, 158, 68, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 16% 88%, rgba(255, 132, 84, 0.24) 0%, transparent 46%);
+  box-shadow: inset 0 0 0 2px rgba(164, 186, 255, 0.42);
+}
+
+/* 額外季節端莊禮裝 CSS 類別（春櫻禮裝／秋楓大衣／冬雪披肩） */
+#app img.outfit-spring {
+  filter: saturate(1.12) brightness(1.06) hue-rotate(-4deg);
+}
+#app .hero-stage[data-outfit="spring"]::after,
+#hero-gallery .hg-art-wrap[data-outfit="spring"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(circle at 80% 14%, rgba(255, 182, 206, 0.28), transparent 58%);
+  box-shadow: inset 0 0 0 2px rgba(255, 196, 214, 0.42);
+}
+
+#app img.outfit-autumn {
+  filter: saturate(1.1) sepia(0.14) contrast(1.04);
+}
+#app .hero-stage[data-outfit="autumn"]::after,
+#hero-gallery .hg-art-wrap[data-outfit="autumn"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(165deg, rgba(235, 142, 66, 0.2), transparent 55%);
+  box-shadow: inset 0 0 0 2px rgba(232, 162, 98, 0.42);
+}
+
+#app img.outfit-winter {
+  filter: saturate(0.96) brightness(1.06) contrast(1.05) hue-rotate(8deg);
+}
+#app .hero-stage[data-outfit="winter"]::after,
+#hero-gallery .hg-art-wrap[data-outfit="winter"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 0%, rgba(180, 228, 255, 0.28), transparent 62%);
+  box-shadow: inset 0 0 0 2px rgba(190, 232, 255, 0.44);
+}
+
+/* 服裝名牌徽章（浮於立繪左下） */
+.hg-outfit-badge {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 4;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(16, 6, 11, 0.82);
+  border: 1px solid rgba(232, 194, 106, 0.55);
+  color: var(--h-gold-bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+
+/* 放大檢視按鈕（立繪左上） */
+.hg-zoom-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(10, 4, 8, 0.72);
+  border: 1px solid rgba(232, 194, 106, 0.45);
+  color: var(--h-gold-bright);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+.hg-zoom-btn:active {
+  transform: scale(0.9);
+}
+
+/* ==========================================================================
+   3. 溫馨觸碰互動區（頭・肩・手）與立繪回饋動畫
+   ========================================================================== */
+
+#hero-gallery .hg-zones {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 31% 31% 38%;
+  z-index: 3;
+}
+
+#hero-gallery .hg-zones.is-disabled {
+  pointer-events: none;
+}
+
+#hero-gallery .hg-zones button {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  background: transparent;
+  border: 0;
+  outline: none;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  #hero-gallery .hg-zones button:hover {
+    background: radial-gradient(circle at 50% 50%, rgba(255, 223, 142, 0.08) 0%, transparent 66%);
+  }
+}
+
+/* 觸碰波紋與溫馨動作提示膠囊 */
+.hg-tap-ripple {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 6;
+  pointer-events: none;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(48, 16, 28, 0.92), rgba(22, 8, 14, 0.92));
+  border: 1px solid var(--h-gold-bright);
+  color: var(--h-gold-bright);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65), 0 0 14px var(--h-accent-soft);
+  animation: heroineTapBadge 0.88s var(--h-ease) forwards;
+}
+
+@keyframes heroineTapBadge {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.68); }
+  22% { opacity: 1; transform: translate(-50%, -55%) scale(1.06); }
+  100% { opacity: 0; transform: translate(-50%, -115%) scale(0.96); }
+}
+
+/* 立繪部位回饋微動態 */
+#hero-gallery .hg-art.is-react-head {
+  animation: heroineReactHead 0.46s var(--h-ease);
+}
+#hero-gallery .hg-art.is-react-shoulder {
+  animation: heroineReactShoulder 0.44s var(--h-spring);
+}
+#hero-gallery .hg-art.is-react-hand {
+  animation: heroineReactHand 0.46s var(--h-spring);
+}
+#hero-gallery .hg-art.is-react-joy {
+  animation: heroineReactJoy 0.62s var(--h-spring);
+}
+
+@keyframes heroineReactHead {
+  0%, 100% { transform: scale(1.018) translateY(0); }
+  35% { transform: scale(1.024) translateY(3px) rotate(-0.7deg); }
+  70% { transform: scale(1.02) translateY(-1px) rotate(0.4deg); }
+}
+@keyframes heroineReactShoulder {
+  0%, 100% { transform: scale(1.018); }
+  38% { transform: scale(1.032) translateY(-3px); }
+}
+@keyframes heroineReactHand {
+  0%, 100% { transform: scale(1.018); }
+  30% { transform: scale(1.036) translateY(-4px) rotate(0.6deg); }
+  65% { transform: scale(1.015) translateY(1px); }
+}
+@keyframes heroineReactJoy {
+  0%, 100% { transform: scale(1.018); filter: brightness(1); }
+  35% { transform: scale(1.045) translateY(-5px); filter: brightness(1.12); }
+  68% { transform: scale(1.022) translateY(-1px); }
+}
+
+/* ==========================================================================
+   4. 女傑鑑賞室資訊區（好感進度條、最愛切換、劇情＆羈絆繪卷列）
+   ========================================================================== */
+
+#hero-gallery .hg-art-wrap {
+  max-height: 44vh;
+}
+
+#hero-gallery .hg-panel {
+  border-color: var(--h-gold-dim);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.9),
+    0 0 32px var(--h-accent-soft);
+}
+
+.hg-head-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hg-fav-btn {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(232, 194, 106, 0.35);
+  color: var(--muted);
+  transition: all 0.2s ease;
+}
+.hg-fav-btn.is-fav {
+  background: rgba(232, 194, 106, 0.18);
+  border-color: var(--h-gold-bright);
+  color: var(--h-gold-bright);
+}
+
+/* 好感度進度條 */
+.hg-bond-meter {
+  flex: 1;
+  height: 6px;
+  max-width: 120px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(232, 194, 106, 0.3);
+  overflow: hidden;
+}
+
+.hg-bond-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d4243e, #ff6b8b, #ffdf8e);
+  box-shadow: 0 0 8px rgba(255, 107, 139, 0.6);
+  transition: width 0.4s var(--h-ease);
+}
+
+#hero-gallery .hg-bubble {
+  border-color: rgba(232, 194, 106, 0.48);
+  background: linear-gradient(155deg, #2e121c, #1d0a11);
+  line-height: 1.55;
+  padding: 10px 13px;
+}
+
+/* 羈絆劇情 ＆ 繪卷回憶橫列 */
+.hg-archive-sec {
+  margin: 4px 0 10px;
+}
+
+.hg-sec-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--h-gold);
+  margin-bottom: 6px;
+}
+
+.hg-sec-head small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.hg-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hg-story-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  background: rgba(0, 0, 0, 0.52);
+  border: 1px solid rgba(232, 194, 106, 0.35);
+  color: var(--text);
+  transition: transform 0.14s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.hg-story-chip:not(:disabled):active {
+  transform: scale(0.95);
+}
+
+.hg-story-chip.is-cg {
+  background: linear-gradient(135deg, rgba(74, 20, 48, 0.78), rgba(28, 10, 22, 0.85));
+  border-color: rgba(255, 174, 201, 0.52);
+  color: #ffe3ec;
+}
+
+.hg-story-chip.is-new {
+  border-color: var(--h-gold-bright);
+  box-shadow: 0 0 12px rgba(255, 223, 142, 0.32);
+}
+
+.hg-story-chip .chip-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--h-gold-bright);
+  box-shadow: 0 0 6px var(--h-gold-bright);
+}
+
+.hg-story-chip.locked {
+  opacity: 0.48;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* 觸碰計數提示 */
+.hg-tap-hint {
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ==========================================================================
+   5. 主城時段問候氣泡與戰鬥助威氣泡增強
+   ========================================================================== */
+
+#app #home-greet.greet-bubble {
+  cursor: pointer;
+  border-color: rgba(232, 194, 106, 0.48);
+  background: linear-gradient(135deg, rgba(36, 13, 22, 0.9), rgba(16, 6, 11, 0.92));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
+  transition: transform 0.15s ease, border-color 0.25s ease;
+}
+#app #home-greet.greet-bubble:active {
+  transform: scale(0.98);
+}
+#app #home-greet.is-pop {
+  animation: heroineGreetPop 0.36s var(--h-ease);
+}
+
+@keyframes heroineGreetPop {
+  0% { opacity: 0.5; transform: translateY(3px) scale(0.97); }
+  60% { opacity: 1; transform: translateY(-1px) scale(1.015); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* 戰鬥女傑頭像與助威氣泡 */
+#app .b-hero {
+  transition: transform 0.25s var(--h-spring), box-shadow 0.25s ease;
+}
+#app .b-hero.is-cheering {
+  transform: scale(1.1);
+  box-shadow: 0 0 16px var(--h-gold-bright), 0 0 24px var(--h-accent-soft);
+}
+
+#app #b-cheer.b-cheer {
+  z-index: 35;
+  left: 64px;
+  bottom: calc(100% + 6px);
+  max-width: min(268px, calc(100vw - 92px));
+  padding: 7px 12px;
+  border-radius: 13px 13px 13px 3px;
+  background: linear-gradient(145deg, rgba(44, 15, 25, 0.95), rgba(18, 6, 12, 0.96));
+  border: 1px solid var(--h-gold);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.72), 0 0 14px rgba(232, 194, 106, 0.28);
+  color: var(--h-gold-bright);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+#app #b-cheer.b-cheer.tone-lowtime,
+#app #b-cheer.b-cheer.tone-miss {
+  border-color: #ff6b81;
+  color: #ffd6dc;
+}
+#app #b-cheer.b-cheer.tone-skill {
+  border-color: #d39eff;
+  color: #f2e2ff;
+}
+
+/* ==========================================================================
+   6. 精品贈禮抽屜／對話劇場／章節序章／全幅羈絆繪卷 (Bond CG Vignette)
+   ========================================================================== */
+
+.heroine-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 79;
+  background: rgba(8, 2, 6, 0.84);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--sat) + 14px) 14px calc(var(--sab) + 14px);
+  animation: fadeIn 0.22s ease;
+}
+
+.heroine-overlay.hidden {
+  display: none !important;
+}
+
+/* 章節劇場層級高於標題淡出層 */
+#story-overlay.heroine-overlay {
+  z-index: 84;
+}
+
+.ho-card {
+  position: relative;
+  width: 100%;
+  max-width: 410px;
+  max-height: 92%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 18px;
+  background: linear-gradient(175deg, #351420 0%, #1c0a12 52%, #12050a 100%);
+  border: 1.5px solid var(--h-gold-dim);
+  box-shadow:
+    0 16px 46px rgba(0, 0, 0, 0.9),
+    inset 0 0 0 1px rgba(255, 223, 142, 0.14);
+  padding: 16px;
+  color: var(--text);
+}
+
+.ho-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(232, 194, 106, 0.45);
+  color: var(--h-gold-bright);
+  font-size: 14px;
+}
+
+/* ── 視覺小說對話與選項舞台 ── */
+.vn-header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-right: 34px;
+  margin-bottom: 12px;
+}
+
+.vn-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+  border: 2px solid var(--h-gold);
+  box-shadow: 0 0 14px var(--h-accent-soft);
+  flex-shrink: 0;
+}
+
+.vn-kicker {
+  font-size: 11px;
+  color: var(--h-gold);
+  letter-spacing: 1.5px;
+}
+
+.vn-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--h-gold-bright);
+  margin-top: 1px;
+}
+
+.vn-intro {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: #dbc6ba;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.36);
+  border-left: 2px solid var(--h-gold-dim);
+  margin-bottom: 10px;
+}
+
+.vn-speech {
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: #fff6ec;
+  padding: 12px 13px;
+  border-radius: 13px;
+  background: linear-gradient(145deg, rgba(64, 20, 34, 0.72), rgba(28, 9, 16, 0.85));
+  border: 1px solid rgba(232, 194, 106, 0.42);
+  margin-bottom: 12px;
+}
+
+.vn-speaker {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--h-gold);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.vn-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vn-choice-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(46, 17, 27, 0.95), rgba(24, 9, 15, 0.95));
+  border: 1px solid rgba(232, 194, 106, 0.4);
+  color: var(--text);
+  font-size: 13.5px;
+  line-height: 1.5;
+  transition: transform 0.12s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.vn-choice-btn:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .vn-choice-btn:hover {
+    border-color: var(--h-gold-bright);
+    background: linear-gradient(135deg, rgba(78, 24, 40, 0.96), rgba(36, 13, 22, 0.96));
+  }
+}
+
+.vn-choice-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(232, 194, 106, 0.18);
+  border: 1px solid var(--h-gold);
+  color: var(--h-gold-bright);
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.vn-reward-pill {
+  text-align: center;
+  margin: 10px 0 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 107, 139, 0.14);
+  border: 1px solid rgba(255, 158, 181, 0.45);
+  color: #ffc2d1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ── 精品贈禮面板 (.gift-grid 強化) ── */
+#app .gift-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 10px 0;
+}
+
+#app .gift-grid .gift-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 10px 8px;
+  border-radius: 12px;
+  background: rgba(12, 4, 8, 0.65);
+  border: 1px solid rgba(232, 194, 106, 0.32);
+  color: var(--text);
+  font-size: 12px;
+  transition: transform 0.12s ease, border-color 0.2s ease;
+}
+
+#app .gift-grid .gift-card.is-owned {
+  border-color: rgba(232, 194, 106, 0.68);
+  background: linear-gradient(160deg, rgba(64, 22, 34, 0.8), rgba(20, 7, 13, 0.88));
+}
+
+#app .gift-grid .gift-card.is-fav {
+  box-shadow: inset 0 0 18px rgba(255, 107, 139, 0.18);
+}
+
+#app .gift-grid .gift-card:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#app .gift-grid .gift-card i {
+  display: block;
+  font-style: normal;
+  font-size: 25px;
+  margin-bottom: 3px;
+}
+
+.gift-fav-tag {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(212, 36, 62, 0.85);
+  color: #fff0f3;
+  font-weight: 700;
+}
+
+.gift-meta {
+  font-size: 11px;
+  color: var(--h-gold-bright);
+  margin-top: 3px;
+}
+
+/* ── 章節散文序章劇場 ── */
+.st-banner {
+  position: relative;
+  height: 128px;
+  margin: -16px -16px 12px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(232, 194, 106, 0.38);
+  background: #0c0407;
+}
+
+.st-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 16%;
+  opacity: 0.56;
+  filter: saturate(1.1) contrast(1.06);
+}
+
+.st-banner-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(13, 4, 8, 0.2) 0%, rgba(28, 10, 18, 0.96) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 12px 16px;
+}
+
+.st-kicker {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--h-gold);
+}
+
+.st-title {
+  font-size: 19px;
+  font-weight: 900;
+  color: var(--h-gold-bright);
+  letter-spacing: 1.5px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+}
+
+.st-prose p {
+  font-size: 14px;
+  line-height: 1.85;
+  color: var(--text);
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.st-quote {
+  margin: 10px 0 14px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(232, 194, 106, 0.08);
+  border: 1px solid rgba(232, 194, 106, 0.28);
+  color: var(--h-gold-bright);
+  font-size: 12.5px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ==========================================================================
+   7. 全幅羈絆繪卷檢視器 (Bond CG Vignette Viewer — 典雅電影感畫框)
+   ========================================================================== */
+
+#heroine-cg-viewer {
+  position: absolute;
+  inset: 0;
+  z-index: 86;
+  background: #080205;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  animation: fadeIn 0.35s ease;
+}
+
+#heroine-cg-viewer.hidden {
+  display: none !important;
+}
+
+.cg-art-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.cg-art-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 10%;
+  animation: heroineCgKenBurns 16s ease-in-out infinite alternate;
+}
+
+@keyframes heroineCgKenBurns {
+  0% { transform: scale(1.03) translate3d(0, 0, 0); }
+  100% { transform: scale(1.1) translate3d(-1.5%, -1%, 0); }
+}
+
+/* 情境氛圍漸層濾鏡（皆為典雅光影） */
+.cg-mood-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 24%, transparent 22%, rgba(10, 3, 7, 0.58) 76%, rgba(8, 2, 5, 0.94) 100%);
+}
+#heroine-cg-viewer[data-mood="amethyst"] .cg-mood-veil {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(168, 102, 255, 0.22), transparent 55%),
+    linear-gradient(180deg, rgba(22, 8, 38, 0.24) 0%, rgba(10, 3, 14, 0.92) 92%);
+}
+#heroine-cg-viewer[data-mood="ember"] .cg-mood-veil {
+  background:
+    radial-gradient(circle at 60% 18%, rgba(255, 128, 72, 0.24), transparent 55%),
+    linear-gradient(180deg, rgba(40, 10, 14, 0.2) 0%, rgba(14, 4, 7, 0.92) 92%);
+}
+#heroine-cg-viewer[data-mood="starlight"] .cg-mood-veil {
+  background:
+    radial-gradient(circle at 50% 14%, rgba(124, 210, 255, 0.24), transparent 56%),
+    linear-gradient(180deg, rgba(12, 22, 42, 0.22) 0%, rgba(8, 6, 16, 0.92) 92%);
+}
+#heroine-cg-viewer[data-mood="frost"] .cg-mood-veil {
+  background:
+    radial-gradient(circle at 46% 16%, rgba(176, 238, 255, 0.22), transparent 56%),
+    linear-gradient(180deg, rgba(14, 26, 34, 0.22) 0%, rgba(7, 10, 14, 0.92) 92%);
+}
+#heroine-cg-viewer[data-mood="dawn"] .cg-mood-veil {
+  background:
+    radial-gradient(circle at 50% 16%, rgba(255, 220, 128, 0.28), transparent 58%),
+    linear-gradient(180deg, rgba(46, 24, 12, 0.18) 0%, rgba(14, 6, 8, 0.92) 92%);
+}
+#heroine-cg-viewer[data-mood="lantern"] .cg-mood-veil {
+  background:
+    radial-gradient(circle at 24% 20%, rgba(92, 126, 255, 0.24), transparent 52%),
+    radial-gradient(circle at 78% 72%, rgba(255, 166, 74, 0.28), transparent 52%),
+    linear-gradient(180deg, rgba(12, 14, 34, 0.2) 0%, rgba(10, 4, 10, 0.92) 94%);
+}
+
+/* 皇室金線畫框 */
+.cg-filigree {
+  position: absolute;
+  inset: calc(var(--sat) + 10px) 10px calc(var(--sab) + 10px);
+  border: 1px solid rgba(232, 194, 106, 0.42);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 3px rgba(10, 3, 7, 0.35), inset 0 0 0 4px rgba(232, 194, 106, 0.18);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cg-top-bar {
+  position: absolute;
+  top: calc(var(--sat) + 18px);
+  left: 18px;
+  right: 18px;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cg-pill-btn {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(12, 4, 8, 0.76);
+  border: 1px solid rgba(232, 194, 106, 0.5);
+  color: var(--h-gold-bright);
+  font-size: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.cg-caption-box {
+  position: relative;
+  z-index: 4;
+  margin: 0 16px calc(var(--sab) + 18px);
+  padding: 15px 16px;
+  border-radius: 16px;
+  background: linear-gradient(170deg, rgba(36, 13, 22, 0.92), rgba(14, 5, 9, 0.95));
+  border: 1px solid rgba(232, 194, 106, 0.55);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.85);
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+#heroine-cg-viewer.is-clean .cg-caption-box {
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+}
+
+.cg-chapter-tag {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--h-gold);
+}
+
+.cg-scene-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--h-gold-bright);
+  margin: 2px 0 8px;
+}
+
+.cg-beat-text {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #f7ece2;
+  min-height: 52px;
+}
+
+.cg-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.cg-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.cg-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(232, 194, 106, 0.28);
+}
+
+.cg-dot.on {
+  width: 18px;
+  border-radius: 999px;
+  background: var(--h-gold-bright);
+}
+
+/* 減少動態偏好支援 */
+@media (prefers-reduced-motion: reduce) {
+  #app .hero-stage > img,
+  #hero-gallery .hg-art,
+  .hero-aura-layer,
+  .hero-mote,
+  .cg-art-img {
+    animation: none !important;
+  }
+}

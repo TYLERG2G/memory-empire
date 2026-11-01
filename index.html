@@ -16,9 +16,123 @@
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-180.png">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/fx.css">
+<link rel="stylesheet" href="css/heroine.css">
+<style id="v3-shell-css">
+/* ── v3 shell（lead）：標題、地圖、商店、星等、頭目、設定滑桿 ── */
+#title-screen{position:absolute;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding:0 24px calc(var(--sab) + 48px);background:#0d0408;overflow:hidden;transition:opacity .6s ease,transform .6s ease}
+#title-screen.leaving{opacity:0;transform:scale(1.04);pointer-events:none}
+#title-screen .ts-art{position:absolute;inset:0;background-size:cover;background-position:center top;opacity:.55;
+  filter:saturate(1.1) contrast(1.05);animation:tsDrift 18s ease-in-out infinite alternate}
+#title-screen .ts-veil{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,transparent 0%,#0d0408cc 60%,#0d0408 92%)}
+#title-screen .ts-logo{position:relative;text-align:center;color:var(--gold2);font-size:40px;letter-spacing:10px;font-weight:900;
+  text-shadow:0 0 24px #e8c26a88,0 3px 0 #6b1020;animation:tsGlow 3s ease-in-out infinite}
+#title-screen .ts-logo span{display:block;font-size:17px;letter-spacing:14px;color:var(--red2);margin-top:6px;text-shadow:none}
+#title-screen .ts-tag{position:relative;color:var(--muted);font-size:13px;letter-spacing:3px;margin:14px 0 30px}
+#title-screen .ts-start{position:relative;min-width:220px;animation:tsPulse 1.8s ease-in-out infinite}
+#title-screen .ts-ver{position:relative;margin-top:18px;color:#7a6058;font-size:11px;letter-spacing:2px}
+@keyframes tsDrift{from{transform:scale(1.06) translateY(0)}to{transform:scale(1.12) translateY(-12px)}}
+@keyframes tsGlow{50%{text-shadow:0 0 36px #ffdf8ecc,0 3px 0 #6b1020}}
+@keyframes tsPulse{50%{transform:scale(1.04);box-shadow:0 0 26px #e8c26a88}}
+.tb-actions{display:flex;gap:6px;align-items:center}
+.tb-btn{width:30px;height:30px;border-radius:50%;background:#0006;border:1px solid #e8c26a44;font-size:15px;display:flex;align-items:center;justify-content:center}
+.tb-btn:active{transform:scale(.9)}
+#nav button{font-size:11px}
+.greet-bubble{position:relative;margin:-4px auto 8px;max-width:92%;padding:8px 14px;border-radius:14px;background:#000a;border:1px solid #e8c26a55;
+  color:var(--text);font-size:13px;line-height:1.5;text-align:center;animation:fadeIn .5s}
+.hero-stage img.breathe{animation:v3Breathe 5.5s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes v3Breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.012) translateY(-1px)}}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.mode-grid .btn{padding:10px 6px;font-size:14px}
+.mode-grid .btn small{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px}
+.btn:active{transform:translateY(1px) scale(.97);filter:brightness(1.15)}
+/* 地圖 */
+.chapter{margin-bottom:14px;padding:12px;border-radius:14px;background:linear-gradient(120deg,var(--panel2),var(--panel));border:1px solid #e8c26a33}
+.chapter.locked{opacity:.45;filter:grayscale(.7)}
+.chapter-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.chapter-head b{color:var(--gold2);font-size:16px;letter-spacing:2px}
+.chapter-head small{color:var(--muted);font-size:11px}
+.nodes{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.node{position:relative;aspect-ratio:1;border-radius:50%;background:#0008;border:2px solid #e8c26a33;color:var(--muted);font-weight:800;font-size:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.node .nstars{font-size:9px;color:var(--gold2);margin-top:2px;letter-spacing:-1px}
+.node.cleared{border-color:var(--gold-d);color:var(--text)}
+.node.current{border-color:var(--gold2);color:var(--gold2);box-shadow:0 0 14px #e8c26a88;animation:tsPulse 1.8s infinite}
+.node.boss{border-radius:12px;background:linear-gradient(#5a0f1e,#1a0a12)}
+.node.boss::before{content:"♛";position:absolute;top:-9px;font-size:13px;color:var(--red2)}
+.node.locked{opacity:.4}
+/* 戰鬥 */
+.boss-tag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:8px;background:var(--red);color:var(--gold2);font-size:11px;vertical-align:middle}
+.board{gap:6px}
+.card.fogged .front .poker-face{filter:blur(7px) grayscale(.6);transition:filter .35s}
+.card.fog-mark .back{box-shadow:inset 0 0 18px #c8d0ff55}
+.joker-face{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(circle,#3a0a1a,#120308);color:#ff5a7a;font-weight:900;font-size:20px}
+.joker-face small{font-size:10px;letter-spacing:2px;color:var(--gold)}
+.btn-skill{position:relative;overflow:hidden}
+.btn-skill .cdfill{position:absolute;left:0;bottom:0;height:100%;background:#0009;pointer-events:none;transition:width .1s linear}
+.btn-skill .lbl{position:relative}
+.b-cheer{position:absolute;left:70px;bottom:calc(100% + 4px);max-width:230px;padding:6px 10px;border-radius:12px;background:#000c;border:1px solid var(--gold);
+  font-size:12px;color:var(--gold2);opacity:0;transform:translateY(6px);transition:.25s;pointer-events:none}
+.b-cheer.show{opacity:1;transform:none}
+.battle-foot{position:relative}
+.board.previewing .card .card-inner{transform:rotateY(180deg)}
+.v3-shake{animation:v3Shake .35s}
+@keyframes v3Shake{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+.v3-particle{position:absolute;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:70;background:var(--gold2);
+  box-shadow:0 0 8px var(--gold2);transition:transform .7s cubic-bezier(.2,.8,.3,1),opacity .7s}
+.v3-combo{position:absolute;left:50%;top:38%;z-index:70;pointer-events:none;font-size:30px;font-weight:900;color:var(--gold2);
+  text-shadow:0 0 16px #ff5a2a,0 2px 0 #6b1020;animation:v3Combo .9s forwards;white-space:nowrap}
+@keyframes v3Combo{0%{opacity:0;transform:translate(-50%,0) scale(.4)}25%{opacity:1;transform:translate(-50%,-10px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-50px) scale(1)}}
+/* 結算星等 */
+.stars{font-size:38px;letter-spacing:6px;margin:6px 0}
+.stars span{display:inline-block;color:#4a3030;transform:scale(.4);opacity:.4;transition:transform .35s cubic-bezier(.3,1.6,.5,1),opacity .3s,color .3s}
+.stars span.on{color:var(--gold2);transform:scale(1);opacity:1;text-shadow:0 0 14px #ffdf8e}
+/* 商店 */
+.tabs{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto}
+.tabs button{flex:1;padding:8px 4px;border-radius:10px;background:#0006;border:1px solid #e8c26a33;color:var(--muted);font-size:13px;white-space:nowrap}
+.tabs button.active{background:linear-gradient(#ffe39a,#d7a743);color:#2a0a12;font-weight:800}
+.shop-item{display:flex;gap:10px;align-items:center;padding:10px;border-radius:12px;background:var(--panel);border:1px solid #e8c26a22;margin-bottom:8px}
+.shop-item .si-ico{font-size:28px;width:40px;text-align:center}
+.shop-item .si-body{flex:1;min-width:0}
+.shop-item .si-body b{color:var(--gold2)}
+.shop-item .owned{font-size:11px;color:var(--gold)}
+/* 設定 */
+.set-row input[type=range]{width:46%;accent-color:var(--gold)}
+.set-row .vol{display:flex;align-items:center;gap:8px;width:62%;justify-content:flex-end}
+/* 名冊 / 技能樹 */
+.tree{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.pips{font-size:10px;color:var(--gold);letter-spacing:1px}
+.lb-row{display:grid;grid-template-columns:28px 1fr auto;gap:8px;padding:6px 4px;border-bottom:1px solid #e8c26a22;text-align:left;font-size:13px}
+.lb-row b{color:var(--gold2)}
+.story-text{text-align:left;line-height:1.9;font-size:15px;letter-spacing:.5px;white-space:pre-wrap}
+.prep-row{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid #e8c26a22;text-align:left}
+/* 備用女傑互動 */
+.hg-zones{position:absolute;inset:0;display:grid;grid-template-rows:28% 30% 42%;z-index:2}
+.hg-zones button{opacity:0}
+.gift-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gift-grid button{padding:8px 4px;border-radius:10px;background:#0006;border:1px solid #e8c26a33;font-size:12px}
+.gift-grid button i{display:block;font-style:normal;font-size:24px}
+img.outfit-summer{filter:saturate(1.15) brightness(1.08) hue-rotate(-8deg)}
+.hero-stage img.outfit-summer,.hg-art.outfit-summer{box-shadow:inset 0 0 60px #ffd27a44}
+img.outfit-yukata{filter:saturate(1.1) sepia(.12)}
+.hero-stage img.outfit-yukata,.hg-art.outfit-yukata{box-shadow:inset 0 0 60px #5a7aff44}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
+</style>
 </head>
 <body>
 <div id="app">
+
+  <!-- 標題 -->
+  <div id="title-screen">
+    <div class="ts-art" style="background-image:url('assets/heroines/verda.webp')"></div>
+    <div class="ts-veil"></div>
+    <div class="ts-logo">記憶帝國<span>女傑翻牌</span></div>
+    <div class="ts-tag">以記憶為劍・與女傑並肩</div>
+    <button id="ts-start" class="btn btn-gold btn-big ts-start">點擊開始</button>
+    <div class="ts-ver" id="ts-ver">v3.0</div>
+  </div>
 
   <!-- 頂部狀態列 -->
   <header id="topbar">
@@ -29,14 +143,18 @@
     <div class="tb-res">
       <span class="res"><i>🪙</i><b id="tb-gold">0</b></span>
       <span class="res energy"><i>⚡</i><b id="tb-energy">10</b>/<span id="tb-emax">10</span><small id="tb-etimer"></small></span>
+      <span class="tb-actions">
+        <button type="button" id="tb-mute" class="tb-btn" aria-label="靜音切換">🔊</button>
+        <button type="button" id="tb-settings" class="tb-btn" aria-label="設定">⚙️</button>
+      </span>
     </div>
   </header>
 
   <main id="screens">
-    <!-- 主畫面 -->
+    <!-- 主城 -->
     <section id="scr-home" class="screen active">
       <h1 class="game-title">記憶帝國<span>女傑翻牌</span></h1>
-      <div class="hero-stage">
+      <div class="hero-stage" id="home-hero-stage">
         <img id="home-hero-img" alt="點擊鑑賞" title="點擊鑑賞" src="assets/heroines/verda.webp" style="cursor:pointer">
         <div class="hero-plate">
           <div id="home-hero-title" class="h-title"></div>
@@ -44,31 +162,45 @@
           <div id="home-hero-skill" class="h-skill"></div>
         </div>
       </div>
+      <div id="home-greet" class="greet-bubble"></div>
       <div class="stage-info">
-        <div>目前關卡 <b id="home-stage">1</b></div>
+        <div><span id="home-chapter"></span> · 第 <b id="home-stage">1</b> 關</div>
         <div class="muted" id="home-stage-detail"></div>
-        <div class="muted">連勝 <b id="home-streak">0</b> · 最高關卡 <b id="home-best">1</b></div>
+        <div class="muted">連續遊玩 <b id="home-streak">0</b> 天 · 星數 <b id="home-stars">0</b></div>
       </div>
-      <button id="btn-fight" class="btn btn-gold btn-big">⚔️ 出戰 <small>（消耗 ⚡1）</small></button>
+      <button id="btn-fight" class="btn btn-gold btn-big">⚔️ 繼續征途 <small>（⚡1）</small></button>
+      <div class="mode-grid">
+        <button id="btn-daily" class="btn">🗓️ 每日挑戰<small id="daily-sub">今日未完成</small></button>
+        <button id="btn-endless" class="btn">♾️ 無盡模式<small id="endless-sub">⚡2</small></button>
+        <button id="btn-map" class="btn">🗺️ 征途地圖<small>選擇關卡</small></button>
+        <button id="btn-board" class="btn">🏆 排行榜<small>無盡紀錄</small></button>
+      </div>
+    </section>
+
+    <!-- 地圖 -->
+    <section id="scr-map" class="screen">
+      <h2 class="scr-title">征途</h2>
+      <div id="map-list"></div>
     </section>
 
     <!-- 戰鬥 -->
     <section id="scr-battle" class="screen">
       <div class="battle-head">
         <button id="btn-pause" class="btn-icon" aria-label="暫停">⏸</button>
-        <div class="bh-stage">第 <b id="b-stage">1</b> 關</div>
+        <div class="bh-stage"><span id="b-stage">第 1 關</span><span id="b-boss" class="boss-tag hidden"></span></div>
         <div class="bh-score">分數 <b id="b-score">0</b></div>
       </div>
       <div class="timebar"><div id="b-timefill" class="timefill"></div><span id="b-time">0</span></div>
       <div class="battle-sub">
         <span>配對 <b id="b-pairs">0/0</b></span>
         <span id="b-combo" class="combo">連擊 x0</span>
-        <span>失誤 <b id="b-miss">0</b></span>
+        <span>失誤 <b id="b-miss">0</b>/<b id="b-misslimit">0</b></span>
       </div>
       <div id="board" class="board"></div>
       <div class="battle-foot">
+        <div id="b-cheer" class="b-cheer"></div>
         <img id="b-hero-img" class="b-hero" alt="">
-        <button id="btn-skill" class="btn btn-skill"></button>
+        <button id="btn-skill" class="btn btn-skill"><span class="cdfill" id="b-cdfill"></span><span class="lbl" id="b-skill-lbl"></span></button>
       </div>
       <div id="b-banner" class="banner hidden"></div>
     </section>
@@ -81,8 +213,20 @@
     <!-- 女傑名冊 -->
     <section id="scr-roster" class="screen">
       <h2 class="scr-title">女傑名冊</h2>
-      <p class="muted center small">點頭像或「互動」可鑑賞與交談</p>
+      <p class="muted center small">點頭像或「互動」可鑑賞、交談與贈禮</p>
       <div id="roster-list" class="roster"></div>
+    </section>
+
+    <!-- 商店 -->
+    <section id="scr-shop" class="screen">
+      <h2 class="scr-title">帝國商會</h2>
+      <div class="tabs" id="shop-tabs">
+        <button data-tab="consumables" class="active">消耗品</button>
+        <button data-tab="relics">遺物</button>
+        <button data-tab="gifts">禮物</button>
+        <button data-tab="outfits">服裝</button>
+      </div>
+      <div id="shop-list"></div>
     </section>
 
     <!-- 成就 -->
@@ -96,32 +240,40 @@
     <section id="scr-settings" class="screen">
       <h2 class="scr-title">設定</h2>
       <div class="set-list">
-        <label class="set-row"><span>🔊 音效</span><input type="checkbox" id="set-sound" class="switch"></label>
+        <div class="set-row"><span>🔔 音效</span><span class="vol"><input type="range" id="set-sfx-vol" min="0" max="1" step="0.05"><input type="checkbox" id="set-sfx" class="switch"></span></div>
+        <div class="set-row"><span>🎼 音樂</span><span class="vol"><input type="range" id="set-bgm-vol" min="0" max="1" step="0.05"><input type="checkbox" id="set-bgm" class="switch"></span></div>
         <label class="set-row"><span>📳 震動回饋</span><input type="checkbox" id="set-vibrate" class="switch"></label>
+        <label class="set-row"><span>💢 失誤震屏</span><input type="checkbox" id="set-shake" class="switch"></label>
         <div class="set-row"><span>📊 統計</span><span id="set-stats" class="muted small"></span></div>
         <div class="set-row"><span>📱 安裝</span><span class="muted small">於瀏覽器選單選擇「加入主畫面」即可離線遊玩</span></div>
         <button id="btn-reset" class="btn btn-danger">重置所有進度</button>
-        <p class="muted small center">記憶帝國：女傑翻牌 v1.1</p>
+        <p class="muted small center" id="set-version">記憶帝國：女傑翻牌 v3.0</p>
       </div>
     </section>
   </main>
 
   <!-- 底部導覽 -->
   <nav id="nav">
-    <button data-go="home" class="active"><i>🏰</i>主畫面</button>
-    <button data-go="roster"><i>👑</i>女傑名冊</button>
+    <button data-go="home" class="active"><i>🏰</i>主城</button>
+    <button data-go="map"><i>🗺️</i>征途</button>
+    <button data-go="roster"><i>👑</i>女傑</button>
+    <button data-go="shop"><i>🛒</i>商會</button>
     <button data-go="ach"><i>🏆</i>成就</button>
-    <button data-go="settings"><i>⚙️</i>設定</button>
   </nav>
 
   <div id="modal" class="modal hidden"><div class="modal-card" id="modal-card"></div></div>
 
-  <!-- 女傑鑑賞／互動 -->
+  <!-- 女傑鑑賞／互動（HeroineUI 缺席時的備用介面） -->
   <div id="hero-gallery" class="hero-gallery hidden">
     <div class="hg-panel">
       <button type="button" id="hg-close" class="hg-close" aria-label="關閉">✕</button>
       <div class="hg-art-wrap">
         <img id="hg-art" class="hg-art" alt="女傑立繪" src="assets/heroines/verda.webp">
+        <div class="hg-zones" id="hg-zones">
+          <button type="button" data-zone="head" aria-label="輕撫頭髮"></button>
+          <button type="button" data-zone="shoulder" aria-label="拍肩鼓勵"></button>
+          <button type="button" data-zone="hand" aria-label="擊掌致意"></button>
+        </div>
         <div class="hg-frame-ornament"></div>
       </div>
       <div class="hg-meta">
@@ -130,20 +282,28 @@
         <div class="hg-bond-row"><span id="hg-hearts" class="bond-hearts"></span><span id="hg-bond-num" class="muted small"></span></div>
         <p id="hg-bio" class="hg-bio muted small"></p>
         <div id="hg-bubble" class="hg-bubble">……</div>
-        <div class="hg-outfit-label">服裝（好感解鎖）</div>
+        <div class="hg-outfit-label">服裝</div>
         <div id="hg-outfits" class="hg-outfits"></div>
         <div class="hg-actions">
           <button type="button" id="hg-talk" class="btn btn-sm">💬 交談</button>
+          <button type="button" id="hg-gift" class="btn btn-sm">🎁 贈禮</button>
           <button type="button" id="hg-select" class="btn btn-sm btn-gold">選為出戰</button>
         </div>
-        <p class="muted small center" style="margin-top:8px">點擊立繪可放大欣賞</p>
+        <p class="muted small center" style="margin-top:8px">輕觸立繪的頭、肩、手可互動</p>
       </div>
     </div>
   </div>
   <div id="toasts"></div>
 </div>
 
+<!-- 模組載入順序：內容 → 資料 → 音效/特效 → 劇情/女傑 → 主程式。缺少任一模組時 game.js 會自動使用備用實作。 -->
+<script src="js/vendor/pixelfx/pixelfx.bundle.js"></script>
+<script src="js/content_zh.js"></script>
 <script src="js/data.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/story.js"></script>
+<script src="js/heroine.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

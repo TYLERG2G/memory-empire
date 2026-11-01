@@ -1,71 +1,401 @@
-/* 記憶帝國：女傑翻牌 — 遊戲邏輯 */
+/* 記憶帝國：女傑翻牌 v3 — 主程式（狀態、存檔遷移、戰鬥、地圖、模式、商店、設定、模組橋接）
+ *
+ * 外部模組皆為「選用」，缺席或拋錯時自動退回內建備用實作：
+ *   window.AudioEngine  音效／音樂     （js/audio.js）
+ *   window.FX           特效／轉場     （js/fx.js）
+ *   window.HeroineUI    女傑互動介面   （js/heroine.js）
+ *   window.StoryUI / window.Story  章節劇情（js/story.js）
+ *   window.CONTENT_ZH   繁中長文本     （js/content_zh.js）
+ * 本檔對外提供 window.GameAPI（給 heroine.js / story.js 使用）與 ?debug=1 時的 window.__DEBUG。
+ * 相容性：ES5 風格，不使用 optional chaining。
+ */
 (function () {
   'use strict';
   var D = window.GAME_DATA;
-  if (!D) { console.error('GAME_DATA missing'); return; }
-  var HEROINES = D.HEROINES, ACHIEVEMENTS = D.ACHIEVEMENTS, CONFIG = D.CONFIG;
-  var pairsFor = D.pairsFor, timeFor = D.timeFor, xpNeed = D.xpNeed, upgradeCost = D.upgradeCost;
-  var skillValue = D.skillValue, skillDesc = D.skillDesc, dealPairs = D.dealPairs, bondTier = D.bondTier;
+  if (!D) { if (window.console) console.error('[game] GAME_DATA missing'); return; }
 
+  var HEROINES = D.HEROINES, ACHIEVEMENTS = D.ACHIEVEMENTS, CONFIG = D.CONFIG, SHOP = D.SHOP;
+  var CHAPTERS = D.CHAPTERS, SPC = D.STAGES_PER_CHAPTER, CAMPAIGN_STAGES = D.CAMPAIGN_STAGES;
+  var BOND_PTS_MAX = CONFIG.BOND_POINTS_MAX || 100, BOND_PER = CONFIG.BOND_PER_LEVEL || 20;
+  var HIDS = HEROINES.map(function (h) { return h.id; });
+
+  /* ════════════════ 小工具 ════════════════ */
   function $(id) { return document.getElementById(id); }
   function qs(sel, root) { return (root || document).querySelector(sel); }
   function qsa(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  function isNum(v) { return typeof v === 'number' && isFinite(v); }
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function dateStr(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function todayStr() { return dateStr(new Date()); }
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function pick(arr) { return arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : null; }
+  function setText(id, t) { var el = $(id); if (el) el.textContent = t; }
+  function warn() { if (window.console && console.warn) console.warn.apply(console, arguments); }
+  function hasFn(obj, name) { return !!obj && typeof obj[name] === 'function'; }
+  /** 依序嘗試 obj 上的方法名稱；成功回傳 {v}，全部不存在或拋錯回傳 null */
+  function tryCall(obj, names, args) {
+    if (!obj) return null;
+    for (var i = 0; i < names.length; i++) {
+      if (hasFn(obj, names[i])) {
+        try { return { v: obj[names[i]].apply(obj, args || []) }; }
+        catch (e) { warn('[game] ' + names[i] + ' failed', e); return null; }
+      }
+    }
+    return null;
+  }
+  function CZ() { return window.CONTENT_ZH || null; }
+  function czGet(path) {
+    var o = CZ();
+    for (var i = 0; o && i < path.length; i++) o = o[path[i]];
+    return o === undefined ? null : o;
+  }
+
+  /* ════════════════ 存檔：預設、遷移、正規化 ════════════════ */
+  function idMap(val) { var o = {}; HIDS.forEach(function (id) { o[id] = typeof val === 'function' ? val(id) : val; }); return o; }
 
   function defaultState() {
     return {
+      v: 3,
       lv: 1, xp: 0, gold: 0,
       energy: CONFIG.ENERGY_MAX, energyMax: CONFIG.ENERGY_MAX, lastEnergyAt: Date.now(),
-      stage: 1, maxStage: 1, streak: 0, bestStreak: 0, lastPlayDate: '',
-      unlocked: { verda: true },
-      skills: { verda: 1, karena: 1, elys: 1, selas: 1, reina: 1 },
-      bond: { verda: 0, karena: 0, elys: 0, selas: 0, reina: 0 },
-      outfit: { verda: 'default', karena: 'default', elys: 'default', selas: 'default', reina: 'default' },
-      talkToday: {},
-      selected: 'verda',
+      stage: 1, maxStage: 1, stars: {},
+      streak: 0, lastPlayDate: '',
+      unlocked: { verda: true }, selected: 'verda',
+      skills: idMap(1), skillCd: idMap(0),
+      bond: idMap(0),                 // 好感點數 0–100
+      outfit: idMap('default'), outfitsOwned: {}, fav: {},
+      inv: {}, relics: {}, events: {}, seenIntro: {}, scenesSeen: {},
+      daily: { date: '', done: false, best: 0 }, dayCounters: { date: '', talk: {}, tap: {}, gift: {} },
+      leaderboard: [],
       achievements: {},
-      sound: false, vibrate: true,
-      stats: { wins: 0, perfects: 0, maxCombo: 0, skillsUsed: 0, goldEarned: 0, bestStreak: 0, clears: 0 }
+      settings: { sfx: true, bgm: true, sfxVol: CONFIG.DEFAULT_SFX_VOL, bgmVol: CONFIG.DEFAULT_BGM_VOL, vibrate: true, shake: true },
+      stats: { wins: 0, losses: 0, plays: 0, perfects: 0, maxCombo: 0, skillsUsed: 0, goldEarned: 0, bestStreak: 0,
+        clears: 0, bossWins: 0, dailyWins: 0, endlessBestRound: 0, endlessBest: 0, purchases: 0, giftsGiven: 0 }
     };
   }
 
-  function load() {
-    try {
-      var raw = localStorage.getItem(CONFIG.SAVE_KEY);
-      if (!raw) {
-        // migrate v1 if present
-        var old = localStorage.getItem('memoryRPG_v1');
-        if (old) {
-          var s0 = Object.assign(defaultState(), JSON.parse(old));
-          return normalize(s0);
-        }
-        return defaultState();
-      }
-      return normalize(Object.assign(defaultState(), JSON.parse(raw)));
-    } catch (e) { return defaultState(); }
+  function mergeMap(base, src, validate) {
+    if (!src || typeof src !== 'object') return base;
+    for (var k in src) if (Object.prototype.hasOwnProperty.call(src, k)) {
+      if (!validate || validate(k, src[k])) base[k] = src[k];
+    }
+    return base;
   }
-  function normalize(s) {
-    s.unlocked = Object.assign({ verda: true }, s.unlocked || {});
-    s.skills = Object.assign(defaultState().skills, s.skills || {});
-    s.bond = Object.assign(defaultState().bond, s.bond || {});
-    s.outfit = Object.assign(defaultState().outfit, s.outfit || {});
-    s.talkToday = s.talkToday || {};
-    s.stats = Object.assign(defaultState().stats, s.stats || {});
-    s.achievements = s.achievements || {};
+  function outfitExists(id) { return D.OUTFITS.some(function (o) { return o.id === id; }); }
+
+  /** 舊版（v1/v2）存檔 → v3 */
+  function migrate(old) {
+    var s = defaultState();
+    ['lv', 'xp', 'gold', 'energy', 'energyMax', 'lastEnergyAt', 'stage', 'maxStage', 'streak'].forEach(function (k) {
+      if (isNum(old[k])) s[k] = old[k];
+    });
+    if (typeof old.lastPlayDate === 'string') s.lastPlayDate = old.lastPlayDate;
+    if (typeof old.selected === 'string' && HIDS.indexOf(old.selected) !== -1) s.selected = old.selected;
+    mergeMap(s.unlocked, old.unlocked, function (k) { return HIDS.indexOf(k) !== -1; });
+    mergeMap(s.skills, old.skills, function (k, v) { return HIDS.indexOf(k) !== -1 && isNum(v); });
+    mergeMap(s.outfit, old.outfit, function (k, v) { return HIDS.indexOf(k) !== -1 && outfitExists(v); });
+    // v2 好感為 0–5 心 → v3 點數
+    HIDS.forEach(function (id) {
+      var b = old.bond ? old.bond[id] : 0;
+      if (isNum(b)) s.bond[id] = b <= CONFIG.BOND_MAX ? b * BOND_PER : b;
+    });
+    mergeMap(s.achievements, old.achievements, function (k) { return ACHIEVEMENTS.some(function (a) { return a.id === k; }); });
+    mergeMap(s.stats, old.stats, function (k, v) { return isNum(v); });
+    if (isNum(old.bestStreak)) s.stats.bestStreak = Math.max(s.stats.bestStreak, old.bestStreak);
+    s.settings.vibrate = old.vibrate !== false;
+    // v2 預設靜音的陷阱：遷移後一律開啟 SFX + BGM
+    s.settings.sfx = true; s.settings.bgm = true;
+    s.migratedFrom = old.v || 'v2';
     return s;
   }
-  function save() { try { localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+
+  function normalize(raw) {
+    var s = defaultState();
+    for (var k in raw) if (Object.prototype.hasOwnProperty.call(raw, k)) {
+      var dv = s[k], rv = raw[k];
+      if (dv && typeof dv === 'object' && !Array.isArray(dv) && rv && typeof rv === 'object' && !Array.isArray(rv)) s[k] = mergeMap(dv, rv);
+      else if (rv !== undefined && rv !== null) s[k] = rv;
+    }
+    s.v = 3;
+    s.unlocked.verda = true;
+    if (HIDS.indexOf(s.selected) === -1 || !s.unlocked[s.selected]) s.selected = 'verda';
+    if (!Array.isArray(s.leaderboard)) s.leaderboard = [];
+    s.maxStage = clamp(s.maxStage | 0 || 1, 1, CAMPAIGN_STAGES + 1);
+    s.stage = clamp(s.stage | 0 || 1, 1, Math.min(s.maxStage, CAMPAIGN_STAGES));
+    s.energy = clamp(isNum(s.energy) ? s.energy : CONFIG.ENERGY_MAX, 0, 999);
+    HIDS.forEach(function (id) {
+      s.bond[id] = clamp(+s.bond[id] || 0, 0, BOND_PTS_MAX);
+      s.skills[id] = clamp(s.skills[id] | 0 || 1, 1, CONFIG.SKILL_MAX);
+      s.skillCd[id] = clamp(s.skillCd[id] | 0, 0, CONFIG.CD_MAX);
+    });
+    ['sfxVol', 'bgmVol'].forEach(function (k) { if (!isNum(s.settings[k])) s.settings[k] = defaultState().settings[k]; s.settings[k] = clamp(s.settings[k], 0, 1); });
+    return s;
+  }
+
+  function load() {
+    var raw = null;
+    try { raw = localStorage.getItem(CONFIG.SAVE_KEY); } catch (e) { return defaultState(); }
+    if (raw) {
+      try { return normalize(JSON.parse(raw)); } catch (e) { warn('[game] v3 save corrupt', e); }
+    }
+    var olds = CONFIG.OLD_KEYS || ['memoryRPG_v2', 'memoryRPG_v1'];
+    for (var i = 0; i < olds.length; i++) {
+      try {
+        var o = localStorage.getItem(olds[i]);
+        if (o) { var m = normalize(migrate(JSON.parse(o))); m.migratedFrom = olds[i]; return m; }
+      } catch (e) { warn('[game] migrate failed ' + olds[i], e); }
+    }
+    return defaultState();
+  }
+  function save() {
+    try { localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(S)); } catch (e) {}
+    emit('game:state', null);
+  }
+  function emit(name, detail) {
+    try { document.dispatchEvent(new CustomEvent(name, { detail: detail })); } catch (e) {}
+  }
 
   var S = load();
+  if (S.migratedFrom) { try { localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
   var battle = null;
-  var audioCtx = null;
-  var energyTimer = null;
   var galleryId = null;
+  var currentScreen = 'home';
+  var started = false;
 
   function heroine(id) {
     for (var i = 0; i < HEROINES.length; i++) if (HEROINES[i].id === id) return HEROINES[i];
     return HEROINES[0];
   }
+  function bondLv(id) { return D.bondLevel(S.bond[id] || 0); }
 
+  /** 每日計數器（交談／觸碰／贈禮上限）跨日重置 */
+  function day() {
+    var t = todayStr();
+    if (S.dayCounters.date !== t) S.dayCounters = { date: t, talk: {}, tap: {}, gift: {} };
+    return S.dayCounters;
+  }
+
+  /* ════════════════ 音效橋接 ════════════════ */
+  var fbAudio = { ctx: null, bgmTimer: null, step: 0, gesture: false };
+  function AE() { return window.AudioEngine || null; }
+  function fbCtx() {
+    if (fbAudio.ctx) return fbAudio.ctx;
+    if (!fbAudio.gesture) return null; // 未有使用者手勢前不建立 AudioContext（iOS / Chrome 自動播放政策）
+    var C = window.AudioContext || window.webkitAudioContext;
+    if (!C) return null;
+    try { fbAudio.ctx = new C(); } catch (e) { return null; }
+    return fbAudio.ctx;
+  }
+  var FB_TONES = {
+    flip: [[520, 0.05, 'triangle']], tap: [[700, 0.04, 'sine']],
+    match: [[660, 0.08, 'triangle'], [990, 0.12, 'triangle', 0.07]],
+    mismatch: [[200, 0.14, 'sawtooth']], fail: [[300, 0.2, 'sawtooth'], [220, 0.3, 'sawtooth', 0.18]],
+    skill: [[440, 0.1, 'sine'], [880, 0.2, 'sine', 0.08]], combo: [[880, 0.08, 'square']],
+    clear: [[523, 0.12, 'triangle'], [659, 0.12, 'triangle', 0.12], [784, 0.3, 'triangle', 0.24]],
+    levelup: [[784, 0.1, 'triangle'], [1047, 0.25, 'triangle', 0.1]],
+    chime: [[1175, 0.2, 'sine']], gift: [[880, 0.1, 'sine'], [1320, 0.2, 'sine', 0.1]],
+    bond: [[660, 0.12, 'sine'], [880, 0.2, 'sine', 0.12]], boss: [[110, 0.5, 'sawtooth'], [104, 0.6, 'sawtooth', 0.1]],
+    star: [[1320, 0.1, 'triangle']], buy: [[990, 0.08, 'square']], joker: [[150, 0.3, 'square']]
+  };
+  function fbTone(freq, dur, type, delay, vol) {
+    var ctx = fbCtx(); if (!ctx) return;
+    try {
+      var t = ctx.currentTime + (delay || 0);
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t + dur + 0.02);
+    } catch (e) {}
+  }
+  function fbSfx(name, opts) {
+    var list = FB_TONES[name] || FB_TONES.tap;
+    var vol = 0.12 * S.settings.sfxVol;
+    var mul = name === 'combo' && opts && isNum(opts.combo) ? Math.pow(1.06, Math.min(opts.combo, 16)) : 1;
+    list.forEach(function (t) { fbTone(t[0] * mul, t[1], t[2], t[3] || 0, vol); });
+  }
+  var FB_BGM = [220, 261.6, 329.6, 293.7, 196, 246.9, 293.7, 261.6];
+  function fbBgmStart() {
+    if (fbAudio.bgmTimer || !fbCtx()) return;
+    fbAudio.bgmTimer = setInterval(function () {
+      if (!S.settings.bgm) return;
+      var f = FB_BGM[fbAudio.step++ % FB_BGM.length];
+      var v = 0.035 * S.settings.bgmVol * (fbAudio.ducked ? 0.35 : 1);
+      fbTone(f, 1.6, 'sine', 0, v); fbTone(f / 2, 1.8, 'triangle', 0, v * 0.6);
+    }, 900);
+  }
+  function fbBgmStop() { if (fbAudio.bgmTimer) { clearInterval(fbAudio.bgmTimer); fbAudio.bgmTimer = null; } }
+
+  var Snd = {
+    applySettings: function () {
+      var st = S.settings, e = AE();
+      if (!e) return;
+      var r = tryCall(e, ['applySettings', 'configure', 'setSettings'], [{ sfx: st.sfx, bgm: st.bgm, sfxVol: st.sfxVol, bgmVol: st.bgmVol, sfxEnabled: st.sfx, bgmEnabled: st.bgm, sfxVolume: st.sfxVol, bgmVolume: st.bgmVol }]);
+      if (r) return;
+      tryCall(e, ['setSfxEnabled', 'enableSfx'], [st.sfx]);
+      tryCall(e, ['setBgmEnabled', 'enableBgm'], [st.bgm]);
+      tryCall(e, ['setSfxVolume'], [st.sfxVol]);
+      tryCall(e, ['setBgmVolume'], [st.bgmVol]);
+    },
+    unlock: function () {
+      fbAudio.gesture = true;
+      var e = AE();
+      if (e) tryCall(e, ['unlock', 'resume', 'init'], []);
+      var c = fbAudio.ctx;
+      if (c && c.state === 'suspended' && c.resume) { try { c.resume(); } catch (err) {} }
+    },
+    play: function (name, opts) {
+      if (!S.settings.sfx) return;
+      var e = AE();
+      if (e && tryCall(e, ['play', 'sfx', 'playSfx'], [name, opts || {}])) return;
+      fbSfx(name, opts);
+    },
+    bgm: function (track) {
+      if (!S.settings.bgm) { Snd.stopBgm(); return; }
+      var e = AE();
+      if (e && tryCall(e, ['playBgm', 'startBgm', 'bgm'], [track || 'main'])) return;
+      if (!e) fbBgmStart();
+    },
+    stopBgm: function () {
+      var e = AE();
+      if (e) tryCall(e, ['stopBgm'], []);
+      fbBgmStop();
+    },
+    duck: function (on) {
+      fbAudio.ducked = !!on;
+      var e = AE();
+      if (e) tryCall(e, on ? ['duck'] : ['unduck', 'duck'], on ? [true] : [false]);
+    },
+    test: function () {
+      var names = Object.keys(FB_TONES), i = 0;
+      var t = setInterval(function () { if (i >= names.length) { clearInterval(t); return; } Snd.play(names[i++], { combo: i }); }, 350);
+      return names;
+    }
+  };
+  function vibe(pattern) {
+    if (!S.settings.vibrate || !navigator.vibrate || !fbAudio.gesture) return;
+    try { navigator.vibrate(pattern); } catch (e) {}
+  }
+
+  /* ════════════════ 特效橋接（FX 缺席時使用 fx.css 類別） ════════════════ */
+  function fxLayer() {
+    var l = $('fx-layer-fallback');
+    if (!l) { l = document.createElement('div'); l.id = 'fx-layer-fallback'; l.className = 'fx-layer'; document.body.appendChild(l); }
+    return l;
+  }
+  function centerOf(el) {
+    if (!el || !el.getBoundingClientRect) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    var r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+  function transient(cls, x, y, html, ms) {
+    var el = document.createElement('div');
+    el.className = cls;
+    if (isNum(x)) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+    if (html !== null && html !== undefined) el.innerHTML = html;
+    fxLayer().appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, ms || 900);
+    return el;
+  }
+  var Fx = {
+    burst: function (el, kind) {
+      var p = centerOf(el);
+      if (tryCall(window.FX, ['burst', 'matchBurst', 'particles'], [p.x, p.y, { kind: kind || 'match', el: el }])) return;
+      var n = kind === 'clear' ? 22 : 10;
+      for (var i = 0; i < n; i++) {
+        (function () {
+          var d = document.createElement('div');
+          d.className = 'v3-particle';
+          d.style.position = 'fixed';
+          d.style.left = p.x + 'px'; d.style.top = p.y + 'px';
+          if (kind === 'miss') d.style.background = '#ff3a5a';
+          fxLayer().appendChild(d);
+          var a = Math.random() * Math.PI * 2, r = 30 + Math.random() * (kind === 'clear' ? 140 : 60);
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              d.style.transform = 'translate(' + Math.cos(a) * r + 'px,' + Math.sin(a) * r + 'px) scale(.3)';
+              d.style.opacity = '0';
+            });
+          });
+          setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 800);
+        })();
+      }
+    },
+    pulse: function (el) {
+      if (!el) return;
+      if (tryCall(window.FX, ['cardPulse', 'pulse'], [el])) return;
+      el.classList.remove('fx-card-pulse'); void el.offsetWidth; el.classList.add('fx-card-pulse');
+      setTimeout(function () { el.classList.remove('fx-card-pulse'); }, 600);
+    },
+    shake: function (el, strength) {
+      if (!S.settings.shake) return;
+      el = el || $('app');
+      if (tryCall(window.FX, ['shake'], [el, strength || 'sm'])) return;
+      el.classList.remove('v3-shake'); void el.offsetWidth; el.classList.add('v3-shake');
+      setTimeout(function () { el.classList.remove('v3-shake'); }, 380);
+    },
+    combo: function (n) {
+      if (tryCall(window.FX, ['comboPop', 'combo'], [n])) return;
+      var tier = n >= 10 ? 'tier-max' : n >= 6 ? 'tier-3' : n >= 3 ? 'tier-2' : '';
+      transient('fx-combo-pop ' + tier, window.innerWidth / 2, window.innerHeight * 0.38, esc(n + ' 連擊！'), 900);
+    },
+    floatText: function (el, text, tone) {
+      var p = centerOf(el);
+      if (tryCall(window.FX, ['floatText'], [p.x, p.y, text, tone])) return;
+      transient('fx-float-text' + (tone ? ' is-' + tone : ''), p.x, p.y, esc(text), 900);
+    },
+    flash: function (tone) {
+      if (tryCall(window.FX, ['flash', 'vignette'], [tone || 'gold'])) return;
+      transient('fx-vignette-flash is-' + (tone || 'gold'), null, null, '', 600);
+    },
+    transition: function (kind) {
+      if (tryCall(window.FX, ['transition', 'veil'], [kind || ''])) return;
+      transient('fx-transition-veil' + (kind ? ' is-' + kind : ''), null, null, '', 400);
+    }
+  };
+
+  /* ════════════════ 共用 UI ════════════════ */
+  function toast(msg) {
+    var box = $('toasts'); if (!box) return;
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    box.appendChild(el);
+    requestAnimationFrame(function () { el.classList.add('show'); });
+    setTimeout(function () {
+      el.classList.remove('show');
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
+    }, 2000);
+  }
+  var modalOnClose = null;
+  function openModal(html, onClose) {
+    $('modal-card').innerHTML = html;
+    $('modal').classList.remove('hidden');
+    modalOnClose = onClose || null;
+  }
+  function closeModal() {
+    $('modal').classList.add('hidden');
+    var cb = modalOnClose; modalOnClose = null;
+    if (cb) cb();
+  }
+  function bindModalBtn(id, fn) { var b = $(id); if (b) b.onclick = function () { Snd.play('tap'); fn(); }; }
+
+  function heartsHTML(points) {
+    var lv = D.bondLevel(points), html = '';
+    for (var i = 1; i <= CONFIG.BOND_MAX; i++) html += '<span class="bond-heart' + (i <= lv ? ' on' : '') + '">♥</span>';
+    return html;
+  }
+  function starsText(n) { var s = ''; for (var i = 0; i < 3; i++) s += i < n ? '★' : '☆'; return s; }
+  function outfitClass(id) { return 'outfit-' + (S.outfit[id] || 'default'); }
+
+  /* ════════════════ 體力、經驗、成就、好感 ════════════════ */
   function regenEnergy() {
     var now = Date.now();
     if (S.energy >= S.energyMax) { S.lastEnergyAt = now; return; }
@@ -79,694 +409,1394 @@
   }
   function energyEta() {
     if (S.energy >= S.energyMax) return '';
-    var left = CONFIG.ENERGY_REGEN_MS - (Date.now() - S.lastEnergyAt);
-    if (left < 0) left = 0;
+    var left = Math.max(0, CONFIG.ENERGY_REGEN_MS - (Date.now() - S.lastEnergyAt));
     var s = Math.ceil(left / 1000);
-    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    return Math.floor(s / 60) + ':' + pad2(s % 60);
   }
-
-  function todayStr() {
-    var d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  function spendEnergy(n) {
+    regenEnergy();
+    if (S.energy < n) { toast('體力不足（需要 ⚡' + n + '），請稍候回復'); Snd.play('mismatch'); return false; }
+    if (S.energy >= S.energyMax) S.lastEnergyAt = Date.now();
+    S.energy -= n;
+    return true;
   }
   function updateStreakOnPlay() {
     var t = todayStr();
     if (S.lastPlayDate === t) return;
     var y = new Date(); y.setDate(y.getDate() - 1);
-    var ys = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
-    if (S.lastPlayDate === ys) S.streak += 1; else S.streak = 1;
+    S.streak = S.lastPlayDate === dateStr(y) ? S.streak + 1 : 1;
     S.lastPlayDate = t;
     if (S.streak > S.stats.bestStreak) S.stats.bestStreak = S.streak;
   }
-
-  function toast(msg) {
-    var box = $('toasts');
-    var el = document.createElement('div');
-    el.className = 'toast';
-    el.textContent = msg;
-    box.appendChild(el);
-    requestAnimationFrame(function () { el.classList.add('show'); });
-    setTimeout(function () {
-      el.classList.remove('show');
-      setTimeout(function () { if (el.parentNode) el.remove(); }, 300);
-    }, 1800);
+  function addGold(n) {
+    n = Math.max(0, Math.round(n));
+    S.gold += n; S.stats.goldEarned += n;
+    return n;
   }
-
-  function playTone(freq, dur, type) {
-    if (!S.sound) return;
-    try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      var o = audioCtx.createOscillator();
-      var g = audioCtx.createGain();
-      o.type = type || 'sine';
-      o.frequency.value = freq;
-      g.gain.value = 0.04;
-      o.connect(g); g.connect(audioCtx.destination);
-      o.start();
-      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-      o.stop(audioCtx.currentTime + dur);
-    } catch (e) {}
-  }
-  function vibe(ms) { if (S.vibrate && navigator.vibrate) navigator.vibrate(ms || 12); }
-
-  function addBond(id, amt) {
-    var cur = S.bond[id] || 0;
-    var next = Math.min(CONFIG.BOND_MAX, cur + (amt || 1));
-    if (next === cur) return false;
-    S.bond[id] = next;
-    checkAchievements();
-    return true;
-  }
-
-  function checkAchievements() {
-    ACHIEVEMENTS.forEach(function (a) {
-      if (S.achievements[a.id]) return;
-      try {
-        if (a.check(S)) {
-          S.achievements[a.id] = true;
-          S.gold += a.reward || 0;
-          S.stats.goldEarned += a.reward || 0;
-          toast('成就解鎖：' + a.name + ' +' + (a.reward || 0) + '金');
-        }
-      } catch (e) {}
-    });
-  }
-
   function addXp(n) {
     S.xp += n;
     var ups = 0;
-    while (S.xp >= xpNeed(S.lv)) {
-      S.xp -= xpNeed(S.lv);
-      S.lv += 1;
-      ups += 1;
-      S.gold += 50;
-      S.stats.goldEarned += 50;
+    while (S.xp >= D.xpNeed(S.lv)) {
+      S.xp -= D.xpNeed(S.lv);
+      S.lv += 1; ups += 1;
+      addGold(50);
+      if (S.lv % 5 === 0) { S.energyMax = Math.min(20, S.energyMax + 1); }
     }
+    if (ups) { S.energy = Math.max(S.energy, S.energyMax); Snd.play('levelup'); }
     return ups;
   }
-
-  function go(name) {
-    qsa('.screen').forEach(function (el) { el.classList.remove('active'); });
-    var scr = $('scr-' + name);
-    if (scr) scr.classList.add('active');
-    qsa('#nav button').forEach(function (b) {
-      b.classList.toggle('active', b.getAttribute('data-go') === name);
+  function checkAchievements() {
+    ACHIEVEMENTS.forEach(function (a) {
+      if (S.achievements[a.id]) return;
+      var ok = false;
+      try { ok = !!a.check(S); } catch (e) {}
+      if (ok) {
+        S.achievements[a.id] = true;
+        addGold(a.reward || 0);
+        toast('🏆 成就解鎖：' + a.name + ' +' + (a.reward || 0) + ' 金');
+      }
     });
-    var hideNav = name === 'battle' || name === 'result';
-    document.body.classList.toggle('no-nav', hideNav);
+  }
+  /** 增加好感點數；回傳實際增加量。升心時播音效與提示。 */
+  function addBond(id, pts, silent) {
+    if (HIDS.indexOf(id) === -1) return 0;
+    var before = S.bond[id] || 0;
+    var after = clamp(before + (pts || 0), 0, BOND_PTS_MAX);
+    if (after === before) return 0;
+    var lv0 = D.bondLevel(before);
+    S.bond[id] = after;
+    var lv1 = D.bondLevel(after);
+    if (lv1 > lv0) {
+      Snd.play('bond'); vibe([20, 40, 20]);
+      if (!silent) toast('💗 ' + heroine(id).name + ' 好感提升至 ' + lv1 + ' 心');
+      emit('game:bondup', { id: id, level: lv1 });
+    }
+    checkAchievements();
+    save();
+    emit('game:bond', { id: id, points: after, delta: after - before });
+    return after - before;
+  }
+
+  /* ════════════════ 導覽 ════════════════ */
+  var NAV_SCREENS = ['home', 'map', 'roster', 'shop', 'ach'];
+  function go(name, opts) {
+    opts = opts || {};
+    var scr = $('scr-' + name);
+    if (!scr) { warn('[game] no screen ' + name); return; }
+    var prev = currentScreen;
+    qsa('.screen').forEach(function (el) { el.classList.remove('active', 'fx-screen-enter', 'fx-screen-enter-right', 'fx-screen-enter-left', 'fx-screen-enter-zoom'); });
+    scr.classList.add('active');
+    var pi = NAV_SCREENS.indexOf(prev), ni = NAV_SCREENS.indexOf(name);
+    var enter = name === 'battle' || name === 'result' ? 'fx-screen-enter-zoom' : (pi !== -1 && ni !== -1 && ni !== pi ? (ni > pi ? 'fx-screen-enter-right' : 'fx-screen-enter-left') : 'fx-screen-enter');
+    void scr.offsetWidth; scr.classList.add(enter);
+    if (opts.veil) Fx.transition(opts.veil);
+    currentScreen = name;
+    qsa('#nav button').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-go') === name); });
+    document.body.classList.toggle('no-nav', name === 'battle' || name === 'result');
     if (name === 'home') renderHome();
-    if (name === 'roster') renderRoster();
-    if (name === 'ach') renderAch();
-    if (name === 'settings') renderSettings();
+    else if (name === 'map') renderMap();
+    else if (name === 'roster') renderRoster();
+    else if (name === 'shop') renderShop();
+    else if (name === 'ach') renderAch();
+    else if (name === 'settings') renderSettings();
     refreshTop();
+    emit('game:screen', { name: name });
   }
 
   function refreshTop() {
     regenEnergy();
-    $('tb-lv').textContent = S.lv;
-    var need = xpNeed(S.lv);
-    $('tb-xp').style.width = Math.min(100, (S.xp / need) * 100) + '%';
-    $('tb-gold').textContent = S.gold;
-    $('tb-energy').textContent = S.energy;
-    $('tb-emax').textContent = S.energyMax;
-    $('tb-etimer').textContent = energyEta() ? ('+' + energyEta()) : '';
+    setText('tb-lv', S.lv);
+    var need = D.xpNeed(S.lv);
+    var xp = $('tb-xp'); if (xp) xp.style.width = Math.min(100, (S.xp / need) * 100) + '%';
+    setText('tb-gold', S.gold);
+    setText('tb-energy', S.energy);
+    setText('tb-emax', S.energyMax);
+    var eta = energyEta();
+    setText('tb-etimer', eta ? ' +' + eta : '');
+    var m = $('tb-mute');
+    if (m) m.textContent = S.settings.sfx || S.settings.bgm ? '🔊' : '🔇';
   }
 
-  function outfitClass(id) {
-    return 'outfit-' + (S.outfit[id] || 'default');
+  /* ════════════════ 主城 ════════════════ */
+  function timeSlot() {
+    var h = new Date().getHours();
+    return h >= 5 && h < 11 ? 'morning' : h >= 11 && h < 17 ? 'afternoon' : h >= 17 && h < 21 ? 'evening' : 'night';
   }
-
+  var SLOT_LABEL = { morning: '晨', afternoon: '午', evening: '晚', night: '夜' };
+  function greetingFor(id) {
+    var slot = timeSlot();
+    var line = pick(czGet(['greetings', id, slot]));
+    if (!line) line = pick((heroine(id).lines || {})[D.bondTier(bondLv(id))]) || '……';
+    return '〔' + SLOT_LABEL[slot] + '〕' + line;
+  }
+  function stageLabel(n) {
+    var c = D.stageConfig(n);
+    var ch = CHAPTERS[c.chapter - 1];
+    return { cfg: c, chapter: ch, text: (ch ? '第' + ch.id + '章・' + ch.name : '') };
+  }
   function renderHome() {
     var h = heroine(S.selected);
     var img = $('home-hero-img');
-    img.src = 'assets/heroines/' + h.id + '.webp';
-    img.className = outfitClass(h.id);
-    $('home-hero-title').textContent = h.title;
-    $('home-hero-name').textContent = h.name;
-    var lv = S.skills[h.id] || 1;
-    var bond = S.bond[h.id] || 0;
-    $('home-hero-skill').textContent = h.skillName + '：' + skillDesc(h.skill, lv) + ' · 好感 ' + bond + '/' + CONFIG.BOND_MAX;
-    $('home-stage').textContent = S.stage;
-    var p = pairsFor(S.stage), t = timeFor(S.stage);
-    $('home-stage-detail').textContent = p + ' 組撲克配對 · 限時 ' + t + ' 秒';
-    $('home-streak').textContent = S.streak;
-    $('home-best').textContent = S.maxStage;
-    $('btn-fight').disabled = S.energy < CONFIG.ENERGY_COST;
-  }
-
-  function shuffle(arr) {
-    for (var i = arr.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    if (img) {
+      img.src = 'assets/heroines/' + h.id + '.webp';
+      img.className = 'breathe ' + outfitClass(h.id);
     }
-    return arr;
+    setText('home-hero-title', h.title);
+    setText('home-hero-name', h.name);
+    var lv = S.skills[h.id] || 1;
+    setText('home-hero-skill', h.skillName + '：' + D.skillDesc(h.skill, lv) + ' · 好感 ' + bondLv(h.id) + '/' + CONFIG.BOND_MAX + '♥');
+    var g = $('home-greet');
+    if (g && (!g.textContent || g.getAttribute('data-hero') !== h.id)) { g.textContent = greetingFor(h.id); g.setAttribute('data-hero', h.id); }
+    var done = S.maxStage > CAMPAIGN_STAGES;
+    var n = Math.min(S.stage, CAMPAIGN_STAGES);
+    var L = stageLabel(n), c = L.cfg;
+    setText('home-chapter', L.text);
+    setText('home-stage', n);
+    setText('home-stage-detail', c.cols + '×' + c.rows + ' · ' + c.sets + ' 組' + (c.setSize === 3 ? '（三張一組）' : '') + ' · 限時 ' + c.time + ' 秒 · 失誤上限 ' + c.missLimit +
+      (c.boss ? ' · ♛ 頭目：' + (c.bossName || '') + '（' + (D.bossMech(c.boss) || {}).name + '）' : '') + (done ? ' · 戰役已全破' : ''));
+    setText('home-streak', S.streak);
+    setText('home-stars', totalStars());
+    var fight = $('btn-fight');
+    if (fight) fight.disabled = S.energy < CONFIG.ENERGY_COST;
+    var d = S.daily.date === todayStr() && S.daily.done;
+    setText('daily-sub', d ? '今日已完成 ✓' : '今日未完成 · ⚡' + CONFIG.ENERGY_COST);
+    setText('endless-sub', '⚡' + CONFIG.ENDLESS_COST + ' · 最佳第 ' + (S.stats.endlessBestRound || 0) + ' 輪');
+  }
+  function totalStars() { var t = 0; for (var k in S.stars) t += S.stars[k] || 0; return t; }
+
+  /* ════════════════ 地圖 ════════════════ */
+  function renderMap() {
+    var list = $('map-list'); if (!list) return;
+    var html = '';
+    CHAPTERS.forEach(function (ch, ci) {
+      var first = ci * SPC + 1;
+      var locked = first > S.maxStage;
+      var got = 0;
+      for (var i = 0; i < SPC; i++) got += S.stars[first + i] || 0;
+      html += '<div class="chapter' + (locked ? ' locked' : '') + '"><div class="chapter-head"><b>第' + ch.id + '章・' + esc(ch.name) + '</b><small>' + esc(ch.sub) + ' · ★' + got + '/' + SPC * 3 +
+        (locked ? '' : ' · <a href="#" data-intro="' + ch.id + '" style="color:var(--gold)">序章</a>') + '</small></div><div class="nodes">';
+      for (var j = 0; j < SPC; j++) {
+        var n = first + j;
+        var boss = n % 5 === 0;
+        var st = n < S.maxStage ? 'cleared' : n === S.maxStage ? 'current' : 'locked';
+        html += '<button type="button" class="node ' + st + (boss ? ' boss' : '') + '" data-n="' + n + '"' + (st === 'locked' ? ' disabled' : '') + '>' + n +
+          '<span class="nstars">' + (S.stars[n] ? starsText(S.stars[n]) : '') + '</span></button>';
+      }
+      html += '</div></div>';
+    });
+    list.innerHTML = html;
+    qsa('.node', list).forEach(function (b) {
+      b.onclick = function () {
+        var n = +b.getAttribute('data-n');
+        if (!isNum(n) || n > S.maxStage) return;
+        Snd.play('tap');
+        stagePreviewModal(n);
+      };
+    });
+    qsa('[data-intro]', list).forEach(function (a) {
+      a.onclick = function (e) { e.preventDefault(); showChapterIntro(+a.getAttribute('data-intro'), null, true); };
+    });
+  }
+  function stagePreviewModal(n) {
+    var c = D.stageConfig(n), mech = c.boss ? D.bossMech(c.boss) : null;
+    openModal('<h3>第 ' + n + ' 關' + (c.boss ? '<span class="boss-tag">♛ 頭目</span>' : '') + '</h3>' +
+      (mech ? '<p><b style="color:var(--red2)">' + esc(c.bossName) + '</b> — ' + esc(mech.name) + '<br><span class="muted small">' + esc(mech.desc) + '</span></p>' : '') +
+      '<p class="muted">' + c.cols + '×' + c.rows + ' 盤面 · ' + c.sets + ' 組 · 限時 ' + c.time + ' 秒<br>失誤上限 ' + c.missLimit + ' · 預覽 ' + c.preview + ' 秒</p>' +
+      '<p class="stars" style="font-size:24px">' + starsText(S.stars[n] || 0) + '</p>' +
+      '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">出戰 ⚡' + CONFIG.ENERGY_COST + '</button></div>');
+    bindModalBtn('m-cancel', closeModal);
+    bindModalBtn('m-go', function () { closeModal(); S.stage = n; save(); beginCampaign(n); });
   }
 
-  function pokerFaceHTML(face) {
-    var color = face.color === 'red' ? 'red' : 'black';
-    return '<div class="poker-face ' + color + '" data-id="' + face.id + '">' +
-      '<div class="p-corner tl"><span class="p-rank">' + face.rank + '</span><span class="p-suit">' + face.suit + '</span></div>' +
-      '<div class="p-center">' + face.suit + '</div>' +
-      '<div class="p-corner br"><span class="p-rank">' + face.rank + '</span><span class="p-suit">' + face.suit + '</span></div>' +
-      '</div>';
+  /* ════════════════ 章節劇情 ════════════════ */
+  function chapterProse(chId) {
+    var arr = czGet(['chapters']);
+    if (Array.isArray(arr)) {
+      for (var i = 0; i < arr.length; i++) if (arr[i] && arr[i].chapter === chId) return arr[i];
+    }
+    return null;
+  }
+  function storyMod() { return window.StoryUI || window.Story || null; }
+  /** 顯示章節序章；done 於關閉後呼叫 */
+  function showChapterIntro(chId, done, replay) {
+    var ch = CHAPTERS[chId - 1];
+    if (!ch) { if (done) done(); return; }
+    if (!replay) { S.seenIntro[chId] = true; save(); }
+    Snd.duck(true);
+    var finish = function () { Snd.duck(false); if (done) done(); };
+    var r = tryCall(storyMod(), ['showChapterIntro', 'chapterIntro', 'playChapter'], [chId, finish, { chapter: ch, api: GameAPI }]);
+    if (r && r.v !== false) return;
+    var p = chapterProse(chId);
+    var title = p && p.title ? p.title : '第' + ch.id + '章・' + ch.name;
+    var body = p && p.prose ? (Array.isArray(p.prose) ? p.prose.join('\n\n') : p.prose) : ch.intro;
+    openModal('<h3>' + esc(title) + '</h3>' + (p && p.subtitle ? '<p class="muted small">' + esc(p.subtitle) + '</p>' : '') +
+      '<div class="story-text">' + esc(body) + '</div>' + (p && p.quote ? '<p class="muted center" style="margin-top:10px">' + esc(p.quote) + '</p>' : '') +
+      '<button class="btn btn-gold" id="m-cont" style="width:100%;margin-top:12px">繼續</button>', finish);
+    bindModalBtn('m-cont', closeModal);
+  }
+  function showChapterEpilogue(chId, done) {
+    var ch = CHAPTERS[chId - 1];
+    var r = tryCall(storyMod(), ['showChapterEpilogue', 'chapterEpilogue'], [chId, done, { chapter: ch, api: GameAPI }]);
+    if (r && r.v !== false) return;
+    var p = chapterProse(chId);
+    var text = p && p.epilogue ? p.epilogue : '第' + chId + '章・' + (ch ? ch.name : '') + ' 已完成。';
+    openModal('<h3>🏵️ 章節完成</h3><div class="story-text">' + esc(text) + '</div><button class="btn btn-gold" id="m-cont" style="width:100%;margin-top:12px">繼續</button>', done);
+    bindModalBtn('m-cont', closeModal);
   }
 
-  function startBattle() {
-    regenEnergy();
-    if (S.energy < CONFIG.ENERGY_COST) { toast('體力不足，請稍候回復'); return; }
-    S.energy -= CONFIG.ENERGY_COST;
+  /* ════════════════ 戰鬥：開始 ════════════════ */
+  function relicOn(id) { return !!S.relics[id]; }
+
+  /** 出戰前：若持有消耗品，讓玩家勾選使用 */
+  function prepThen(cb) {
+    var owned = SHOP.consumables.filter(function (c) { return !c.instant && (S.inv[c.id] || 0) > 0; });
+    if (!owned.length) { cb({}); return; }
+    var rows = owned.map(function (c) {
+      return '<label class="prep-row"><span>' + c.icon + ' ' + esc(c.name) + ' <small class="muted">×' + S.inv[c.id] + ' · ' + esc(c.desc) + '</small></span><input type="checkbox" class="switch" data-use="' + c.id + '"></label>';
+    }).join('');
+    openModal('<h3>出戰準備</h3>' + rows + '<div class="btn-row" style="margin-top:12px"><button class="btn secondary" id="m-cancel">取消</button><button class="btn btn-gold" id="m-go">出發</button></div>');
+    bindModalBtn('m-cancel', closeModal);
+    bindModalBtn('m-go', function () {
+      var use = {};
+      qsa('[data-use]', $('modal-card')).forEach(function (cb2) { if (cb2.checked) use[cb2.getAttribute('data-use')] = true; });
+      closeModal();
+      cb(use);
+    });
+  }
+
+  function beginCampaign(n) {
+    n = clamp(n | 0 || S.stage, 1, Math.min(S.maxStage, CAMPAIGN_STAGES));
+    var cfg = D.stageConfig(n);
+    cfg.mode = 'campaign';
+    var go2 = function () {
+      prepThen(function (use) {
+        if (!spendEnergy(CONFIG.ENERGY_COST)) return;
+        startBattle(cfg, use);
+      });
+    };
+    if (cfg.chapterIdx === 1 && !S.seenIntro[cfg.chapter]) showChapterIntro(cfg.chapter, go2);
+    else go2();
+  }
+  function beginDaily() {
+    var t = todayStr();
+    if (S.daily.date !== t) S.daily = { date: t, done: false, best: 0 };
+    var cfg = D.dailyConfig(t);
+    prepThen(function (use) {
+      if (!spendEnergy(CONFIG.ENERGY_COST)) return;
+      startBattle(cfg, use);
+    });
+  }
+  function beginEndless(round, carry) {
+    var cfg = D.endlessConfig(round || 1);
+    if (!carry) {
+      prepThen(function (use) {
+        if (!spendEnergy(CONFIG.ENDLESS_COST)) return;
+        startBattle(cfg, use, { total: 0 });
+      });
+    } else startBattle(cfg, {}, carry);
+  }
+
+  function buildCards(cfg) {
+    var rng = isNum(cfg.seed) ? D.mulberry32(cfg.seed) : Math.random;
+    var faces = cfg.boss === 'decoy' ? D.dealDecoy(cfg.sets, rng) : D.dealPairs(cfg.sets, rng);
+    var cards = [];
+    faces.forEach(function (face, fi) {
+      for (var k = 0; k < cfg.setSize; k++) cards.push({ key: face.id + '-' + fi + '-' + k, pair: face.id, face: face, open: false, matched: false, joker: false, fog: false });
+    });
+    for (var j = 0; j < cfg.jokers; j++) cards.push({ key: 'joker-' + j, pair: null, face: null, open: false, matched: false, joker: true, fog: false });
+    D.shuffleInPlace(cards, rng);
+    if (cfg.fogRatio > 0) cards.forEach(function (c) { if (!c.joker && rng() < cfg.fogRatio) c.fog = true; });
+    return cards;
+  }
+
+  function startBattle(cfg, use, carry) {
+    use = use || {};
+    Object.keys(use).forEach(function (id) { if (S.inv[id] > 0) S.inv[id] -= 1; });
     updateStreakOnPlay();
+    S.stats.plays += 1;
     save();
 
     var h = heroine(S.selected);
-    var pairs = pairsFor(S.stage);
-    var time = timeFor(S.stage);
-    var faces = dealPairs(pairs);
-    var cards = [];
-    faces.forEach(function (face, idx) {
-      cards.push({ key: face.id + '-a-' + idx, pair: face.id, face: face, open: false, matched: false });
-      cards.push({ key: face.id + '-b-' + idx, pair: face.id, face: face, open: false, matched: false });
-    });
-    shuffle(cards);
-
     var skillLv = S.skills[h.id] || 1;
-    var comboMul = h.skill === 'combo' ? skillValue('combo', skillLv) : 1;
-
+    var time = cfg.time * (relicOn('gear') ? 1.06 : 1) + (use.hourglass ? 10 : 0);
+    if (cfg.mode === 'endless' && carry && isNum(carry.bank)) time += carry.bank;
+    var cd = D.skillCooldown(h.skill, S.skillCd[h.id] || 0);
+    if (use.elixir) cd = Math.round(cd / 2);
     battle = {
-      stage: S.stage, pairs: pairs, matched: 0, score: 0, combo: 0, miss: 0,
-      timeMax: time, timeLeft: time, frozen: 0, skillUsed: false,
-      cards: cards, lock: false, first: null, timer: null, heroine: h, skillLv: skillLv, comboMul: comboMul,
-      running: true
+      cfg: cfg, mode: cfg.mode || 'campaign', n: cfg.n, heroine: h, skillLv: skillLv,
+      cards: buildCards(cfg), sel: [], lock: true, running: false, paused: false, over: false,
+      matched: 0, score: 0, combo: 0, bestCombo: 0, miss: 0, moves: 0,
+      missLimit: cfg.missLimit + (use.charm ? 3 : 0) + (relicOn('compass') ? 1 : 0),
+      timeMax: Math.round(time), timeLeft: Math.round(time), frozen: 0,
+      preview: cfg.preview > 0 ? cfg.preview + (relicOn('mirror') ? 0.5 : 0) + (use.scroll ? 1.5 : 0) : (use.scroll ? 1.5 : 0),
+      comboMul: (h.skill === 'combo' ? D.skillValue('combo', skillLv) : 1) * (relicOn('ring') ? 1.2 : 1),
+      cd: cd, cdLeft: 0, skillCasts: 0, jokerPenalty: (cfg.jokerPenalty || 5) * (relicOn('dice') ? 0.5 : 1),
+      carry: carry || null, lowWarned: false, lastTick: 0, raf: 0, timers: []
     };
-
-    $('b-stage').textContent = battle.stage;
-    $('b-score').textContent = '0';
-    $('b-pairs').textContent = '0/' + pairs;
-    $('b-combo').textContent = '連擊 x0';
-    $('b-miss').textContent = '0';
-    $('b-hero-img').src = 'assets/heroines/' + h.id + '-sm.webp';
-    var skillBtn = $('btn-skill');
-    if (h.skill === 'combo') {
-      skillBtn.textContent = '被動：' + h.skillName + ' x' + comboMul;
-      skillBtn.disabled = true;
-    } else {
-      skillBtn.textContent = '✦ ' + h.skillName;
-      skillBtn.disabled = false;
+    var b = battle;
+    var title = b.mode === 'daily' ? '每日挑戰' : b.mode === 'endless' ? '無盡・第 ' + cfg.round + ' 輪' : '第 ' + cfg.n + ' 關';
+    setText('b-stage', title);
+    var bt = $('b-boss');
+    if (bt) {
+      if (cfg.boss) { bt.textContent = '♛ ' + (cfg.bossName || '') + '・' + ((D.bossMech(cfg.boss) || {}).name || ''); bt.classList.remove('hidden'); }
+      else bt.classList.add('hidden');
     }
+    var hi = $('b-hero-img'); if (hi) { hi.src = 'assets/heroines/' + h.id + '-sm.webp'; hi.className = 'b-hero ' + outfitClass(h.id); }
     $('b-banner').classList.add('hidden');
+    updateBattleHUD();
     renderBoard();
-    go('battle');
-    tickStart();
+    updateTimeUI();
+    updateSkillBtn();
+    go('battle', { veil: cfg.boss ? 'boss' : 'battle' });
+    Snd.bgm(cfg.boss ? 'boss' : 'battle');
+    if (cfg.boss) {
+      Snd.play('boss'); vibe([40, 60, 40]); Fx.flash('crimson');
+      var mech = D.bossMech(cfg.boss);
+      banner('♛ ' + (cfg.bossName || '頭目') + '\n' + (mech ? mech.name + '：' + mech.desc : ''), 2200);
+      later(runPreview, 2000);
+    } else runPreview();
   }
 
-  function colsFor(n) {
-    if (n <= 6) return 3;
-    if (n <= 12) return 4;
-    return 4;
+  function later(fn, ms) {
+    var b = battle;
+    var t = setTimeout(function () { if (battle === b && !b.over) fn(); }, ms);
+    if (b) b.timers.push(t);
+    return t;
+  }
+
+  function runPreview() {
+    var b = battle; if (!b) return;
+    var board = $('board');
+    if (b.preview > 0) {
+      board.classList.add('previewing');
+      banner('記住牌面！', Math.max(700, b.preview * 1000 - 100));
+      later(function () {
+        board.classList.remove('previewing');
+        later(beginTimer, 380);
+      }, Math.round(b.preview * 1000));
+    } else beginTimer();
+  }
+  function beginTimer() {
+    var b = battle; if (!b || b.over) return;
+    b.lock = false; b.running = true;
+    b.lastTick = performance.now();
+    updateSkillBtn();
+    cheer('start');
+    loop();
+  }
+  function loop() {
+    var b = battle; if (!b || b.over) return;
+    b.raf = requestAnimationFrame(loop);
+    var now = performance.now();
+    var dt = Math.min(0.25, (now - b.lastTick) / 1000);
+    b.lastTick = now;
+    if (!b.running || b.paused) return;
+    if (b.cdLeft > 0) { b.cdLeft = Math.max(0, b.cdLeft - dt); updateSkillBtn(); }
+    if (b.frozen > 0) { b.frozen = Math.max(0, b.frozen - dt); }
+    else b.timeLeft -= dt;
+    if (!b.lowWarned && b.timeLeft < Math.max(6, b.timeMax * 0.2)) { b.lowWarned = true; cheer('lowtime'); vibe([15, 30, 15]); }
+    if (b.timeLeft <= 0) { b.timeLeft = 0; updateTimeUI(); endBattle(false, 'time'); return; }
+    updateTimeUI();
+  }
+  function updateTimeUI() {
+    var b = battle; if (!b) return;
+    var pct = Math.max(0, Math.min(100, (b.timeLeft / b.timeMax) * 100));
+    $('b-timefill').style.width = pct + '%';
+    setText('b-time', Math.ceil(b.timeLeft) + 's' + (b.frozen > 0 ? ' ❄' : ''));
+    var tb = qs('.timebar');
+    if (tb) { tb.classList.toggle('frozen', b.frozen > 0); tb.classList.toggle('low', b.timeLeft < 8 && b.frozen <= 0); }
+  }
+  function updateBattleHUD() {
+    var b = battle; if (!b) return;
+    setText('b-score', b.score);
+    setText('b-pairs', b.matched + '/' + b.cfg.sets);
+    setText('b-miss', b.miss);
+    setText('b-misslimit', b.missLimit);
+    setText('b-combo', '連擊 x' + b.combo);
+  }
+  function updateSkillBtn() {
+    var b = battle, btn = $('btn-skill'); if (!b || !btn) return;
+    var h = b.heroine, fill = $('b-cdfill');
+    if (h.skill === 'combo') {
+      setText('b-skill-lbl', '被動：' + h.skillName + ' x' + (Math.round(b.comboMul * 100) / 100));
+      btn.disabled = true; if (fill) fill.style.width = '0%';
+      return;
+    }
+    var ready = b.cdLeft <= 0;
+    setText('b-skill-lbl', '✦ ' + h.skillName + (ready ? '' : ' ' + Math.ceil(b.cdLeft) + 's'));
+    btn.disabled = !ready || !b.running || b.over;
+    if (fill) fill.style.width = (b.cd > 0 ? (b.cdLeft / b.cd) * 100 : 0) + '%';
+  }
+
+  /* ════════════════ 戰鬥：盤面 ════════════════ */
+  function pokerFaceHTML(face) {
+    var color = face.color === 'red' ? 'red' : 'black';
+    return '<div class="poker-face ' + color + '" data-id="' + esc(face.id) + '">' +
+      '<div class="p-corner tl"><span class="p-rank">' + esc(face.rank) + '</span><span class="p-suit">' + face.suit + '</span></div>' +
+      '<div class="p-center">' + face.suit + '</div>' +
+      '<div class="p-corner br"><span class="p-rank">' + esc(face.rank) + '</span><span class="p-suit">' + face.suit + '</span></div></div>';
+  }
+  function cardClass(c) {
+    return 'card' + (c.open || c.matched ? ' open' : '') + (c.matched ? ' matched' : '') + (c.fog ? ' fog-mark' : '') + (c.joker && c.matched ? ' joker-spent' : '');
   }
   function renderBoard() {
-    var board = $('board');
+    var b = battle, board = $('board');
     board.innerHTML = '';
-    board.style.gridTemplateColumns = 'repeat(' + colsFor(battle.cards.length) + ',1fr)';
-    battle.cards.forEach(function (c, i) {
+    board.className = 'board';
+    var cols = b.cfg.cols, rows = b.cfg.rows;
+    board.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';
+    // 依可用高度限制寬度，避免 6×5 溢出
+    board.style.maxWidth = 'min(100%, calc((100vh - 290px) * ' + (cols * 3 / (rows * 4)).toFixed(3) + '))';
+    board.style.margin = '0 auto';
+    board.style.width = '100%';
+    board.style.alignItems = 'start'; // 讓 .card 的 aspect-ratio 生效（stretch 會把列高壓成 0）
+    b.cards.forEach(function (c, i) {
       var el = document.createElement('button');
       el.type = 'button';
-      el.className = 'card' + (c.open || c.matched ? ' open' : '') + (c.matched ? ' matched' : '');
+      el.className = cardClass(c);
       el.setAttribute('data-i', String(i));
-      el.innerHTML = '<div class="card-inner">' +
-        '<div class="face back"><div class="back-crest">✦</div></div>' +
-        '<div class="face front">' + pokerFaceHTML(c.face) + '</div>' +
-        '</div>';
+      el.setAttribute('aria-label', '卡牌 ' + (i + 1));
+      el.innerHTML = '<div class="card-inner"><div class="face back"><div class="back-crest">✦</div></div><div class="face front">' +
+        (c.joker ? '<div class="joker-face">🃏<small>JOKER</small></div>' : pokerFaceHTML(c.face)) + '</div></div>';
       el.addEventListener('click', onCard);
       board.appendChild(el);
     });
   }
-
-  function tickStart() {
-    if (battle.timer) clearInterval(battle.timer);
-    battle.timer = setInterval(function () {
-      if (!battle || !battle.running) return;
-      if (battle.frozen > 0) {
-        battle.frozen -= 0.1;
-        qs('.timebar').classList.add('frozen');
-        updateTimeUI();
-        return;
-      }
-      qs('.timebar').classList.remove('frozen');
-      battle.timeLeft -= 0.1;
-      updateTimeUI();
-      if (battle.timeLeft <= 0) {
-        battle.timeLeft = 0;
-        endBattle(false);
-      }
-    }, 100);
-  }
-  function updateTimeUI() {
-    var pct = Math.max(0, (battle.timeLeft / battle.timeMax) * 100);
-    $('b-timefill').style.width = pct + '%';
-    $('b-time').textContent = Math.ceil(battle.timeLeft) + 's';
-    qs('.timebar').classList.toggle('low', battle.timeLeft < 8 && battle.frozen <= 0);
-  }
-
-  function boardCardEls() {
-    return qsa('#board .card');
+  function cardEl(i) { return qs('#board .card[data-i="' + i + '"]'); }
+  function syncCard(i) {
+    var el = cardEl(i), c = battle && battle.cards[i];
+    if (!el || !c) return;
+    var fogged = el.classList.contains('fogged');
+    el.className = cardClass(c) + (fogged && c.open && !c.matched ? ' fogged' : '');
   }
 
   function onCard(ev) {
-    if (!battle || !battle.running || battle.lock) return;
-    var i = +ev.currentTarget.getAttribute('data-i');
-    var c = battle.cards[i];
-    if (!c || c.open || c.matched) return;
+    var b = battle;
+    if (!b || !b.running || b.paused || b.lock || b.over) return;
+    var i = parseInt(ev.currentTarget.getAttribute('data-i'), 10);
+    if (!isNum(i) || i < 0 || i >= b.cards.length) return;
+    var c = b.cards[i];
+    if (c === null || c === undefined || c.open || c.matched) return;
+    if (b.sel.indexOf(i) !== -1) return;
     c.open = true;
-    ev.currentTarget.classList.add('open');
-    playTone(520, 0.06);
-    vibe(8);
-    // BUGFIX: index 0 is falsy — must use null check
-    if (battle.first === null || battle.first === undefined) {
-      battle.first = i;
-      return;
+    syncCard(i);
+    Snd.play('flip'); vibe(8);
+
+    if (c.joker) { hitJoker(i); return; }
+    if (c.fog) {
+      later(function () { var el = cardEl(i); if (el && c.open && !c.matched) el.classList.add('fogged'); }, 380);
     }
-    if (battle.first === i) return;
-    var a = battle.cards[battle.first];
-    var b = c;
-    var fi = battle.first, si = i;
-    battle.lock = true;
-    if (a.pair === b.pair) {
-      a.matched = b.matched = true;
-      battle.matched += 1;
-      battle.combo += 1;
-      if (battle.combo > S.stats.maxCombo) S.stats.maxCombo = battle.combo;
-      var gain = Math.round(100 * battle.combo * battle.comboMul);
-      battle.score += gain;
-      playTone(780, 0.1, 'triangle');
-      $('b-score').textContent = battle.score;
-      $('b-pairs').textContent = battle.matched + '/' + battle.pairs;
-      var comboEl = $('b-combo');
-      comboEl.textContent = '連擊 x' + battle.combo;
-      comboEl.classList.remove('pop'); void comboEl.offsetWidth; comboEl.classList.add('pop');
-      boardCardEls().forEach(function (el, idx) {
-        if (idx === fi || idx === si) el.classList.add('matched');
-      });
-      battle.first = null;
-      battle.lock = false;
-      if (battle.matched >= battle.pairs) endBattle(true);
-    } else {
-      battle.miss += 1;
-      battle.combo = 0;
-      $('b-miss').textContent = battle.miss;
-      $('b-combo').textContent = '連擊 x0';
-      playTone(180, 0.12, 'sawtooth');
-      setTimeout(function () {
-        if (!battle) return;
-        a.open = false; b.open = false;
-        boardCardEls().forEach(function (el, idx) {
-          if (idx === fi || idx === si) {
-            el.classList.remove('open');
-            el.classList.add('shake');
-            setTimeout(function () { el.classList.remove('shake'); }, 350);
-          }
-        });
-        battle.first = null;
-        battle.lock = false;
-      }, 650);
-    }
+    b.sel.push(i);
+    var first = b.sel[0];
+    if (first !== i && b.cards[first].pair !== c.pair) { mismatch(); return; }
+    if (b.sel.length >= b.cfg.setSize) matchSet();
   }
 
+  function hitJoker(i) {
+    var b = battle, c = b.cards[i];
+    b.lock = true;
+    Snd.play('joker'); vibe([30, 40, 30]);
+    b.timeLeft = Math.max(0.1, b.timeLeft - b.jokerPenalty);
+    Fx.floatText(cardEl(i), '-' + b.jokerPenalty + 's', 'crimson');
+    Fx.flash('crimson'); Fx.shake($('board'));
+    b.combo = 0;
+    updateBattleHUD(); updateTimeUI();
+    later(function () {
+      c.matched = true; // 鬼牌只觸發一次，之後保持翻開
+      syncCard(i);
+      b.lock = false;
+    }, 500);
+  }
+
+  function matchSet() {
+    var b = battle, idxs = b.sel.slice();
+    b.sel = [];
+    b.moves += 1;
+    idxs.forEach(function (k) { b.cards[k].matched = true; syncCard(k); });
+    b.matched += 1;
+    b.combo += 1;
+    if (b.combo > b.bestCombo) b.bestCombo = b.combo;
+    if (b.combo > S.stats.maxCombo) S.stats.maxCombo = b.combo;
+    var gain = Math.round(100 * b.combo * b.comboMul * (b.cfg.setSize === 3 ? 1.5 : 1));
+    b.score += gain;
+    var lastEl = cardEl(idxs[idxs.length - 1]);
+    idxs.forEach(function (k) { Fx.pulse(cardEl(k)); });
+    Fx.burst(lastEl, 'match');
+    Fx.floatText(lastEl, '+' + gain);
+    if (b.combo >= 2) {
+      Snd.play('combo', { combo: b.combo });
+      Fx.combo(b.combo);
+      if (b.combo === 3 || b.combo % 5 === 0) cheer('combo');
+    } else Snd.play('match');
+    vibe(18);
+    var ce = $('b-combo'); if (ce) { ce.classList.remove('pop'); void ce.offsetWidth; ce.classList.add('pop'); }
+    updateBattleHUD();
+    if (b.matched >= b.cfg.sets) later(function () { endBattle(true); }, 450);
+  }
+
+  function mismatch() {
+    var b = battle, idxs = b.sel.slice();
+    b.sel = [];
+    b.lock = true;
+    b.moves += 1;
+    b.miss += 1;
+    b.combo = 0;
+    updateBattleHUD();
+    Snd.play('mismatch'); vibe([25, 30, 25]);
+    if (b.miss === 1 || b.miss % 4 === 0) cheer('miss');
+    Fx.shake($('board'));
+    var ml = $('b-miss'); if (ml) Fx.floatText(ml, '失誤', 'crimson');
+    var delay = b.cfg.flipBack || 600;
+    later(function () {
+      idxs.forEach(function (k) {
+        var c = b.cards[k];
+        if (c && !c.matched) { c.open = false; var el = cardEl(k); if (el) { el.classList.remove('fogged'); el.classList.add('shake'); } syncCard(k); }
+      });
+      if (b.cfg.boss === 'shuffle') shuffleAfterMiss(idxs);
+      b.lock = false;
+      if (b.miss >= b.missLimit) endBattle(false, 'miss');
+    }, delay);
+  }
+
+  /** 頭目「錯位洗牌」：翻錯的牌各自與一張未配對的蓋牌交換位置 */
+  function shuffleAfterMiss(idxs) {
+    var b = battle;
+    var pool = [];
+    b.cards.forEach(function (c, k) { if (!c.matched && !c.open && idxs.indexOf(k) === -1) pool.push(k); });
+    if (!pool.length) return;
+    idxs.forEach(function (k) {
+      if (!pool.length) return;
+      var j = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+      var t = b.cards[k]; b.cards[k] = b.cards[j]; b.cards[j] = t;
+      [k, j].forEach(function (x) {
+        var el = cardEl(x); if (!el) return;
+        var c = b.cards[x];
+        qs('.front', el).innerHTML = c.joker ? '<div class="joker-face">🃏<small>JOKER</small></div>' : pokerFaceHTML(c.face);
+        syncCard(x);
+        el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+      });
+    });
+    banner('牌陣錯位！', 700);
+  }
+
+  /* ════════════════ 戰鬥：技能、助威 ════════════════ */
   function useSkill() {
-    if (!battle || !battle.running || battle.skillUsed) return;
-    var h = battle.heroine;
+    var b = battle;
+    if (!b || !b.running || b.paused || b.over || b.cdLeft > 0) return;
+    var h = b.heroine;
     if (h.skill === 'combo') return;
-    battle.skillUsed = true;
-    $('btn-skill').disabled = true;
+    var v = D.skillValue(h.skill, b.skillLv);
+    if (h.skill === 'match' && b.matched >= b.cfg.sets) return;
+    b.cdLeft = b.cd;
+    b.skillCasts += 1;
     S.stats.skillsUsed += 1;
-    var v = skillValue(h.skill, battle.skillLv);
-    playTone(660, 0.15);
-    vibe(20);
+    Snd.play('skill'); vibe([10, 20, 40]); Fx.flash('arcane');
+    cheer('skill');
     if (h.skill === 'peek') {
       banner('魔眼窺視！');
-      battle.cards.forEach(function (c) { if (!c.matched) c.open = true; });
-      boardCardEls().forEach(function (el, idx) {
-        if (!battle.cards[idx].matched) el.classList.add('open');
-      });
-      battle.lock = true;
-      setTimeout(function () {
-        if (!battle) return;
-        battle.cards.forEach(function (c) { if (!c.matched) c.open = false; });
-        boardCardEls().forEach(function (el, idx) {
-          if (!battle.cards[idx].matched) el.classList.remove('open');
-        });
-        battle.first = null;
-        battle.lock = false;
-      }, Math.round(v * 1000));
+      b.lock = true;
+      // 先蓋回已翻開未配對的牌，避免狀態錯亂
+      b.sel.forEach(function (k) { b.cards[k].open = false; syncCard(k); });
+      b.sel = [];
+      var board = $('board');
+      board.classList.add('previewing');
+      later(function () { board.classList.remove('previewing'); b.lock = false; }, Math.round(v * 1000));
     } else if (h.skill === 'freeze') {
-      battle.frozen = v;
-      qs('.timebar').classList.add('frozen');
-      banner('時間凍結 ' + v + ' 秒！');
+      b.frozen += v; banner('時間凍結 ' + v + ' 秒！');
     } else if (h.skill === 'time') {
-      battle.timeLeft += v;
-      battle.timeMax += v;
-      updateTimeUI();
-      banner('時間 +' + v + ' 秒！');
+      b.timeLeft += v; b.timeMax = Math.max(b.timeMax, b.timeLeft); banner('時間 +' + v + ' 秒！');
+      Fx.floatText($('b-time'), '+' + v + 's');
     } else if (h.skill === 'match') {
-      var need = Math.min(v, battle.pairs - battle.matched);
-      var unmatched = {};
-      battle.cards.forEach(function (c, idx) {
-        if (c.matched || c.open) return;
-        if (!unmatched[c.pair]) unmatched[c.pair] = [];
-        unmatched[c.pair].push(idx);
+      var groups = {};
+      b.cards.forEach(function (c, k) {
+        if (c.matched || c.joker || b.sel.indexOf(k) !== -1) return;
+        if (!groups[c.pair]) groups[c.pair] = [];
+        groups[c.pair].push(k);
       });
+      // 優先處理已部分翻開的組
+      if (b.sel.length) {
+        var p = b.cards[b.sel[0]].pair;
+        if (groups[p]) groups[p] = b.sel.concat(groups[p]);
+        b.sel.forEach(function (k) { b.cards[k].open = false; });
+        b.sel = [];
+      }
       var done = 0;
-      Object.keys(unmatched).forEach(function (pair) {
-        if (done >= need) return;
-        if (unmatched[pair].length >= 2) {
-          var i1 = unmatched[pair][0], i2 = unmatched[pair][1];
-          battle.cards[i1].matched = battle.cards[i1].open = true;
-          battle.cards[i2].matched = battle.cards[i2].open = true;
-          var els = boardCardEls();
-          if (els[i1]) els[i1].classList.add('open', 'matched');
-          if (els[i2]) els[i2].classList.add('open', 'matched');
-          battle.matched += 1;
-          battle.combo += 1;
-          battle.score += Math.round(100 * battle.combo * battle.comboMul);
-          done += 1;
+      Object.keys(groups).sort(function (x, y) { return groups[y].length - groups[x].length; }).forEach(function (pair) {
+        if (done >= v) return;
+        var g = groups[pair];
+        if (g.length >= b.cfg.setSize) {
+          g.slice(0, b.cfg.setSize).forEach(function (k) { b.cards[k].matched = true; b.cards[k].open = true; syncCard(k); Fx.pulse(cardEl(k)); });
+          b.matched += 1; b.combo += 1; done += 1;
+          if (b.combo > b.bestCombo) b.bestCombo = b.combo;
+          b.score += Math.round(100 * b.combo * b.comboMul);
         }
       });
-      $('b-score').textContent = battle.score;
-      $('b-pairs').textContent = battle.matched + '/' + battle.pairs;
-      $('b-combo').textContent = '連擊 x' + battle.combo;
+      b.cards.forEach(function (c, k) { syncCard(k); });
       banner('自動配對 ' + done + ' 組！');
-      if (battle.matched >= battle.pairs) endBattle(true);
+      updateBattleHUD();
+      if (b.matched >= b.cfg.sets) later(function () { endBattle(true); }, 450);
     }
-    save();
+    updateSkillBtn(); updateTimeUI();
   }
 
-  function banner(text) {
-    var el = $('b-banner');
+  var cheerTimer = null;
+  function cheer(kind) {
+    var b = battle; if (!b) return;
+    var h = b.heroine;
+    var line = pick(czGet(['battleCheer', h.id, kind]));
+    if (!line && h.cheer && h.cheer[kind]) line = h.cheer[kind];
+    if (!line && kind === 'start') line = pick(czGet(['battleCheer', h.id, 'combo'])) || h.cheer.combo;
+    if (!line) line = pick(czGet(['battleCheer', 'general', kind]));
+    if (!line) return;
+    var r = tryCall(window.HeroineUI, ['cheer', 'battleCheer'], [h.id, kind, line]);
+    if (r && r.v === true) return;
+    var el = $('b-cheer'); if (!el) return;
+    el.textContent = line;
+    el.classList.add('show');
+    if (kind !== 'start') Snd.play('chime');
+    if (cheerTimer) clearTimeout(cheerTimer);
+    cheerTimer = setTimeout(function () { el.classList.remove('show'); }, 2200);
+  }
+
+  function banner(text, ms) {
+    var el = $('b-banner'); if (!el) return;
     el.textContent = text;
+    el.style.whiteSpace = 'pre-line';
     el.classList.remove('hidden');
-    setTimeout(function () { el.classList.add('hidden'); }, 1200);
+    if (el._t) clearTimeout(el._t);
+    el._t = setTimeout(function () { el.classList.add('hidden'); }, ms || 1200);
   }
 
-  function endBattle(win) {
-    if (!battle || !battle.running) return;
-    battle.running = false;
-    if (battle.timer) clearInterval(battle.timer);
-    var timeBonus = win ? Math.floor(battle.timeLeft) * 10 : 0;
-    var perfect = win && battle.miss === 0;
-    var perfectBonus = perfect ? 500 : 0;
-    var total = battle.score + timeBonus + perfectBonus;
-    var xpGain = win ? (40 + battle.stage * 8 + (perfect ? 30 : 0)) : 10;
-    var goldGain = win ? (30 + battle.stage * 5 + Math.floor(total / 50)) : 5;
-    var hid = battle.heroine.id;
+  function clearBattleTimers() {
+    var b = battle; if (!b) return;
+    if (b.raf) cancelAnimationFrame(b.raf);
+    b.timers.forEach(clearTimeout);
+    b.timers = [];
+  }
+
+  /* ════════════════ 戰鬥：結算 ════════════════ */
+  function endBattle(win, reason) {
+    var b = battle;
+    if (!b || b.over) return;
+    b.over = true; b.running = false; b.lock = true;
+    clearBattleTimers();
+    var cfg = b.cfg, mode = b.mode, hid = b.heroine.id;
+    var stars = win ? D.starsFor({ sets: cfg.sets, miss: b.miss, timeLeft: b.timeLeft, timeMax: b.timeMax }) : 0;
+    var perfect = win && b.miss === 0;
+    var timeBonus = win ? Math.floor(b.timeLeft) * 10 : 0;
+    var total = b.score + timeBonus + (perfect ? 500 : 0) + (win && cfg.boss ? 300 : 0);
+    var lion = relicOn('lion') ? 1.15 : 1;
+    var r = { win: win, reason: reason, stars: stars, perfect: perfect, timeBonus: timeBonus, base: b.score, total: total,
+      miss: b.miss, combo: b.bestCombo, gold: 0, xp: 0, ups: 0, firstClear: false, chapterDone: 0, mode: mode, n: cfg.n, boss: !!cfg.boss };
+
     if (win) {
-      S.stats.wins += 1;
-      S.stats.clears += 1;
-      S.totalClears = (S.totalClears || 0) + 1;
+      S.stats.wins += 1; S.stats.clears += 1;
       if (perfect) S.stats.perfects += 1;
-      S.stage += 1;
-      if (S.stage > S.maxStage) S.maxStage = S.stage;
-      S.bestStreak = Math.max(S.bestStreak || 0, S.streak);
-      if (addBond(hid, perfect ? 2 : 1)) toast(battle.heroine.name + ' 好感提升');
+      if (cfg.boss) S.stats.bossWins += 1;
+      r.xp = 30 + cfg.n * 6 + stars * 10 + (perfect ? 25 : 0) + (cfg.boss ? 40 : 0);
+      r.gold = (25 + cfg.n * 4 + stars * 12 + Math.floor(total / 60) + (cfg.boss ? 80 : 0)) * lion;
+      var bondGain = 2 + stars + (perfect ? 2 : 0);
+      if (mode === 'campaign') {
+        var prevStars = S.stars[cfg.n] || 0;
+        if (stars > prevStars) S.stars[cfg.n] = stars;
+        if (cfg.n >= S.maxStage) {
+          r.firstClear = true;
+          S.maxStage = Math.min(CAMPAIGN_STAGES + 1, cfg.n + 1);
+          r.gold += 40;
+          if (cfg.chapterIdx === SPC) {
+            r.chapterDone = cfg.chapter;
+            S.events['chapter' + cfg.chapter] = true;
+            bondGain += 6;
+          }
+        } else r.gold *= 0.6; // 重刷收益降低
+        S.stage = Math.min(CAMPAIGN_STAGES, Math.max(S.stage, cfg.n + 1));
+        if (S.stage > S.maxStage) S.stage = S.maxStage;
+      } else if (mode === 'daily') {
+        var first = !S.daily.done;
+        S.daily.done = true; S.daily.best = Math.max(S.daily.best || 0, total);
+        if (first) { S.stats.dailyWins += 1; r.gold += 150; r.xp += 60; r.dailyFirst = true; }
+        else r.gold *= 0.3;
+      } else if (mode === 'endless') {
+        var carry = b.carry || { total: 0 };
+        carry.total = (carry.total || 0) + total;
+        carry.bank = Math.min(15, Math.floor(b.timeLeft * 0.5));
+        r.endlessTotal = carry.total; r.round = cfg.round;
+        S.stats.endlessBestRound = Math.max(S.stats.endlessBestRound, cfg.round);
+        r.gold *= 0.5;
+        r.nextCarry = carry;
+      }
+      r.bond = addBond(hid, bondGain, true);
+    } else {
+      S.stats.losses += 1;
+      r.xp = 8;
+      r.gold = mode === 'endless' ? 0 : 5;
+      if (mode === 'endless') {
+        var c2 = b.carry || { total: 0 };
+        r.endlessTotal = (c2.total || 0) + b.score;
+        r.round = cfg.round;
+        recordEndless(r.endlessTotal, cfg.round - 1);
+      }
     }
-    S.gold += goldGain;
-    S.stats.goldEarned += goldGain;
-    var ups = addXp(xpGain);
+    r.gold = addGold(r.gold);
+    r.ups = addXp(r.xp);
     checkAchievements();
     save();
-    showResult(win, {
-      score: battle.score, timeBonus: timeBonus, perfectBonus: perfectBonus, total: total,
-      xp: xpGain, gold: goldGain, ups: ups, perfect: perfect, miss: battle.miss, combo: S.stats.maxCombo
-    });
+    Snd.duck(true);
+    if (win) { Snd.play('clear'); vibe([20, 40, 20, 40, 60]); Fx.burst($('board'), 'clear'); Fx.flash('gold'); cheer('win'); }
+    else { Snd.play('fail'); vibe([80]); Fx.flash('crimson'); cheer('lose'); }
+    setTimeout(function () { showResult(r); }, win ? 650 : 500);
   }
 
-  function showResult(win, r) {
-    var box = $('r-box');
-    box.innerHTML =
-      '<h2 class="scr-title">' + (win ? '勝利' : '時間到') + '</h2>' +
-      '<div class="result-score">' + r.total + '</div>' +
-      '<div class="muted center">基礎 ' + r.score + ' · 時間獎 ' + r.timeBonus + (r.perfect ? ' · 完美 +500' : '') + '</div>' +
-      '<div class="overlay-msg">經驗 +' + r.xp + '　金幣 +' + r.gold +
-      (r.ups ? '<br>等級提升 ×' + r.ups + '！' : '') +
-      (r.perfect ? '<br>✨ 完美通關' : '') + '</div>' +
-      '<div class="btn-row">' +
-      '<button class="btn secondary" id="r-home">回主畫面</button>' +
-      (win ? '<button class="btn btn-gold" id="r-next">下一關</button>' : '<button class="btn btn-gold" id="r-retry">再試一次</button>') +
-      '</div>';
+  function recordEndless(score, rounds) {
+    S.stats.endlessBest = Math.max(S.stats.endlessBest || 0, score);
+    S.leaderboard.push({ score: score, round: Math.max(0, rounds), hero: S.selected, date: todayStr() });
+    S.leaderboard.sort(function (a, b) { return b.score - a.score; });
+    S.leaderboard = S.leaderboard.slice(0, CONFIG.LEADERBOARD_SIZE || 10);
+  }
+
+  function showResult(r) {
+    var b = battle;
+    var h = b ? b.heroine : heroine(S.selected);
+    var head = r.win ? (r.mode === 'endless' ? '第 ' + r.round + ' 輪突破' : r.boss ? '頭目擊破！' : '勝利') :
+      (r.reason === 'miss' ? '失誤過多' : r.reason === 'quit' ? '撤退' : '時間到');
+    var winLine = pick(czGet(['battleCheer', h.id, r.win ? 'win' : 'lose'])) || '';
+    var html = '<h2 class="scr-title">' + head + '</h2>';
+    if (r.win && r.mode !== 'endless') html += '<div class="stars" id="r-stars"><span>★</span><span>★</span><span>★</span></div>';
+    html += '<div class="result-score">' + (r.mode === 'endless' ? r.endlessTotal : r.total) + '</div>';
+    html += '<div class="muted center small">基礎 ' + r.base + ' · 時間獎 ' + r.timeBonus + (r.perfect ? ' · 完美 +500' : '') + (r.win && r.boss ? ' · 頭目 +300' : '') +
+      ' · 失誤 ' + r.miss + ' · 最高連擊 ' + r.combo + '</div>';
+    html += '<div class="overlay-msg">經驗 +' + r.xp + '　金幣 +' + r.gold + (r.bond ? '　好感 +' + r.bond : '') +
+      (r.ups ? '<br>⬆️ 等級提升 ×' + r.ups + '！' : '') + (r.firstClear ? '<br>🗝️ 首次通關' : '') + (r.dailyFirst ? '<br>🗓️ 每日挑戰完成獎勵 +150' : '') +
+      (r.mode === 'endless' && !r.win ? '<br>♾️ 已記錄至排行榜' : '') + '</div>';
+    if (winLine) html += '<p class="greet-bubble" style="margin-top:10px">' + esc(h.name) + '：' + esc(winLine) + '</p>';
+    html += '<div class="btn-row"><button class="btn secondary" id="r-home">回主城</button>';
+    if (r.mode === 'campaign') {
+      if (r.win && r.n < CAMPAIGN_STAGES) html += '<button class="btn btn-gold" id="r-next">下一關 ⚡' + CONFIG.ENERGY_COST + '</button>';
+      else if (!r.win) html += '<button class="btn btn-gold" id="r-retry">再試一次 ⚡' + CONFIG.ENERGY_COST + '</button>';
+    } else if (r.mode === 'endless' && r.win) {
+      html += '<button class="btn btn-gold" id="r-endless">下一輪 →</button>';
+    } else if (r.mode === 'endless') {
+      html += '<button class="btn btn-gold" id="r-retry">再挑戰 ⚡' + CONFIG.ENDLESS_COST + '</button>';
+    } else if (r.mode === 'daily' && !r.win) {
+      html += '<button class="btn btn-gold" id="r-retry">再試一次</button>';
+    }
+    html += '</div>';
+    if (r.mode === 'endless' && r.win) html += '<button class="btn secondary" id="r-cashout" style="width:100%;margin-top:8px">收手並記錄成績</button>';
+    $('r-box').innerHTML = html;
     go('result');
-    $('r-home').onclick = function () { go('home'); };
-    if ($('r-next')) $('r-next').onclick = function () { startBattle(); };
-    if ($('r-retry')) $('r-retry').onclick = function () { startBattle(); };
-  }
-
-  function heartsHTML(bond) {
-    var html = '';
-    for (var i = 1; i <= CONFIG.BOND_MAX; i++) {
-      html += '<span class="bond-heart' + (i <= bond ? ' on' : '') + '">♥</span>';
+    if (r.win && r.stars) {
+      qsa('#r-stars span').forEach(function (s, k) {
+        if (k < r.stars) setTimeout(function () { s.classList.add('on'); Snd.play('star'); vibe(10); }, 250 + k * 280);
+      });
     }
-    return html;
+    var leave = function () { battle = null; Snd.duck(false); Snd.bgm('main'); };
+    var homeBtn = $('r-home');
+    if (homeBtn) homeBtn.onclick = function () {
+      Snd.play('tap');
+      if (r.mode === 'endless' && r.win && r.nextCarry) { recordEndless(r.nextCarry.total, r.round); save(); }
+      leave();
+      afterResult(r, function () { go('home'); });
+    };
+    var next = $('r-next');
+    if (next) next.onclick = function () { Snd.play('tap'); leave(); afterResult(r, function () { beginCampaign(Math.min(S.maxStage, r.n + 1)); }); };
+    var retry = $('r-retry');
+    if (retry) retry.onclick = function () {
+      Snd.play('tap'); leave();
+      if (r.mode === 'campaign') beginCampaign(r.n);
+      else if (r.mode === 'daily') beginDaily();
+      else beginEndless(1);
+    };
+    var en = $('r-endless');
+    if (en) en.onclick = function () { Snd.play('tap'); var c = r.nextCarry; battle = null; Snd.duck(false); beginEndless(r.round + 1, c); };
+    var co = $('r-cashout');
+    if (co) co.onclick = function () { Snd.play('tap'); recordEndless(r.nextCarry.total, r.round); save(); leave(); go('home'); showLeaderboard(); };
   }
 
-  function pickLine(h, bond) {
-    var tier = bondTier(bond);
-    var arr = (h.lines && h.lines[tier]) || ['……'];
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-
-  function openGallery(id) {
-    var h = heroine(id);
-    if (!S.unlocked[id]) { toast('尚未解鎖'); return; }
-    galleryId = id;
-    var g = $('hero-gallery');
-    g.classList.remove('hidden');
-    renderGallery();
-  }
-
-  function closeGallery() {
-    $('hero-gallery').classList.add('hidden');
-    galleryId = null;
-    var art = $('hg-art');
-    if (art) art.classList.remove('zoomed');
-  }
-
-  function renderGallery() {
-    if (!galleryId) return;
-    var h = heroine(galleryId);
-    var bond = S.bond[h.id] || 0;
-    var art = $('hg-art');
-    art.src = 'assets/heroines/' + h.id + '.webp';
-    art.className = 'hg-art ' + outfitClass(h.id);
-    $('hg-title').textContent = h.title;
-    $('hg-name').textContent = h.name;
-    $('hg-bio').textContent = h.bio;
-    $('hg-hearts').innerHTML = heartsHTML(bond);
-    $('hg-bond-num').textContent = bond + ' / ' + CONFIG.BOND_MAX;
-    $('hg-bubble').textContent = pickLine(h, bond);
-    var outfits = $('hg-outfits');
-    outfits.innerHTML = '';
-    (h.outfits || []).forEach(function (o) {
-      var unlocked = bond >= o.reqBond;
-      var active = (S.outfit[h.id] || 'default') === o.id;
-      var chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'outfit-chip' + (unlocked ? '' : ' locked') + (active ? ' active' : '');
-      chip.textContent = unlocked ? o.name : ('🔒 ' + o.name + '（好感' + o.reqBond + '）');
-      chip.disabled = !unlocked;
-      chip.onclick = function () {
-        if (!unlocked) return;
-        S.outfit[h.id] = o.id;
-        save();
-        toast('換裝：' + o.name);
-        renderGallery();
-        renderHome();
-      };
-      outfits.appendChild(chip);
+  /** 結算後的章節收尾／事件（日期事件、浴衣解鎖） */
+  function afterResult(r, cont) {
+    if (!r.chapterDone) { cont(); return; }
+    var ch = r.chapterDone;
+    var unlocks = D.OUTFITS.filter(function (o) { return o.event === 'chapter' + ch; });
+    showChapterEpilogue(ch, function () {
+      if (unlocks.length) toast('👘 服裝解鎖：' + unlocks.map(function (o) { return o.name; }).join('、'));
+      emit('game:event', { type: 'chapter', chapter: ch });
+      var r2 = tryCall(window.HeroineUI, ['dateEvent', 'onChapterClear'], [ch, S.selected]);
+      if (r2 && r2.v === true) { cont(); return; }
+      cont();
     });
-    var talkBtn = $('hg-talk');
-    var key = todayStr() + ':' + h.id;
-    var talked = (S.talkToday[key] || 0) >= 3;
-    talkBtn.disabled = talked;
-    talkBtn.textContent = talked ? '今日已暢談' : '💬 交談';
   }
 
-  function talkHeroine() {
-    if (!galleryId) return;
-    var h = heroine(galleryId);
-    var key = todayStr() + ':' + h.id;
-    S.talkToday[key] = (S.talkToday[key] || 0) + 1;
-    $('hg-bubble').textContent = pickLine(h, S.bond[h.id] || 0);
-    $('hg-bubble').classList.remove('pop'); void $('hg-bubble').offsetWidth; $('hg-bubble').classList.add('pop');
-    if (S.talkToday[key] === 1 || S.talkToday[key] === 3) {
-      if (addBond(h.id, 1)) toast('好感 +1');
-    }
-    playTone(640, 0.08);
-    vibe(10);
-    save();
-    renderGallery();
+  /* ════════════════ 暫停 ════════════════ */
+  function showPause() {
+    var b = battle;
+    if (!b || b.over) return;
+    b.paused = true;
+    Snd.duck(true);
+    var mech = b.cfg.boss ? D.bossMech(b.cfg.boss) : null;
+    openModal('<h3>暫停</h3>' + (mech ? '<p class="muted small">♛ ' + esc(mech.name) + '：' + esc(mech.desc) + '</p>' : '<p class="muted center">戰鬥暫停中</p>') +
+      '<button class="btn btn-gold" id="m-resume" style="width:100%">繼續</button>' +
+      '<button class="btn secondary" id="m-quit" style="margin-top:8px;width:100%">撤退（判定失敗）</button>', function () {
+      if (battle === b && !b.over) { b.paused = false; b.lastTick = performance.now(); Snd.duck(false); }
+    });
+    bindModalBtn('m-resume', closeModal);
+    bindModalBtn('m-quit', function () { modalOnClose = null; closeModal(); endBattle(false, 'quit'); });
   }
 
+  /* ════════════════ 名冊（技能樹、解鎖） ════════════════ */
   function renderRoster() {
-    var list = $('roster-list');
+    var list = $('roster-list'); if (!list) return;
     list.innerHTML = '';
     HEROINES.forEach(function (h) {
       var unlocked = !!S.unlocked[h.id];
       var canUnlock = !unlocked && S.lv >= h.reqLv && S.gold >= h.cost;
-      var lv = S.skills[h.id] || 1;
-      var bond = S.bond[h.id] || 0;
+      var lv = S.skills[h.id] || 1, cdLv = S.skillCd[h.id] || 0;
       var card = document.createElement('div');
       card.className = 'roster-card' + (unlocked ? '' : ' locked') + (S.selected === h.id ? ' selected' : '');
+      var cdText = h.skill === 'combo' ? '被動技能' : '冷卻 ' + D.skillCooldown(h.skill, cdLv) + ' 秒';
       card.innerHTML =
-        '<button type="button" class="rc-img-btn" data-view="' + h.id + '">' +
-        '<img class="' + outfitClass(h.id) + '" src="assets/heroines/' + h.id + '.webp" alt="">' +
-        '<span class="rc-view-hint">鑑賞</span></button>' +
-        '<div class="rc-body">' +
-        '<div class="rc-title">' + h.title + '</div>' +
-        '<div class="rc-name">' + h.name + '</div>' +
-        '<div class="rc-hearts">' + (unlocked ? heartsHTML(bond) : '') + '</div>' +
-        '<div class="muted small">' + (unlocked ? skillDesc(h.skill, lv) + '（技等 ' + lv + '）' : '解鎖：Lv' + h.reqLv + (h.cost ? ' · ' + h.cost + ' 金' : ' · 免費')) + '</div>' +
-        '<div class="rc-actions"></div></div>';
+        '<button type="button" class="rc-img-btn"><img class="' + outfitClass(h.id) + '" src="assets/heroines/' + h.id + '.webp" alt=""><span class="rc-view-hint">' + (unlocked ? '互動' : '🔒') + '</span></button>' +
+        '<div class="rc-body"><div class="rc-title">' + esc(h.title) + (S.fav[h.id] ? ' ★' : '') + '</div><div class="rc-name">' + esc(h.name) + '</div>' +
+        '<div class="rc-hearts">' + (unlocked ? heartsHTML(S.bond[h.id] || 0) + ' <small class="muted">' + (S.bond[h.id] || 0) + '/' + BOND_PTS_MAX + '</small>' : '') + '</div>' +
+        '<div class="muted small">' + (unlocked ? esc(h.skillName) + '：' + esc(D.skillDesc(h.skill, lv)) + '<br>' + cdText +
+          '<div class="pips">威力 ' + pips(lv, CONFIG.SKILL_MAX) + (h.skill === 'combo' ? '' : '<br>冷卻 ' + pips(cdLv, CONFIG.CD_MAX)) + '</div>' :
+          '解鎖：Lv' + h.reqLv + (h.cost ? ' · ' + h.cost + ' 金' : ' · 免費')) + '</div>' +
+        '<div class="rc-actions tree"></div></div>';
       var actions = qs('.rc-actions', card);
-      var viewBtn = qs('.rc-img-btn', card);
-      viewBtn.onclick = function () { openGallery(h.id); };
+      qs('.rc-img-btn', card).onclick = function () { if (unlocked) openGallery(h.id); else toast('尚未解鎖'); };
       if (!unlocked) {
-        var b = document.createElement('button');
-        b.className = 'btn btn-sm btn-gold';
-        b.textContent = canUnlock ? '解鎖' : '未解鎖';
-        b.disabled = !canUnlock;
-        b.onclick = function () {
+        actions.appendChild(mkBtn(canUnlock ? '解鎖' : '未達條件', 'btn btn-sm btn-gold', !canUnlock, function () {
           if (S.gold < h.cost || S.lv < h.reqLv) return;
-          S.gold -= h.cost;
-          S.unlocked[h.id] = true;
-          checkAchievements();
-          save(); toast('解鎖 ' + h.name);
+          S.gold -= h.cost; S.unlocked[h.id] = true;
+          Snd.play('levelup'); checkAchievements(); save();
+          toast('👑 ' + h.name + ' 加入麾下');
           renderRoster(); refreshTop();
-        };
-        actions.appendChild(b);
+        }));
       } else {
-        var sel = document.createElement('button');
-        sel.className = 'btn btn-sm' + (S.selected === h.id ? ' btn-gold' : '');
-        sel.textContent = S.selected === h.id ? '出戰中' : '選為出戰';
-        sel.disabled = S.selected === h.id;
-        sel.onclick = function () { S.selected = h.id; save(); renderRoster(); renderHome(); toast('出戰：' + h.name); };
-        actions.appendChild(sel);
-        var view = document.createElement('button');
-        view.className = 'btn btn-sm';
-        view.textContent = '互動';
-        view.onclick = function () { openGallery(h.id); };
-        actions.appendChild(view);
+        actions.appendChild(mkBtn(S.selected === h.id ? '出戰中' : '選為出戰', 'btn btn-sm' + (S.selected === h.id ? ' btn-gold' : ''), S.selected === h.id, function () {
+          S.selected = h.id; save(); renderRoster(); toast('出戰：' + h.name);
+        }));
+        actions.appendChild(mkBtn('互動', 'btn btn-sm', false, function () { openGallery(h.id); }));
         if (lv < CONFIG.SKILL_MAX) {
-          var cost = upgradeCost(lv);
-          var up = document.createElement('button');
-          up.className = 'btn btn-sm';
-          up.textContent = '強化 ' + cost + '金';
-          up.disabled = S.gold < cost;
-          up.onclick = function () {
+          var cost = D.upgradeCost(lv);
+          actions.appendChild(mkBtn('威力↑ ' + cost + '金', 'btn btn-sm', S.gold < cost, function () {
             if (S.gold < cost) return;
-            S.gold -= cost;
-            S.skills[h.id] = lv + 1;
-            save(); toast(h.skillName + ' → Lv' + (lv + 1));
-            renderRoster(); refreshTop();
-          };
-          actions.appendChild(up);
+            S.gold -= cost; S.skills[h.id] = lv + 1; Snd.play('levelup'); save();
+            toast(h.skillName + ' → Lv' + (lv + 1)); renderRoster(); refreshTop();
+          }));
+        }
+        if (h.skill !== 'combo' && cdLv < CONFIG.CD_MAX) {
+          var c2 = D.cdUpgradeCost(cdLv);
+          actions.appendChild(mkBtn('冷卻↓ ' + c2 + '金', 'btn btn-sm', S.gold < c2, function () {
+            if (S.gold < c2) return;
+            S.gold -= c2; S.skillCd[h.id] = cdLv + 1; Snd.play('levelup'); save();
+            toast(h.skillName + ' 冷卻縮短'); renderRoster(); refreshTop();
+          }));
         }
       }
       list.appendChild(card);
     });
   }
+  function pips(n, max) { var s = ''; for (var i = 0; i < max; i++) s += i < n ? '◆' : '◇'; return s; }
+  function mkBtn(text, cls, disabled, fn) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = cls; b.textContent = text; b.disabled = !!disabled;
+    b.onclick = function () { Snd.play('tap'); fn(); };
+    return b;
+  }
 
-  function renderAch() {
-    var got = Object.keys(S.achievements).length;
-    $('ach-summary').textContent = '已解鎖 ' + got + ' / ' + ACHIEVEMENTS.length;
-    var list = $('ach-list');
-    list.innerHTML = '';
-    ACHIEVEMENTS.forEach(function (a) {
-      var ok = !!S.achievements[a.id];
-      var el = document.createElement('div');
-      el.className = 'ach-item' + (ok ? '' : ' locked');
-      el.innerHTML = '<div class="ico">' + a.icon + '</div><div><b>' + a.name + '</b><div class="muted small">' + a.desc + (ok ? '' : ' · 獎 ' + a.reward + '金') + '</div></div>';
-      list.appendChild(el);
+  /* ════════════════ 女傑互動（HeroineUI 優先；否則內建備用） ════════════════ */
+  var heroineInited = false;
+  function heroineModule() {
+    var H = window.HeroineUI;
+    if (!H) return null;
+    if (!heroineInited) { heroineInited = true; tryCall(H, ['init'], [GameAPI]); }
+    return H;
+  }
+  function openGallery(id) {
+    if (!S.unlocked[id]) { toast('尚未解鎖'); return; }
+    Snd.play('chime');
+    var H = heroineModule();
+    if (H) {
+      var r = tryCall(H, ['open', 'openGallery', 'show'], [id, GameAPI]);
+      if (r && r.v !== false) return;
+    }
+    galleryId = id;
+    $('hero-gallery').classList.remove('hidden');
+    Snd.duck(true);
+    renderGallery(true);
+  }
+  function closeGallery() {
+    var g = $('hero-gallery');
+    if (g && !g.classList.contains('hidden')) { g.classList.add('hidden'); Snd.duck(false); }
+    galleryId = null;
+    var art = $('hg-art'); if (art) art.classList.remove('zoomed');
+    if (currentScreen === 'home') renderHome();
+    if (currentScreen === 'roster') renderRoster();
+  }
+  function outfitStatus(o, id) {
+    if (o.shop) return S.outfitsOwned[o.id] ? true : '商會購買';
+    if (o.event) return S.events[o.event] ? true : (o.note || '活動解鎖');
+    return bondLv(id) >= o.reqBond ? true : '好感 ' + o.reqBond + '♥';
+  }
+  function renderGallery(fresh) {
+    if (!galleryId) return;
+    var h = heroine(galleryId), pts = S.bond[h.id] || 0;
+    var art = $('hg-art');
+    art.src = 'assets/heroines/' + h.id + '.webp';
+    art.className = 'hg-art breathe ' + outfitClass(h.id);
+    setText('hg-title', h.title + (S.fav[h.id] ? ' ★' : ''));
+    setText('hg-name', h.name);
+    setText('hg-bio', h.bio);
+    $('hg-hearts').innerHTML = heartsHTML(pts);
+    setText('hg-bond-num', pts + ' / ' + BOND_PTS_MAX);
+    if (fresh) setText('hg-bubble', greetingFor(h.id));
+    var outfits = $('hg-outfits');
+    outfits.innerHTML = '';
+    D.OUTFITS.forEach(function (o) {
+      var st = outfitStatus(o, h.id), ok = st === true;
+      var active = (S.outfit[h.id] || 'default') === o.id;
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'outfit-chip' + (ok ? '' : ' locked') + (active ? ' active' : '');
+      chip.textContent = ok ? o.name : '🔒 ' + o.name + '（' + st + '）';
+      chip.disabled = !ok;
+      chip.onclick = function () {
+        S.outfit[h.id] = o.id; save(); Snd.play('tap');
+        toast('換裝：' + o.name); renderGallery();
+      };
+      outfits.appendChild(chip);
+    });
+    var talkBtn = $('hg-talk');
+    var scene = nextScene(h.id);
+    var talks = day().talk[h.id] || 0;
+    talkBtn.disabled = !scene && talks >= 3;
+    talkBtn.textContent = scene ? '💬 劇情：' + (scene.title || '交談') : talks >= 3 ? '今日已暢談' : '💬 交談';
+    var sel = $('hg-select');
+    sel.disabled = S.selected === h.id;
+    sel.textContent = S.selected === h.id ? '出戰中' : '選為出戰';
+  }
+  function nextScene(id) {
+    var list = czGet(['dialogues', id]);
+    if (!Array.isArray(list)) return null;
+    var lv = bondLv(id);
+    for (var i = 0; i < list.length; i++) {
+      var sc = list[i];
+      if (sc && !S.scenesSeen[sc.id] && (sc.reqBond || 0) <= lv) return sc;
+    }
+    return null;
+  }
+  function talkHeroine() {
+    if (!galleryId) return;
+    var h = heroine(galleryId);
+    var sc = nextScene(h.id);
+    if (sc) { playScene(h.id, sc); return; }
+    var dc = day();
+    dc.talk[h.id] = (dc.talk[h.id] || 0) + 1;
+    var bubble = $('hg-bubble');
+    bubble.textContent = pick((h.lines || {})[D.bondTier(bondLv(h.id))]) || greetingFor(h.id);
+    bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
+    Snd.play('chime'); vibe(10);
+    if (dc.talk[h.id] <= 3) addBond(h.id, 2);
+    save(); renderGallery();
+  }
+  function playScene(id, sc) {
+    var choices = sc.choices || [];
+    var html = '<h3>' + esc(sc.title || '') + '</h3><div class="story-text">' + esc(sc.intro || '') + '\n\n' + esc(sc.line || '') + '</div>' +
+      choices.map(function (c, k) { return '<button class="btn" data-ch="' + k + '" style="width:100%;margin-top:8px;text-align:left;font-size:13px">' + esc(c.text) + '</button>'; }).join('');
+    openModal(html);
+    qsa('[data-ch]', $('modal-card')).forEach(function (btn) {
+      btn.onclick = function () {
+        var k = parseInt(btn.getAttribute('data-ch'), 10);
+        var c = choices[k]; if (!c) return;
+        S.scenesSeen[sc.id] = true;
+        var gain = addBond(id, (c.bondDelta || 1) * 4);
+        Snd.play(gain > 0 ? 'gift' : 'chime');
+        openModal('<h3>' + esc(sc.title || '') + '</h3><div class="story-text">' + esc(c.response || '') + (c.note ? '\n\n' + esc(c.note) : '') + '</div>' +
+          '<p class="center" style="color:var(--gold2)">好感 +' + gain + '</p><button class="btn btn-gold" id="m-cont" style="width:100%">繼續</button>', function () { renderGallery(); });
+        bindModalBtn('m-cont', closeModal);
+      };
     });
   }
+  var TAP_LINES = {
+    head: ['（她微微一怔，隨即別過臉）……下次先說一聲。', '（輕輕整理被你撥亂的髮絲）真拿你沒辦法。'],
+    shoulder: ['（拍了拍你的肩回禮）一起加油吧。', '嗯，我會撐住的。你也是。'],
+    hand: ['（擊掌！）漂亮，搭檔。', '（行了一個利落的軍禮）隨時聽候差遣。']
+  };
+  function tapZone(zone) {
+    if (!galleryId) return;
+    var id = galleryId, dc = day();
+    var key = id;
+    dc.tap[key] = (dc.tap[key] || 0) + 1;
+    var line = pick(czGet(['taps', id, zone])) || pick(TAP_LINES[zone]) || '……';
+    var bubble = $('hg-bubble');
+    bubble.textContent = line;
+    bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
+    Snd.play('chime'); vibe(12);
+    var art = $('hg-art'); Fx.pulse(art && art.parentNode);
+    if (dc.tap[key] <= (CONFIG.TAP_DAILY_CAP || 5) && Math.random() < 0.5) {
+      var g = addBond(id, 1);
+      if (g) Fx.floatText(art, '♥ +' + g, 'rose');
+    }
+    save(); renderGallery();
+  }
+  function giftFlow() {
+    if (!galleryId) return;
+    var h = heroine(galleryId), dc = day();
+    var used = dc.gift[h.id] || 0;
+    var owned = SHOP.gifts.filter(function (g) { return (S.inv[g.id] || 0) > 0; });
+    var html = '<h3>贈禮給 ' + esc(h.name) + '</h3><p class="muted small">今日已贈 ' + used + '/' + CONFIG.GIFT_DAILY_CAP + ' · 喜好：' +
+      (h.favGifts || []).map(function (gid) { var g = findItem('gifts', gid); return g ? g.icon + g.name : ''; }).join('、') + '</p>';
+    if (!owned.length) html += '<p class="muted">背包中沒有禮物，請至帝國商會購買。</p>';
+    else html += '<div class="gift-grid">' + owned.map(function (g) { return '<button data-gift="' + g.id + '"' + (used >= CONFIG.GIFT_DAILY_CAP ? ' disabled' : '') + '><i>' + g.icon + '</i>' + esc(g.name) + ' ×' + S.inv[g.id] + '</button>'; }).join('') + '</div>';
+    html += '<button class="btn secondary" id="m-cancel" style="width:100%;margin-top:10px">關閉</button>';
+    openModal(html);
+    bindModalBtn('m-cancel', closeModal);
+    qsa('[data-gift]', $('modal-card')).forEach(function (btn) {
+      btn.onclick = function () { giveGift(h.id, btn.getAttribute('data-gift')); };
+    });
+  }
+  /** 贈禮（也提供給 HeroineUI 使用）。回傳 {ok, gain, fav, line} */
+  function giveGift(id, giftId) {
+    var h = heroine(id), dc = day();
+    if ((S.inv[giftId] || 0) <= 0) return { ok: false, reason: 'none' };
+    if ((dc.gift[id] || 0) >= CONFIG.GIFT_DAILY_CAP) { toast('今天已經送很多了，明天再來吧'); return { ok: false, reason: 'cap' }; }
+    S.inv[giftId] -= 1;
+    dc.gift[id] = (dc.gift[id] || 0) + 1;
+    S.stats.giftsGiven += 1;
+    var fav = (h.favGifts || []).indexOf(giftId) !== -1;
+    var gain = addBond(id, fav ? 16 : 8);
+    var g = findItem('gifts', giftId);
+    var line = fav ? '（眼睛一亮）這是……我最喜歡的！謝謝你。' : '謝謝，我會好好珍惜的。';
+    Snd.play('gift'); vibe([15, 30, 15]);
+    save();
+    if (galleryId === id) {
+      closeModal();
+      setText('hg-bubble', (g ? g.icon + ' ' : '') + line);
+      Fx.floatText($('hg-art'), '♥ +' + gain, 'rose');
+      renderGallery();
+    }
+    toast((fav ? '💖 正中喜好！' : '🎁 ') + '好感 +' + gain);
+    return { ok: true, gain: gain, fav: fav, line: line };
+  }
 
+  /* ════════════════ 商店 ════════════════ */
+  var shopTab = 'consumables';
+  function findItem(tab, id) {
+    var arr = SHOP[tab] || [];
+    for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return arr[i];
+    return null;
+  }
+  function renderShop() {
+    qsa('#shop-tabs button').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === shopTab); });
+    var list = $('shop-list'); if (!list) return;
+    var cat = czGet(['shop', 'categories', shopTab]);
+    var html = cat && cat.desc ? '<p class="muted small center" style="margin-bottom:8px">' + esc(cat.desc) + '</p>' : '';
+    (SHOP[shopTab] || []).forEach(function (it) {
+      var owned = shopTab === 'relics' ? !!S.relics[it.id] : shopTab === 'outfits' ? !!S.outfitsOwned[outfitIdForShop(it.id)] : 0;
+      var count = S.inv[it.id] || 0;
+      html += '<div class="shop-item"><div class="si-ico">' + it.icon + '</div><div class="si-body"><b>' + esc(it.name) + '</b><div class="muted small">' + esc(it.desc) + '</div>' +
+        (shopTab === 'consumables' || shopTab === 'gifts' ? (count ? '<div class="owned">持有 ×' + count + '</div>' : '') : (owned ? '<div class="owned">已擁有</div>' : '')) + '</div>' +
+        '<button class="btn btn-sm btn-gold" data-buy="' + it.id + '"' + (owned || S.gold < it.price ? ' disabled' : '') + '>' + (owned ? '✓' : '🪙' + it.price) + '</button></div>';
+    });
+    list.innerHTML = html;
+    qsa('[data-buy]', list).forEach(function (b) { b.onclick = function () { buy(shopTab, b.getAttribute('data-buy')); }; });
+  }
+  function outfitIdForShop(shopId) {
+    for (var i = 0; i < D.OUTFITS.length; i++) if (D.OUTFITS[i].shop === shopId) return D.OUTFITS[i].id;
+    return shopId;
+  }
+  function buy(tab, id) {
+    var it = findItem(tab, id);
+    if (!it) return false;
+    if (S.gold < it.price) { toast(pick(czGet(['shop', 'responses', 'notEnoughGold'])) || '金幣不足'); Snd.play('mismatch'); return false; }
+    if (tab === 'relics' && S.relics[id]) return false;
+    if (tab === 'outfits' && S.outfitsOwned[outfitIdForShop(id)]) return false;
+    S.gold -= it.price;
+    S.stats.purchases += 1;
+    if (tab === 'relics') S.relics[id] = true;
+    else if (tab === 'outfits') S.outfitsOwned[outfitIdForShop(id)] = true;
+    else if (it.instant && id === 'potion') S.energy = Math.min(S.energy + 5, S.energyMax + 5);
+    else S.inv[id] = (S.inv[id] || 0) + 1;
+    Snd.play('buy'); vibe(12);
+    toast(pick(czGet(['shop', 'responses', 'buySuccess'])) || ('購入：' + it.name));
+    checkAchievements(); save();
+    renderShop(); refreshTop();
+    return true;
+  }
+
+  /* ════════════════ 成就、排行、設定 ════════════════ */
+  function renderAch() {
+    var got = Object.keys(S.achievements).length;
+    setText('ach-summary', '已解鎖 ' + got + ' / ' + ACHIEVEMENTS.length);
+    var list = $('ach-list'); if (!list) return;
+    list.innerHTML = ACHIEVEMENTS.map(function (a) {
+      var ok = !!S.achievements[a.id];
+      return '<div class="ach-item' + (ok ? '' : ' locked') + '"><div class="ico">' + a.icon + '</div><div><b>' + esc(a.name) + '</b><div class="muted small">' + esc(a.desc) + (ok ? ' ✓' : ' · 獎 ' + a.reward + ' 金') + '</div></div></div>';
+    }).join('');
+  }
+  function showLeaderboard() {
+    var rows = S.leaderboard.length ? S.leaderboard.map(function (e, k) {
+      return '<div class="lb-row"><b>' + (k + 1) + '</b><span>' + esc(heroine(e.hero).name) + ' · 第 ' + e.round + ' 輪<br><small class="muted">' + esc(e.date) + '</small></span><b>' + e.score + '</b></div>';
+    }).join('') : '<p class="muted">尚無紀錄。挑戰無盡模式吧！</p>';
+    openModal('<h3>🏆 無盡排行榜</h3>' + rows + '<p class="muted small" style="margin-top:8px">最佳輪數：' + (S.stats.endlessBestRound || 0) + '</p><button class="btn btn-gold" id="m-cancel" style="width:100%;margin-top:8px">關閉</button>');
+    bindModalBtn('m-cancel', closeModal);
+  }
   function renderSettings() {
-    $('set-sound').checked = !!S.sound;
-    $('set-vibrate').checked = !!S.vibrate;
-    $('set-stats').textContent = '勝 ' + S.stats.wins + ' · 完美 ' + S.stats.perfects + ' · 最高連擊 ' + S.stats.maxCombo;
+    var st = S.settings;
+    var set = function (id, prop, val) { var el = $(id); if (el) el[prop] = val; };
+    set('set-sfx', 'checked', !!st.sfx); set('set-bgm', 'checked', !!st.bgm);
+    set('set-sfx-vol', 'value', st.sfxVol); set('set-bgm-vol', 'value', st.bgmVol);
+    set('set-vibrate', 'checked', !!st.vibrate); set('set-shake', 'checked', !!st.shake);
+    setText('set-stats', '勝 ' + S.stats.wins + ' · 敗 ' + S.stats.losses + ' · 完美 ' + S.stats.perfects + ' · 最高連擊 ' + S.stats.maxCombo + ' · 頭目 ' + S.stats.bossWins + ' · ★' + totalStars());
+    setText('set-version', '記憶帝國：女傑翻牌 ' + (D.VERSION || 'v3.0'));
+  }
+  function setAudio(patch) {
+    for (var k in patch) S.settings[k] = patch[k];
+    Snd.applySettings();
+    if (S.settings.bgm) Snd.bgm(currentScreen === 'battle' && battle && battle.cfg.boss ? 'boss' : currentScreen === 'battle' ? 'battle' : 'main');
+    else Snd.stopBgm();
+    save(); refreshTop();
   }
 
-  function showPause() {
-    var modal = $('modal');
-    var card = $('modal-card');
-    card.innerHTML = '<h3>暫停</h3><p class="muted center">戰鬥暫停中</p>' +
-      '<button class="btn btn-gold btn-row-item" id="m-resume">繼續</button>' +
-      '<button class="btn secondary" id="m-quit" style="margin-top:8px;width:100%">放棄回主畫面</button>';
-    modal.classList.remove('hidden');
-    if (battle) battle.running = false;
-    $('m-resume').onclick = function () {
-      modal.classList.add('hidden');
-      if (battle) { battle.running = true; }
-    };
-    $('m-quit').onclick = function () {
-      modal.classList.add('hidden');
-      if (battle && battle.timer) clearInterval(battle.timer);
-      battle = null;
-      go('home');
-    };
-  }
-
+  /* ════════════════ 綁定 ════════════════ */
+  function on(id, ev, fn) { var el = $(id); if (el) el.addEventListener(ev, fn); }
   function bind() {
     qsa('#nav button').forEach(function (b) {
       b.addEventListener('click', function () {
-        if (battle && battle.running) return;
+        if (battle && !battle.over) return;
+        Snd.play('tap');
         closeGallery();
         go(b.getAttribute('data-go'));
       });
     });
-    $('btn-fight').onclick = startBattle;
-    $('btn-skill').onclick = useSkill;
-    $('btn-pause').onclick = showPause;
-    $('home-hero-img').onclick = function () { openGallery(S.selected); };
-    $('hg-close').onclick = closeGallery;
-    $('hg-talk').onclick = talkHeroine;
-    $('hg-select').onclick = function () {
+    on('btn-fight', 'click', function () {
+      Snd.play('tap');
+      if (S.maxStage > CAMPAIGN_STAGES && S.stage >= CAMPAIGN_STAGES) { go('map'); toast('戰役已全破！可於地圖重刷關卡衝三星'); return; }
+      beginCampaign(S.stage);
+    });
+    on('btn-daily', 'click', function () {
+      Snd.play('tap');
+      var c = D.dailyConfig(todayStr()), mech = c.boss ? D.bossMech(c.boss) : null;
+      var done = S.daily.date === todayStr() && S.daily.done;
+      openModal('<h3>🗓️ ' + esc(c.label) + '</h3><p class="muted">同一天所有玩家的牌局相同。<br>' + c.cols + '×' + c.rows + ' · ' + c.sets + ' 組 · 限時 ' + c.time + ' 秒 · 失誤上限 ' + c.missLimit +
+        (mech ? '<br>♛ 特殊規則：' + esc(mech.name) + '（' + esc(mech.desc) + '）' : '') + '</p><p>' + (done ? '今日已完成 ✓ 最佳 ' + S.daily.best + '（再挑戰獎勵降低）' : '首次通關：🪙+150、經驗+60') + '</p>' +
+        '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">挑戰 ⚡' + CONFIG.ENERGY_COST + '</button></div>');
+      bindModalBtn('m-cancel', closeModal);
+      bindModalBtn('m-go', function () { closeModal(); beginDaily(); });
+    });
+    on('btn-endless', 'click', function () {
+      Snd.play('tap');
+      openModal('<h3>♾️ 無盡模式</h3><p class="muted">連續挑戰逐漸變難的牌局，每 3 輪出現頭目機制。剩餘時間的一半會帶入下一輪（最多 15 秒）。失敗或收手時記錄總分。</p>' +
+        '<p>最佳：第 ' + (S.stats.endlessBestRound || 0) + ' 輪 · ' + (S.stats.endlessBest || 0) + ' 分</p>' +
+        '<div class="btn-row"><button class="btn secondary" id="m-cancel">返回</button><button class="btn btn-gold" id="m-go">開始 ⚡' + CONFIG.ENDLESS_COST + '</button></div>');
+      bindModalBtn('m-cancel', closeModal);
+      bindModalBtn('m-go', function () { closeModal(); beginEndless(1); });
+    });
+    on('btn-map', 'click', function () { Snd.play('tap'); go('map'); });
+    on('btn-board', 'click', function () { Snd.play('tap'); showLeaderboard(); });
+    on('btn-skill', 'click', useSkill);
+    on('btn-pause', 'click', function () { Snd.play('tap'); showPause(); });
+    on('home-hero-img', 'click', function () { openGallery(S.selected); });
+    on('home-greet', 'click', function () { var g = $('home-greet'); g.textContent = greetingFor(S.selected); Snd.play('chime'); });
+    on('tb-settings', 'click', function () {
+      if (battle && !battle.over) { showPause(); return; }
+      Snd.play('tap'); closeGallery(); go(currentScreen === 'settings' ? 'home' : 'settings');
+    });
+    on('tb-mute', 'click', function () {
+      var anyOn = S.settings.sfx || S.settings.bgm;
+      setAudio({ sfx: !anyOn, bgm: !anyOn });
+      if (!anyOn) Snd.play('tap');
+      toast(anyOn ? '已靜音' : '已開啟聲音');
+      if (currentScreen === 'settings') renderSettings();
+    });
+    // 設定
+    on('set-sfx', 'change', function () { setAudio({ sfx: $('set-sfx').checked }); Snd.play('tap'); });
+    on('set-bgm', 'change', function () { setAudio({ bgm: $('set-bgm').checked }); });
+    on('set-sfx-vol', 'input', function () { S.settings.sfxVol = clamp(parseFloat($('set-sfx-vol').value) || 0, 0, 1); Snd.applySettings(); });
+    on('set-sfx-vol', 'change', function () { save(); Snd.play('flip'); });
+    on('set-bgm-vol', 'input', function () { S.settings.bgmVol = clamp(parseFloat($('set-bgm-vol').value) || 0, 0, 1); Snd.applySettings(); });
+    on('set-bgm-vol', 'change', save);
+    on('set-vibrate', 'change', function () { S.settings.vibrate = $('set-vibrate').checked; save(); vibe(20); });
+    on('set-shake', 'change', function () { S.settings.shake = $('set-shake').checked; save(); Fx.shake(); });
+    on('btn-reset', 'click', function () {
+      if (!window.confirm('確定要重置所有進度嗎？此操作無法復原。')) return;
+      S = defaultState(); GameAPI.state = S; save();
+      toast('進度已重置'); go('home');
+    });
+    // 商店分頁
+    qsa('#shop-tabs button').forEach(function (b) {
+      b.addEventListener('click', function () { shopTab = b.getAttribute('data-tab'); Snd.play('tap'); renderShop(); });
+    });
+    // 備用女傑介面
+    on('hg-close', 'click', function () { Snd.play('tap'); closeGallery(); });
+    on('hg-talk', 'click', talkHeroine);
+    on('hg-gift', 'click', function () { Snd.play('tap'); giftFlow(); });
+    on('hg-select', 'click', function () {
       if (!galleryId || !S.unlocked[galleryId]) return;
-      S.selected = galleryId;
-      save();
-      toast('出戰：' + heroine(galleryId).name);
-      closeGallery();
-      renderHome();
+      S.selected = galleryId; save(); Snd.play('tap');
+      toast('出戰：' + heroine(galleryId).name); renderGallery();
+    });
+    on('hg-title', 'click', function () {
+      if (!galleryId) return;
+      S.fav[galleryId] = !S.fav[galleryId]; save(); renderGallery();
+      toast(S.fav[galleryId] ? '★ 已設為最愛' : '已取消最愛');
+    });
+    qsa('#hg-zones button').forEach(function (b) {
+      b.addEventListener('click', function (e) { e.stopPropagation(); tapZone(b.getAttribute('data-zone')); });
+    });
+    // 立繪視差
+    var wrap = qs('.hg-art-wrap');
+    if (wrap) wrap.addEventListener('pointermove', function (e) {
+      var r = wrap.getBoundingClientRect(), art = $('hg-art');
+      if (!art || art.classList.contains('zoomed')) return;
+      var dx = ((e.clientX - r.left) / r.width - 0.5) * 8, dy = ((e.clientY - r.top) / r.height - 0.5) * 6;
+      art.style.translate = (-dx).toFixed(1) + 'px ' + (-dy).toFixed(1) + 'px';
+    });
+    // 點擊遮罩關閉（戰鬥暫停時除外，避免誤觸）
+    on('modal', 'click', function (e) { if (e.target === $('modal') && !(battle && !battle.over)) closeModal(); });
+    // 背景／前景
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        if (battle && battle.running && !battle.over && !battle.paused) showPause();
+      } else { Snd.unlock(); refreshTop(); }
+    });
+    // 第一次互動解鎖音訊（iOS）
+    var unlockOnce = function () {
+      Snd.unlock(); Snd.applySettings();
+      if (started) Snd.bgm(currentScreen === 'battle' ? 'battle' : 'main');
+      document.removeEventListener('pointerdown', unlockOnce, true);
+      document.removeEventListener('touchend', unlockOnce, true);
+      document.removeEventListener('keydown', unlockOnce, true);
     };
-    $('hg-art').onclick = function () {
-      $('hg-art').classList.toggle('zoomed');
-    };
-    $('set-sound').onchange = function () { S.sound = $('set-sound').checked; save(); if (S.sound) playTone(600, 0.08); };
-    $('set-vibrate').onchange = function () { S.vibrate = $('set-vibrate').checked; save(); };
-    $('btn-reset').onclick = function () {
-      if (!confirm('確定要重置所有進度嗎？')) return;
-      S = defaultState();
-      save();
-      toast('進度已重置');
-      go('home');
-    };
+    document.addEventListener('pointerdown', unlockOnce, true);
+    document.addEventListener('touchend', unlockOnce, true);
+    document.addEventListener('keydown', unlockOnce, true);
   }
 
-  function ensureCssExtras() {
-    if (!document.getElementById('dyn-css')) {
-      var s = document.createElement('style');
-      s.id = 'dyn-css';
-      s.textContent = '.toast{background:#2a1018ee;border:1px solid #e8c26a;color:#ffdf8e;padding:10px 14px;border-radius:999px;margin:6px;opacity:0;transition:opacity .2s;font-size:13px}.toast.show{opacity:1}.result-score{font-size:42px;text-align:center;color:#ffdf8e;font-weight:900;margin:8px 0}.roster-card{display:grid;grid-template-columns:88px 1fr;gap:10px;background:#2b1119;border:1px solid #e8c26a44;border-radius:14px;padding:10px;margin-bottom:10px}.roster-card.locked{opacity:.55;filter:grayscale(.6)}.roster-card.selected{border-color:#e8c26a}.rc-name{font-weight:800;font-size:16px}.rc-title{color:#e8c26a;font-size:12px}.rc-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.rc-img-btn{position:relative;padding:0;border:0;background:none;border-radius:10px;overflow:hidden}.rc-img-btn img{width:88px;height:118px;object-fit:cover;border-radius:10px;border:1px solid #e8c26a66;display:block}.rc-view-hint{position:absolute;left:0;right:0;bottom:0;font-size:10px;background:#000a;color:#ffdf8e;padding:2px 0}.rc-hearts{letter-spacing:1px;font-size:12px;margin:2px 0}.ach-item{display:flex;gap:10px;align-items:center;background:#2b1119;border:1px solid #e8c26a33;border-radius:12px;padding:10px;margin-bottom:8px}.ach-item.locked{opacity:.45;filter:grayscale(1)}.bond-heart{color:#5a3040;margin-right:1px}.bond-heart.on{color:#ff5a7a;text-shadow:0 0 6px #ff5a7a88}';
-      document.head.appendChild(s);
-    }
+  /* ════════════════ 標題畫面 ════════════════ */
+  function setupTitle() {
+    var ts = $('title-screen');
+    setText('ts-ver', D.VERSION || 'v3.0');
+    if (!ts) { started = true; return; }
+    var art = qs('.ts-art', ts);
+    if (art) art.style.backgroundImage = "url('assets/heroines/" + heroine(S.selected).id + ".webp')";
+    var startFn = function () {
+      if (started) return;
+      started = true;
+      Snd.unlock(); Snd.applySettings();
+      Snd.play('chime');
+      Snd.bgm('main');
+      ts.classList.add('leaving');
+      setTimeout(function () { ts.style.display = 'none'; }, 650);
+      if (S.migratedFrom) { toast('已從舊版存檔遷移進度（' + S.migratedFrom + '）'); delete S.migratedFrom; save(); }
+      var g = $('home-greet'); if (g) { g.textContent = greetingFor(S.selected); g.setAttribute('data-hero', S.selected); }
+      if (!S.seenIntro[1] && S.maxStage <= 1) setTimeout(function () { if (currentScreen === 'home' && !battle && $('modal').classList.contains('hidden') && !S.seenIntro[1]) showChapterIntro(1, null); }, 700);
+    };
+    on('ts-start', 'click', startFn);
+    ts.addEventListener('click', function (e) { if (e.target !== $('ts-start')) startFn(); });
   }
 
+  /* ════════════════ 對外 API（heroine.js / story.js 使用） ════════════════ */
+  var GameAPI = {
+    version: D.VERSION,
+    state: S,
+    getState: function () { return S; },
+    save: save,
+    data: D,
+    heroine: heroine,
+    bondLevel: bondLv,
+    addBond: addBond,
+    giveGift: giveGift,
+    addGold: function (n) { var g = addGold(n); save(); refreshTop(); return g; },
+    spendGold: function (n) { if (S.gold < n) return false; S.gold -= n; save(); refreshTop(); return true; },
+    inventory: function () { return S.inv; },
+    dayCounters: day,
+    toast: toast,
+    sfx: function (n, o) { Snd.play(n, o); },
+    duck: function (v) { Snd.duck(v); },
+    vibe: vibe,
+    fx: Fx,
+    content: CZ,
+    greeting: greetingFor,
+    selectHeroine: function (id) { if (!S.unlocked[id]) return false; S.selected = id; save(); renderHome(); return true; },
+    setOutfit: function (id, outfitId) { var o = null; D.OUTFITS.forEach(function (x) { if (x.id === outfitId) o = x; }); if (!o || outfitStatus(o, id) !== true) return false; S.outfit[id] = outfitId; save(); return true; },
+    outfitStatus: function (id, outfitId) { var o = null; D.OUTFITS.forEach(function (x) { if (x.id === outfitId) o = x; }); return o ? outfitStatus(o, id) : false; },
+    markScene: function (sceneId) { S.scenesSeen[sceneId] = true; save(); },
+    sceneSeen: function (sceneId) { return !!S.scenesSeen[sceneId]; },
+    refresh: function () { refreshTop(); if (currentScreen === 'home') renderHome(); if (currentScreen === 'roster') renderRoster(); },
+    go: go,
+    openGallery: openGallery,
+    closeGallery: closeGallery,
+    openModal: openModal,
+    closeModal: closeModal
+  };
+  window.GameAPI = GameAPI;
+
+  /* ════════════════ 除錯（?debug=1 或 localStorage.memoryRPG_debug=1） ════════════════ */
+  function debugEnabled() {
+    try { if (/[?&]debug=1\b/.test(location.search)) return true; } catch (e) {}
+    try { return localStorage.getItem('memoryRPG_debug') === '1'; } catch (e) { return false; }
+  }
+  function setupDebug() {
+    if (!debugEnabled()) return;
+    window.__DEBUG = {
+      state: function () { return S; },
+      skipToStage: function (n) {
+        n = clamp(n | 0, 1, CAMPAIGN_STAGES);
+        if (S.maxStage < n) S.maxStage = n;
+        S.stage = n; S.energy = Math.max(S.energy, S.energyMax);
+        save(); go('home'); return D.stageConfig(n);
+      },
+      forceBoss: function (mech) {
+        var ids = D.BOSS_MECHS.map(function (m) { return m.id; });
+        if (ids.indexOf(mech) === -1) mech = pick(ids);
+        var cfg = D.stageConfig(Math.max(5, S.stage), { boss: mech });
+        cfg.mode = 'campaign';
+        S.energy = Math.max(S.energy, 1);
+        if (battle) { clearBattleTimers(); battle = null; }
+        startBattle(cfg, {});
+        return cfg;
+      },
+      winLevel: function () {
+        if (!battle || battle.over) return false;
+        battle.matched = battle.cfg.sets;
+        battle.cards.forEach(function (c, k) { if (!c.joker) { c.matched = true; c.open = true; syncCard(k); } });
+        endBattle(true); return true;
+      },
+      loseLevel: function () { if (battle && !battle.over) endBattle(false, 'time'); },
+      unlockAll: function () {
+        HIDS.forEach(function (id) { S.unlocked[id] = true; });
+        S.gold += 99999; S.energy = 99; S.maxStage = CAMPAIGN_STAGES + 1;
+        D.OUTFITS.forEach(function (o) { S.outfitsOwned[o.id] = true; if (o.event) S.events[o.event] = true; });
+        save(); go(currentScreen === 'battle' ? 'home' : currentScreen); return true;
+      },
+      setBond: function (id, n) {
+        if (HIDS.indexOf(id) === -1) return false;
+        // n ≤ 5 視為心數，否則視為點數
+        S.bond[id] = clamp(n <= CONFIG.BOND_MAX ? n * BOND_PER : n, 0, BOND_PTS_MAX);
+        save(); GameAPI.refresh(); if (galleryId === id) renderGallery(); return S.bond[id];
+      },
+      audioTest: function () { Snd.unlock(); return Snd.test(); },
+      reveal: function () { if (battle) $('board').classList.toggle('previewing'); },
+      battle: function () { return battle; },
+      migrateFrom: function (json) { S = normalize(migrate(typeof json === 'string' ? JSON.parse(json) : json)); GameAPI.state = S; save(); go('home'); return S; }
+    };
+    if (window.console) console.info('[game] __DEBUG enabled', Object.keys(window.__DEBUG));
+  }
+
+  /* ════════════════ 啟動 ════════════════ */
   function init() {
-    ensureCssExtras();
-    bind();
-    refreshTop();
+    try { bind(); } catch (e) { warn('[game] bind error', e); }
+    Snd.applySettings();
+    setupTitle();
+    setupDebug();
     go('home');
-    energyTimer = setInterval(function () { refreshTop(); }, 1000);
-    if ('serviceWorker' in navigator) {
+    setInterval(refreshTop, 1000);
+    heroineModule();
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('./sw.js').catch(function () {});
     }
+    emit('game:ready', { api: GameAPI });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

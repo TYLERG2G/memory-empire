@@ -1,0 +1,488 @@
+/* ==========================================================================
+   記憶帝國：女傑翻牌 — V3 Boutique Visual FX & Imperial Noir Polish (css/fx.css)
+   Palette: Imperial Crimson (#a3122a / #d4243e), Sovereign Gold (#e8c26a / #ffdf8e),
+            Obsidian Void (#0d0408 / #1a0a12), Arcane Amethyst (#b377ff)
+   ========================================================================== */
+
+:root {
+  --fx-crimson: #d4243e;
+  --fx-crimson-deep: #7a0b1e;
+  --fx-gold: #e8c26a;
+  --fx-gold-bright: #ffe6a3;
+  --fx-gold-foil: #fff4d2;
+  --fx-void: #0d0408;
+  --fx-amethyst: #c58aff;
+  --fx-rose: #ff6b8b;
+  --fx-frost: #6ad7ff;
+  --fx-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --fx-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---------- Overlay Canvas & Transient FX Stage ---------- */
+.fx-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none !important;
+  z-index: 9990;
+  display: block;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+.fx-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none !important;
+  z-index: 9985;
+  overflow: hidden;
+}
+
+/* ---------- Screen Transition Silk Veil ---------- */
+.fx-transition-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none !important;
+  opacity: 0;
+  background:
+    radial-gradient(ellipse at 50% 38%, rgba(232, 194, 106, 0.16) 0%, rgba(163, 18, 42, 0.24) 45%, rgba(13, 4, 8, 0.68) 100%);
+  animation: fxVeilDissolve 0.26s var(--fx-ease-out) forwards;
+}
+
+.fx-transition-veil::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 223, 142, 0.65), transparent);
+  box-shadow: 0 0 14px rgba(232, 194, 106, 0.55);
+  transform: scaleX(0.2);
+  opacity: 0;
+  animation: fxHorizonSweep 0.26s var(--fx-ease-out) forwards;
+}
+
+.fx-transition-veil.is-battle {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(212, 36, 62, 0.34) 0%, rgba(42, 15, 26, 0.62) 55%, rgba(13, 4, 8, 0.85) 100%);
+}
+
+.fx-transition-veil.is-boss {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 42, 68, 0.42) 0%, rgba(90, 10, 24, 0.72) 52%, rgba(8, 2, 5, 0.92) 100%);
+}
+
+.fx-transition-veil.is-arcane,
+.fx-transition-veil.is-story {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(155, 89, 255, 0.34) 0%, rgba(42, 16, 58, 0.68) 54%, rgba(13, 4, 8, 0.9) 100%);
+}
+
+.fx-transition-veil.is-gold {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 215, 0, 0.28) 0%, rgba(138, 16, 38, 0.42) 52%, rgba(13, 4, 8, 0.84) 100%);
+}
+
+@keyframes fxVeilDissolve {
+  0% { opacity: 0.92; }
+  100% { opacity: 0; }
+}
+
+@keyframes fxHorizonSweep {
+  0% { opacity: 0.85; transform: scaleX(0.18); }
+  55% { opacity: 0.55; transform: scaleX(1); }
+  100% { opacity: 0; transform: scaleX(1.15); }
+}
+
+/* ---------- Screen Entrance Motion ---------- */
+.screen.fx-screen-enter {
+  animation: fxScreenEnterFade 0.28s var(--fx-ease-out) both;
+}
+
+.screen.fx-screen-enter-right {
+  animation: fxScreenEnterRight 0.28s var(--fx-ease-out) both;
+}
+
+.screen.fx-screen-enter-left {
+  animation: fxScreenEnterLeft 0.28s var(--fx-ease-out) both;
+}
+
+.screen.fx-screen-enter-zoom {
+  animation: fxScreenEnterZoom 0.32s var(--fx-ease-out) both;
+}
+
+@keyframes fxScreenEnterFade {
+  0% { opacity: 0; transform: translateY(8px) scale(0.992); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes fxScreenEnterRight {
+  0% { opacity: 0; transform: translateX(18px); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes fxScreenEnterLeft {
+  0% { opacity: 0; transform: translateX(-18px); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes fxScreenEnterZoom {
+  0% { opacity: 0; transform: scale(0.955); filter: brightness(1.18); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+
+/* ---------- Vignette Edge Flashes ---------- */
+.fx-vignette-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none !important;
+  opacity: 0;
+  box-shadow: inset 0 0 68px 18px rgba(232, 194, 106, 0.42);
+  animation: fxVignettePulse var(--fx-flash-dur, 420ms) var(--fx-ease-out) forwards;
+}
+
+.fx-vignette-flash.is-crimson {
+  box-shadow: inset 0 0 74px 20px rgba(212, 36, 62, 0.52);
+}
+
+.fx-vignette-flash.is-gold {
+  box-shadow: inset 0 0 78px 22px rgba(255, 223, 142, 0.48);
+}
+
+.fx-vignette-flash.is-arcane {
+  box-shadow: inset 0 0 76px 20px rgba(180, 114, 255, 0.48);
+}
+
+.fx-vignette-flash.is-rose {
+  box-shadow: inset 0 0 72px 18px rgba(255, 107, 139, 0.45);
+}
+
+.fx-vignette-flash.is-frost {
+  box-shadow: inset 0 0 72px 18px rgba(106, 215, 255, 0.45);
+}
+
+@keyframes fxVignettePulse {
+  0% { opacity: 0; }
+  22% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ---------- Screen & Board Shake Helpers ---------- */
+.fx-shake-sm {
+  animation: fxShakeSm 0.28s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.fx-shake,
+.fx-shake-md {
+  animation: fxShakeMd 0.34s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.fx-shake-lg {
+  animation: fxShakeLg 0.44s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes fxShakeSm {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  20% { transform: translate3d(-4px, 1px, 0); }
+  40% { transform: translate3d(4px, -1px, 0); }
+  60% { transform: translate3d(-2.5px, 0.5px, 0); }
+  80% { transform: translate3d(2px, 0, 0); }
+}
+
+@keyframes fxShakeMd {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  15% { transform: translate3d(-6px, 1.5px, 0) rotate(-0.35deg); }
+  32% { transform: translate3d(6px, -1.5px, 0) rotate(0.35deg); }
+  50% { transform: translate3d(-4.5px, 1px, 0) rotate(-0.2deg); }
+  68% { transform: translate3d(3.5px, -0.5px, 0) rotate(0.15deg); }
+  84% { transform: translate3d(-1.5px, 0, 0); }
+}
+
+@keyframes fxShakeLg {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  12% { transform: translate3d(-9px, 2.5px, 0) rotate(-0.6deg); }
+  26% { transform: translate3d(8.5px, -2.5px, 0) rotate(0.6deg); }
+  42% { transform: translate3d(-7px, 2px, 0) rotate(-0.4deg); }
+  58% { transform: translate3d(5.5px, -1.5px, 0) rotate(0.3deg); }
+  74% { transform: translate3d(-3.5px, 1px, 0); }
+  88% { transform: translate3d(2px, 0, 0); }
+}
+
+/* ---------- Combo Pop Callout ---------- */
+.fx-combo-pop {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none !important;
+  white-space: nowrap;
+  padding: 5px 16px 6px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--fx-gold-foil);
+  background: linear-gradient(135deg, rgba(58, 16, 28, 0.92), rgba(26, 8, 16, 0.94));
+  border: 1.5px solid rgba(255, 223, 142, 0.78);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.65),
+    0 0 22px rgba(232, 194, 106, 0.45),
+    inset 0 0 12px rgba(212, 36, 62, 0.35);
+  text-shadow:
+    0 2px 0 #590a18,
+    0 0 12px rgba(255, 223, 142, 0.75);
+  animation: fxComboPop 0.92s var(--fx-ease-out) forwards;
+  will-change: transform, opacity;
+}
+
+.fx-combo-pop::before,
+.fx-combo-pop::after {
+  content: "✦";
+  display: inline-block;
+  margin: 0 6px;
+  font-size: 0.72em;
+  color: var(--fx-gold);
+  vertical-align: middle;
+}
+
+.fx-combo-pop.tier-2 {
+  font-size: 25px;
+  background: linear-gradient(135deg, rgba(138, 16, 38, 0.94), rgba(43, 12, 22, 0.95));
+  border-color: #ffe8a8;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.72),
+    0 0 28px rgba(212, 36, 62, 0.65),
+    0 0 14px rgba(255, 223, 142, 0.55);
+}
+
+.fx-combo-pop.tier-3 {
+  font-size: 28px;
+  color: #fff9e6;
+  background: linear-gradient(135deg, rgba(178, 22, 48, 0.96), rgba(74, 14, 34, 0.96));
+  border-width: 2px;
+  border-color: #fff3c4;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.78),
+    0 0 34px rgba(255, 210, 110, 0.75),
+    0 0 18px rgba(212, 36, 62, 0.8);
+}
+
+.fx-combo-pop.tier-max {
+  font-size: 31px;
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(190, 28, 62, 0.96), rgba(92, 24, 120, 0.95), rgba(38, 10, 24, 0.96));
+  border-width: 2px;
+  border-color: #fff7d6;
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.82),
+    0 0 40px rgba(255, 223, 142, 0.9),
+    0 0 24px rgba(197, 138, 255, 0.75);
+}
+
+@keyframes fxComboPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -32%) scale(0.38);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -54%) scale(1.16);
+  }
+  36% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+  52% {
+    opacity: 1;
+    transform: translate(-50%, -55%) scale(1.03);
+  }
+  78% {
+    opacity: 0.95;
+    transform: translate(-50%, -72%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -98%) scale(0.92);
+  }
+}
+
+/* ---------- Floating Score / Bond / Status Text ---------- */
+.fx-float-text {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none !important;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: var(--fx-gold-bright);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.88), 0 0 10px rgba(232, 194, 106, 0.55);
+  animation: fxFloatUp 0.85s var(--fx-ease-out) forwards;
+}
+
+.fx-float-text.is-crimson {
+  color: #ff6b81;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(212, 36, 62, 0.65);
+}
+
+.fx-float-text.is-rose {
+  color: #ff9eb5;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.88), 0 0 12px rgba(255, 107, 139, 0.75);
+}
+
+.fx-float-text.is-arcane,
+.fx-float-text.is-purple {
+  color: #dec0ff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 12px rgba(155, 89, 255, 0.78);
+}
+
+.fx-float-text.is-gold {
+  color: #fff2b2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 14px rgba(255, 215, 0, 0.78);
+}
+
+.fx-float-text.is-frost {
+  color: #bff0ff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 12px rgba(106, 215, 255, 0.75);
+}
+
+@keyframes fxFloatUp {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.7); }
+  20% { opacity: 1; transform: translate(-50%, -55%) scale(1.08); }
+  100% { opacity: 0; transform: translate(-50%, -125%) scale(0.96); }
+}
+
+/* ---------- Card Match Pulse & Boutique 3D Card Juice ---------- */
+.card {
+  perspective: 860px;
+}
+
+.card .card-inner {
+  will-change: transform;
+}
+
+.card:not(.open):not(.matched):active .card-inner {
+  transform: scale(0.95) translateY(1px);
+  transition-duration: 0.1s;
+}
+
+.card .back {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .card:not(.open):not(.matched):hover .back {
+    border-color: var(--fx-gold-bright);
+    box-shadow:
+      inset 0 0 0 3px #1a0a12,
+      inset 0 0 0 5px rgba(255, 223, 142, 0.65),
+      0 6px 16px rgba(0, 0, 0, 0.72),
+      0 0 14px rgba(232, 194, 106, 0.28);
+  }
+}
+
+/* Subtle gilded foil sheen sweeping across revealed card face */
+.card .front::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 32%,
+    rgba(255, 244, 210, 0.55) 48%,
+    rgba(255, 223, 142, 0.2) 56%,
+    transparent 68%
+  );
+  transform: translateX(-120%);
+  opacity: 0;
+}
+
+.card.open:not(.matched) .front::after {
+  animation: fxCardSheen 0.52s var(--fx-ease-out) 0.08s forwards;
+}
+
+@keyframes fxCardSheen {
+  0% { opacity: 0.9; transform: translateX(-110%); }
+  100% { opacity: 0; transform: translateX(115%); }
+}
+
+/* Match Pulse Helper (.fx-card-pulse) */
+.fx-card-pulse {
+  z-index: 6;
+  animation: fxCardPop 0.52s var(--fx-ease-spring);
+}
+
+.fx-card-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 13px;
+  pointer-events: none;
+  border: 2px solid var(--fx-gold-bright);
+  box-shadow:
+    0 0 22px 4px rgba(255, 223, 142, 0.75),
+    inset 0 0 14px rgba(212, 36, 62, 0.4);
+  animation: fxCardHaloRing 0.56s var(--fx-ease-out) forwards;
+}
+
+@keyframes fxCardPop {
+  0% { transform: scale(1); }
+  32% { transform: scale(1.09); }
+  68% { transform: scale(0.985); }
+  100% { transform: scale(1); }
+}
+
+@keyframes fxCardHaloRing {
+  0% {
+    opacity: 0.95;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.26);
+  }
+}
+
+/* ---------- Boutique Button Press & Gold Lustre ---------- */
+.btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-gold {
+  transition: transform 0.12s var(--fx-ease-out), box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.btn-gold:not(:disabled):active {
+  transform: translateY(2px) scale(0.975);
+  box-shadow: 0 2px 0 #6a4a14, 0 0 16px rgba(232, 194, 106, 0.45);
+}
+
+.btn-skill:not(:disabled):active {
+  transform: scale(0.97);
+  box-shadow: 0 0 20px rgba(197, 138, 255, 0.6);
+}
+
+/* ---------- Reduced Motion Accessibility ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .fx-shake-sm,
+  .fx-shake,
+  .fx-shake-lg {
+    animation: none !important;
+  }
+  .screen.fx-screen-enter,
+  .screen.fx-screen-enter-right,
+  .screen.fx-screen-enter-left,
+  .screen.fx-screen-enter-zoom {
+    animation-duration: 0.12s !important;
+  }
+  .fx-combo-pop,
+  .fx-float-text,
+  .fx-card-pulse,
+  .fx-card-pulse::after {
+    animation-duration: 0.25s !important;
+  }
+}

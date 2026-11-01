@@ -1,0 +1,2046 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>記憶帝國：女傑翻牌 — QA 視覺與動效審查面板 (Review Sheet)</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+
+<!-- Canonical asset paths only (no root fallbacks — avoids console 404 noise in QA) -->
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/fx.css">
+<link rel="stylesheet" href="css/heroine.css">
+
+<script src="js/vendor/pixelfx/pixelfx.bundle.js"></script>
+<script src="js/content_zh.js"></script>
+<script src="js/data.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/story.js"></script>
+<script src="js/heroine.js"></script>
+
+<style id="review-qa-inline-css">
+/* ==========================================================================
+   記憶帝國：QA 審查專用樣式（獨立內嵌，支援多欄網格與對比展示）
+   ========================================================================== */
+:root {
+  --qa-crimson: #d4243e;
+  --qa-crimson-deep: #7a0b1e;
+  --qa-gold: #e8c26a;
+  --qa-gold-bright: #ffe6a3;
+  --qa-amethyst: #9b59ff;
+  --qa-void: #0d0408;
+  --qa-card-bg: rgba(26, 10, 18, 0.94);
+  --qa-card-border: rgba(232, 194, 106, 0.28);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--qa-void);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(163, 18, 42, 0.22) 0%, transparent 65%),
+    radial-gradient(circle at 85% 90%, rgba(155, 89, 255, 0.12) 0%, transparent 50%),
+    linear-gradient(180deg, #12040a 0%, #0d0408 100%);
+  color: #f5e9dc;
+  font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* 頂部審查控管列 */
+#qa-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(13, 4, 8, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(232, 194, 106, 0.35);
+  padding: 12px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.85);
+}
+.qa-top-row {
+  max-width: 1320px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.qa-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.qa-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--qa-gold-bright);
+  letter-spacing: 2px;
+  text-shadow: 0 0 14px rgba(232, 194, 106, 0.45);
+}
+.qa-badge {
+  font-size: 11px;
+  background: linear-gradient(135deg, #a3122a, #5a0a14);
+  color: #ffdf8e;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 223, 142, 0.4);
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+.qa-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* 模組狀態指標燈 */
+.qa-module-status-bar {
+  max-width: 1320px;
+  margin: 8px auto 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11.5px;
+  align-items: center;
+}
+.qa-mod-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+.qa-mod-item .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff4d4d;
+  box-shadow: 0 0 6px #ff4d4d;
+}
+.qa-mod-item.is-ok .dot {
+  background: #4ade80;
+  box-shadow: 0 0 6px #4ade80;
+}
+.qa-mod-item.is-missing .dot {
+  background: #f87171;
+  box-shadow: 0 0 6px #f87171;
+}
+
+/* 自動巡迴進度條 */
+#qa-autoplay-bar {
+  display: none;
+  max-width: 1320px;
+  margin: 10px auto 0;
+  padding: 8px 12px;
+  background: rgba(58, 22, 34, 0.7);
+  border: 1px solid rgba(232, 194, 106, 0.4);
+  border-radius: 8px;
+  align-items: center;
+  gap: 14px;
+}
+#qa-autoplay-bar.active {
+  display: flex;
+}
+.ap-step-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--qa-gold-bright);
+  white-space: nowrap;
+}
+.ap-progress-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(232, 194, 106, 0.2);
+}
+.ap-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #d4243e, #e8c26a);
+  transition: width 0.3s ease;
+}
+
+/* 主容器與多欄網格 */
+.qa-container {
+  max-width: 1320px;
+  margin: 20px auto 60px;
+  padding: 0 16px;
+}
+
+/* 區塊標題 */
+.qa-sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 32px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(232, 194, 106, 0.25);
+}
+.qa-sec-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--qa-gold-bright);
+  letter-spacing: 1.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qa-sec-title::before {
+  content: "✦";
+  color: var(--qa-crimson);
+  font-size: 14px;
+}
+.qa-sec-desc {
+  font-size: 12px;
+  color: #b59a8d;
+}
+
+/* 色彩規範樣卡（Crimson, Gold, Purple, Void） */
+.qa-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.qa-swatch-card {
+  background: var(--qa-card-bg);
+  border: 1px solid var(--qa-card-border);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.qa-swatch-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232, 194, 106, 0.6);
+}
+.qa-swatch-color {
+  height: 72px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 8px;
+}
+.qa-swatch-color .hex {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+.qa-swatch-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.qa-swatch-meta {
+  font-size: 11.5px;
+  color: #b59a8d;
+  line-height: 1.4;
+}
+.qa-swatch-test-btn {
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* 核心審查網格 Cards */
+.qa-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(580px, 1fr));
+  gap: 20px;
+}
+@media (max-width: 640px) {
+  .qa-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.qa-review-card {
+  background: var(--qa-card-bg);
+  border: 1px solid var(--qa-card-border);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.qa-review-card.is-active-step {
+  border-color: var(--qa-gold-bright) !important;
+  box-shadow: 0 0 30px rgba(232, 194, 106, 0.45), 0 8px 24px rgba(0, 0, 0, 0.8) !important;
+}
+
+.qa-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(232, 194, 106, 0.15);
+}
+.qa-card-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--qa-gold);
+  letter-spacing: 1px;
+}
+.qa-card-tag {
+  font-size: 11px;
+  color: #a89285;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* 側並側 (Side-by-Side) 檢視面板 */
+.qa-side-by-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  flex: 1;
+}
+@media (max-width: 768px) {
+  .qa-side-by-side {
+    grid-template-columns: 1fr;
+  }
+}
+
+.qa-panel-view {
+  background: rgba(13, 4, 8, 0.85);
+  border: 1px solid rgba(232, 194, 106, 0.2);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
+  position: relative;
+  overflow: hidden;
+}
+.qa-panel-ctrl {
+  background: rgba(22, 8, 14, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 控制按鈕組與狀態文字 */
+.qa-btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.qa-btn-row {
+  display: flex;
+  gap: 8px;
+}
+.qa-btn-row > * {
+  flex: 1;
+}
+
+.qa-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  background: linear-gradient(135deg, #351520, #220c15);
+  border: 1px solid rgba(232, 194, 106, 0.35);
+  color: #f5e9dc;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  text-align: left;
+}
+.qa-action-btn:hover {
+  background: linear-gradient(135deg, #481d2c, #2d101d);
+  border-color: rgba(232, 194, 106, 0.6);
+  transform: translateY(-1px);
+}
+.qa-action-btn:active {
+  transform: translateY(1px);
+}
+.qa-action-btn.gold {
+  background: linear-gradient(135deg, #d7a743, #a77a26);
+  color: #1a0a12;
+  border-color: #fff3c4;
+}
+.qa-action-btn.crimson {
+  background: linear-gradient(135deg, #a3122a, #6b0c1b);
+  border-color: #ff8a9b;
+}
+
+/* 狀態徽章（若缺少模組顯示 'module missing'） */
+.qa-status-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #b59a8d;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.qa-status-pill.missing {
+  background: #7a0b1e;
+  border-color: #ff4d4d;
+  color: #ffcfd5;
+  box-shadow: 0 0 6px rgba(255, 77, 77, 0.4);
+}
+.qa-status-pill.ok {
+  background: #0f4024;
+  border-color: #4ade80;
+  color: #bbf7d0;
+}
+
+/* 女傑待機展示特定樣式 */
+.qa-heroine-stage {
+  position: relative;
+  width: 170px;
+  height: 226px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2px solid var(--qa-gold);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 0, 0, 0.6);
+  background: #1a0a12;
+}
+.qa-heroine-stage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  transition: transform 0.4s ease, filter 0.4s ease;
+}
+/* 呼吸待機動態 */
+.qa-heroine-stage img.breathe-standard {
+  animation: v3Breathe 4.8s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+.qa-heroine-stage img.breathe-deep {
+  animation: qaBreatheDeep 6.5s ease-in-out infinite;
+  transform-origin: 50% 88%;
+}
+@keyframes qaBreatheDeep {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.025) translateY(-2px); }
+}
+
+/* 觸碰感應熱區 */
+.qa-tap-zones {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 30% 32% 38%;
+  z-index: 5;
+}
+.qa-tap-zone {
+  background: rgba(255, 255, 255, 0.0);
+  border: 1px dashed rgba(232, 194, 106, 0.0);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.qa-tap-zones.show-debug .qa-tap-zone {
+  border-color: rgba(232, 194, 106, 0.4);
+  background: rgba(232, 194, 106, 0.06);
+}
+.qa-tap-zone:hover {
+  background: rgba(232, 194, 106, 0.16) !important;
+}
+
+/* 女傑對話泡泡與好感回饋 */
+.qa-cheer-bubble {
+  margin-top: 10px;
+  width: 90%;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid var(--qa-gold);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--qa-gold-bright);
+  text-align: center;
+  min-height: 20px;
+  line-height: 1.4;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+  opacity: 0.95;
+  transition: opacity 0.3s;
+}
+
+/* 卡牌展示專用卡片容器 */
+.qa-cards-demo-wrap {
+  display: grid;
+  grid-template-columns: repeat(2, 72px);
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+.qa-cards-demo-wrap .card {
+  width: 72px;
+  height: 96px;
+}
+
+/* 首領展示專用舞台 */
+.qa-boss-stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  text-align: center;
+}
+.qa-boss-avatar {
+  font-size: 54px;
+  filter: drop-shadow(0 0 16px rgba(212, 36, 62, 0.8));
+  animation: qaBossDrift 3.5s ease-in-out infinite alternate;
+}
+@keyframes qaBossDrift {
+  from { transform: translateY(-3px) scale(1); }
+  to { transform: translateY(4px) scale(1.04); }
+}
+.qa-boss-hp-track {
+  width: 82%;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(212, 36, 62, 0.5);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.qa-boss-hp-fill {
+  height: 100%;
+  width: 85%;
+  background: linear-gradient(90deg, #d4243e, #ff5a7a);
+  transition: width 0.3s ease;
+}
+
+/* 技能施放展示畫布 */
+.qa-skill-canvas-wrap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#qa-skill-canvas {
+  width: 180px;
+  height: 180px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  border-radius: 50%;
+  background: radial-gradient(circle, #250b16 0%, #0d0408 85%);
+  border: 1.5px solid rgba(155, 89, 255, 0.4);
+  box-shadow: 0 0 24px rgba(155, 89, 255, 0.25);
+}
+
+/* 通關 3 星結算舞台 */
+.qa-clear-stars-stage {
+  text-align: center;
+}
+.qa-clear-stars-stage .stars {
+  font-size: 42px;
+  margin: 4px 0 10px;
+}
+
+/* 轉場視圖模擬容器 */
+.qa-trans-viewport {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2b1119, #15060d);
+  border: 1px solid rgba(232, 194, 106, 0.3);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--qa-gold);
+  overflow: hidden;
+}
+
+/* 全域 Toast 提示窗 */
+#qa-toast-container {
+  position: fixed;
+  top: 72px;
+  right: 20px;
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.qa-toast {
+  pointer-events: auto;
+  background: rgba(26, 10, 18, 0.95);
+  border: 1.5px solid var(--qa-gold);
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffdf8e;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8), 0 0 16px rgba(232, 194, 106, 0.35);
+  animation: qaToastIn 0.25s ease-out forwards;
+}
+.qa-toast.missing {
+  border-color: #ff4d4d;
+  color: #ffcfcf;
+  background: rgba(46, 10, 18, 0.96);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.85), 0 0 16px rgba(255, 77, 77, 0.4);
+}
+@keyframes qaToastIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+  to { opacity: 1; transform: none; }
+}
+
+/* 即時活動日誌面板 */
+.qa-log-box {
+  margin-top: 36px;
+  background: rgba(13, 4, 8, 0.9);
+  border: 1px solid rgba(232, 194, 106, 0.25);
+  border-radius: 12px;
+  padding: 14px;
+}
+.qa-log-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--qa-gold);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.qa-log-content {
+  max-height: 140px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #a89285;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+  padding: 8px;
+}
+.qa-log-entry {
+  margin-bottom: 3px;
+}
+.qa-log-entry.missing {
+  color: #f87171;
+}
+.qa-log-entry.success {
+  color: #4ade80;
+}
+</style>
+</head>
+<body>
+
+<!-- 頂部審查控制列 -->
+<header id="qa-header">
+  <div class="qa-top-row">
+    <div class="qa-brand">
+      <span class="qa-title">記憶帝國：女傑翻牌</span>
+      <span class="qa-badge">QA 視覺與動效審查面板</span>
+    </div>
+    <div class="qa-actions">
+      <button type="button" id="btn-toggle-autoplay" class="qa-action-btn gold" style="width:auto; padding:6px 14px;">
+        <span id="btn-ap-lbl">▶ 開始自動巡迴審查 (Autoplay)</span>
+      </button>
+      <button type="button" id="btn-refresh-status" class="qa-action-btn" style="width:auto; padding:6px 12px;">
+        🔄 檢測全域模組
+      </button>
+    </div>
+  </div>
+
+  <!-- 模組狀態指標燈 -->
+  <div class="qa-module-status-bar" id="qa-mod-bar">
+    <span style="color:#b59a8d;">全域模組偵測：</span>
+    <span class="qa-mod-item" id="mod-fx"><span class="dot"></span>window.FX</span>
+    <span class="qa-mod-item" id="mod-ae"><span class="dot"></span>AudioEngine</span>
+    <span class="qa-mod-item" id="mod-hui"><span class="dot"></span>HeroineUI</span>
+    <span class="qa-mod-item" id="mod-pfx"><span class="dot"></span>PixelFX (Canvas)</span>
+    <span class="qa-mod-item" id="mod-data"><span class="dot"></span>GAME_DATA</span>
+    <span class="qa-mod-item" id="mod-cz"><span class="dot"></span>CONTENT_ZH</span>
+  </div>
+
+  <!-- 自動巡迴播放指示條 (?autoplay=1) -->
+  <div id="qa-autoplay-bar">
+    <span class="ap-step-text" id="ap-step-text">準備巡迴……</span>
+    <div class="ap-progress-track">
+      <div class="ap-progress-fill" id="ap-progress-fill"></div>
+    </div>
+    <button type="button" id="btn-stop-autoplay" class="qa-action-btn crimson" style="width:auto; padding:4px 10px; font-size:11px;">
+      ⏹ 停止巡迴
+    </button>
+  </div>
+</header>
+
+<!-- 主容器 -->
+<main class="qa-container">
+
+  <!-- 1. 色彩規範樣卡（Art-Direction Swatches） -->
+  <section id="sec-swatches">
+    <div class="qa-sec-head">
+      <div class="qa-sec-title">帝國黑夜美學色彩規範 (Art-Direction Swatches)</div>
+      <div class="qa-sec-desc">Crimson / Gold / Purple / Void 四原色規範與即時測試</div>
+    </div>
+    <div class="qa-swatch-grid">
+      <!-- Crimson -->
+      <div class="qa-swatch-card" id="swatch-crimson">
+        <div class="qa-swatch-color" style="background: linear-gradient(135deg, #d4243e, #7a0b1e);">
+          <span class="hex">#D4243E</span>
+        </div>
+        <div class="qa-swatch-name" style="color:#ff8a9b;">帝國緋紅 (Imperial Crimson)</div>
+        <div class="qa-swatch-meta">
+          變數：<code>--fx-crimson</code>, <code>--red</code><br>
+          職能：首領怒意預警、連擊暴擊受擊、危急邊界暗角
+        </div>
+        <button type="button" class="qa-action-btn crimson qa-swatch-test-btn" data-action="swatch-crimson">
+          <span>暗角測試 Flash Crimson</span>
+          <span class="qa-status-pill">FX.flash</span>
+        </button>
+      </div>
+
+      <!-- Gold -->
+      <div class="qa-swatch-card" id="swatch-gold">
+        <div class="qa-swatch-color" style="background: linear-gradient(135deg, #ffe6a3, #e8c26a 50%, #9c7a2e);">
+          <span class="hex">#E8C26A</span>
+        </div>
+        <div class="qa-swatch-name" style="color:#ffe6a3;">帝國金箔 (Sovereign Gold)</div>
+        <div class="qa-swatch-meta">
+          變數：<code>--fx-gold</code>, <code>--gold</code>, <code>--gold2</code><br>
+          職能：牌面配對成功金環、星級光輝、勝券在握之結算
+        </div>
+        <button type="button" class="qa-action-btn gold qa-swatch-test-btn" data-action="swatch-gold">
+          <span>光環測試 Flash Gold</span>
+          <span class="qa-status-pill">FX.flash</span>
+        </button>
+      </div>
+
+      <!-- Purple / Arcane -->
+      <div class="qa-swatch-card" id="swatch-purple">
+        <div class="qa-swatch-color" style="background: linear-gradient(135deg, #c58aff, #9b59ff 55%, #3a1622);">
+          <span class="hex">#9B59FF</span>
+        </div>
+        <div class="qa-swatch-name" style="color:#c58aff;">魔導晶紫 (Purple / Arcane Amethyst)</div>
+        <div class="qa-swatch-meta">
+          變數：<code>--fx-amethyst</code>, 薇爾妲主色 (purple accent)<br>
+          職能：魔眼窺視、神秘法陣聚能、最高階連擊璀璨高光
+        </div>
+        <button type="button" class="qa-action-btn qa-swatch-test-btn" data-action="swatch-purple">
+          <span>法陣測試 Flash Purple</span>
+          <span class="qa-status-pill">FX.flash</span>
+        </button>
+      </div>
+
+      <!-- Void -->
+      <div class="qa-swatch-card" id="swatch-void">
+        <div class="qa-swatch-color" style="background: linear-gradient(135deg, #1a0a12, #0d0408);">
+          <span class="hex">#0D0408</span>
+        </div>
+        <div class="qa-swatch-name" style="color:#e8c26a;">漆黑虛空 (Obsidian Void)</div>
+        <div class="qa-swatch-meta">
+          變數：<code>--fx-void</code>, <code>--bg</code>, <code>--panel</code><br>
+          職能：絲綢薄紗黑夜基石、牌背幽影襯托、典雅沉浸感
+        </div>
+        <button type="button" class="qa-action-btn qa-swatch-test-btn" data-action="swatch-void">
+          <span>轉場面紗 Transition Veil</span>
+          <span class="qa-status-pill">FX.transition</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 審查卡片核心網格 (Side-by-side Review Cards) -->
+  <section class="qa-cards-grid">
+
+    <!-- Card 1: 女傑待機與立繪動態 (Heroine Idle img + animate) -->
+    <div class="qa-review-card" id="card-heroine-idle">
+      <div class="qa-card-title-row">
+        <span class="qa-card-label">女傑待機立繪動態 (Heroine Idle Animation)</span>
+        <span class="qa-card-tag">Live2D-Like Breathing</span>
+      </div>
+      <div class="qa-side-by-side">
+        <!-- 左側：待機展示舞台 -->
+        <div class="qa-panel-view">
+          <div class="qa-heroine-stage" id="qa-idle-stage">
+            <img id="qa-heroine-img" class="breathe-standard" src="assets/heroines/verda.webp" alt="女傑待機立繪">
+            <div class="qa-tap-zones" id="qa-idle-tapzones">
+              <div class="qa-tap-zone" data-zone="head" title="輕撫頭部 (Head)"></div>
+              <div class="qa-tap-zone" data-zone="shoulder" title="拍肩鼓勵 (Shoulder)"></div>
+              <div class="qa-tap-zone" data-zone="hand" title="擊掌致意 (Hand)"></div>
+            </div>
+          </div>
+          <div class="qa-cheer-bubble" id="qa-idle-bubble">「……有事嗎？別浪費時間。」</div>
+        </div>
+        <!-- 右側：女傑切換與呼吸控制 -->
+        <div class="qa-panel-ctrl">
+          <div style="font-size:12px; font-weight:700; color:var(--qa-gold);">切換待機女傑 (Roster Select)</div>
+          <div class="qa-btn-row">
+            <button type="button" class="qa-action-btn" data-heroine="verda">薇爾妲</button>
+            <button type="button" class="qa-action-btn" data-heroine="karena">卡蓮娜</button>
+            <button type="button" class="qa-action-btn" data-heroine="elys">艾莉絲</button>
+          </div>
+          <div class="qa-btn-row">
+            <button type="button" class="qa-action-btn" data-heroine="selas">塞拉斯</button>
+            <button type="button" class="qa-action-btn" data-heroine="reina">萊娜</button>
+          </div>
+
+          <div style="font-size:12px; font-weight:700; color:var(--qa-gold); margin-top:6px;">呼吸待機律動 (Animation Modes)</div>
+          <div class="qa-btn-row">
+            <button type="button" class="qa-action-btn" id="btn-anim-standard">標準呼吸 (Normal)</button>
+            <button type="button" class="qa-action-btn" id="btn-anim-deep">深層律動 (Deep)</button>
+            <button type="button" class="qa-action-btn" id="btn-anim-none">靜止 (Static)</button>
+          </div>
+
+          <div style="font-size:12px; font-weight:700; color:var(--qa-gold); margin-top:6px;">典雅服裝濾鏡 (Outfit Filters)</div>
+          <div class="qa-btn-row">
+            <button type="button" class="qa-action-btn" id="btn-outfit-def">常服</button>
+            <button type="button" class="qa-action-btn" id="btn-outfit-sum">夏日洋裝</button>
+            <button type="button" class="qa-action-btn" id="btn-outfit-yuk">祭典浴衣</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: 觸碰反應按鈕 (Tap Reaction Buttons) -->
+    <div class="qa-review-card" id="card-heroine-tap">
+      <div class="qa-card-title-row">
+        <span class="qa-card-label">觸碰互動與語音反應 (Tap Reactions)</span>
+        <span class="qa-card-tag">HeroineUI & AudioEngine</span>
+      </div>
+      <div class="qa-side-by-side">
+        <!-- 左側：當前女傑互動資訊卡 -->
+        <div class="qa-panel-view" style="align-items:flex-start; justify-content:flex-start;">
+          <div style="display:flex; gap:12px; align-items:center; width:100%; margin-bottom:10px;">
+            <img id="qa-tap-avatar" src="assets/heroines/verda-sm.webp" style="width:48px; height:48px; border-radius:50%; border:2px solid var(--qa-gold); object-fit:cover;">
+            <div>
+              <div id="qa-tap-hname" style="font-weight:800; color:var(--qa-gold-bright); font-size:15px;">薇爾妲·諾克特</div>
+              <div id="qa-tap-htitle" style="font-size:11px; color:#b59a8d;">冷傲魔女軍官 • 專屬技能：魔眼窺視</div>
+            </div>
+          </div>
+          <div id="qa-tap-quote" style="font-size:13px; line-height:1.6; background:rgba(0,0,0,0.6); padding:10px; border-radius:8px; border:1px solid rgba(232,194,106,0.2); width:100%; box-sizing:border-box;">
+            「你的記憶力……還算過得去。繼續精進吧。」
+          </div>
+          <div style="margin-top:10px; font-size:11px; color:#b59a8d;">
+            互動熱區：<span id="qa-tap-zone-lbl" style="color:var(--qa-gold);">尚未觸碰</span>
+          </div>
+        </div>
+        <!-- 右側：觸碰互動按鈕 -->
+        <div class="qa-panel-ctrl">
+          <div class="qa-btn-group">
+            <button type="button" class="qa-action-btn" data-tap-btn="head">
+              <span>🌸 輕撫頭部 (Head Pat)</span>
+              <span class="qa-status-pill" data-mod="HeroineUI">HeroineUI.tap</span>
+            </button>
+            <button type="button" class="qa-action-btn" data-tap-btn="shoulder">
+              <span>🛡️ 拍肩鼓勵 (Shoulder Tap)</span>
+              <span class="qa-status-pill" data-mod="HeroineUI">HeroineUI.tap</span>
+            </button>
+            <button type="button" class="qa-action-btn" data-tap-btn="hand">
+              <span>🤝 擊掌致意 (Hand Clasp)</span>
+              <span class="qa-status-pill" data-mod="HeroineUI">HeroineUI.tap</span>
+            </button>
+            <button type="button" class="qa-action-btn" data-tap-btn="cheer">
+              <span>📣 戰鬥應援語 (Battle Cheer)</span>
+              <span class="qa-status-pill" data-mod="HeroineUI">HeroineUI.cheer</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-toggle-zones">
+              <span>👁️ 顯示/隱藏立繪點擊熱區網格</span>
+              <span class="qa-status-pill">Toggle</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: 翻牌／配對／配對失敗展示 (Card Flip / Match / Mismatch Demos) -->
+    <div class="qa-review-card" id="card-card-demo">
+      <div class="qa-card-title-row">
+        <span class="qa-card-label">卡牌翻轉、配對與失敗動效 (Card Mechanics)</span>
+        <span class="qa-card-tag">3D Transform & Particles</span>
+      </div>
+      <div class="qa-side-by-side">
+        <!-- 左側：卡牌展示舞台 -->
+        <div class="qa-panel-view">
+          <div class="qa-cards-demo-wrap" id="qa-card-stage">
+            <!-- Card 1: 紅心 A -->
+            <div class="card" id="demo-card-1">
+              <div class="card-inner">
+                <div class="face back"><div class="back-crest">✦</div></div>
+                <div class="face front">
+                  <div class="poker-face red">
+                    <div class="p-corner tl"><div class="p-rank">A</div><div class="p-suit">♥</div></div>
+                    <div class="p-center">♥</div>
+                    <div class="p-corner br"><div class="p-rank">A</div><div class="p-suit">♥</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: 方塊 A (配對對象) -->
+            <div class="card" id="demo-card-2">
+              <div class="card-inner">
+                <div class="face back"><div class="back-crest">✦</div></div>
+                <div class="face front">
+                  <div class="poker-face red">
+                    <div class="p-corner tl"><div class="p-rank">A</div><div class="p-suit">♦</div></div>
+                    <div class="p-center">♦</div>
+                    <div class="p-corner br"><div class="p-rank">A</div><div class="p-suit">♦</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: 黑桃 K (失配對象) -->
+            <div class="card" id="demo-card-3">
+              <div class="card-inner">
+                <div class="face back"><div class="back-crest">✦</div></div>
+                <div class="face front">
+                  <div class="poker-face black">
+                    <div class="p-corner tl"><div class="p-rank">K</div><div class="p-suit">♠</div></div>
+                    <div class="p-center">♠</div>
+                    <div class="p-corner br"><div class="p-rank">K</div><div class="p-suit">♠</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 4: 鬼牌 Joker / 迷霧 -->
+            <div class="card" id="demo-card-4">
+              <div class="card-inner">
+                <div class="face back"><div class="back-crest">✦</div></div>
+                <div class="face front">
+                  <div class="joker-face">
+                    <span>🃏</span>
+                    <small>JOKER</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="qa-card-status-text" style="font-size:11.5px; color:#b59a8d; margin-top:10px;">點擊右側按鈕觸發卡牌動畫</div>
+        </div>
+        <!-- 右側：卡牌測試控制鈕 -->
+        <div class="qa-panel-ctrl">
+          <div class="qa-btn-group">
+            <button type="button" class="qa-action-btn" id="btn-card-flip">
+              <span>🎴 單張翻轉 (Card Flip)</span>
+              <span class="qa-status-pill" data-mod="AudioEngine">AudioEngine.play</span>
+            </button>
+            <button type="button" class="qa-action-btn gold" id="btn-card-match">
+              <span>✨ 成功配對演示 (Match Pair)</span>
+              <span class="qa-status-pill" data-mod="FX">FX.burst</span>
+            </button>
+            <button type="button" class="qa-action-btn crimson" id="btn-card-mismatch">
+              <span>❌ 配對失敗晃動 (Mismatch)</span>
+              <span class="qa-status-pill" data-mod="AudioEngine">AudioEngine.play</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-card-fog">
+              <span>🌫️ 迷霧狀態切換 (Fog Toggle)</span>
+              <span class="qa-status-pill">CSS .fogged</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-card-reset">
+              <span>🔄 重置所有卡牌 (Reset Cards)</span>
+              <span class="qa-status-pill">Reset</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: 連擊動效展示 (Combo Demo) -->
+    <div class="qa-review-card" id="card-combo-demo">
+      <div class="qa-card-title-row">
+        <span class="qa-card-label">連擊數字與階梯反饋 (Combo Mechanics)</span>
+        <span class="qa-card-tag">FX.comboPop & Audio Pitch</span>
+      </div>
+      <div class="qa-side-by-side">
+        <!-- 左側：連擊展示舞台 -->
+        <div class="qa-panel-view" id="qa-combo-stage">
+          <div style="font-size:12px; color:#b59a8d; letter-spacing:1px;">CURRENT COMBO</div>
+          <div id="qa-combo-counter" style="font-size:52px; font-weight:900; color:var(--qa-gold-bright); text-shadow:0 0 24px rgba(232,194,106,0.6); margin:6px 0;">
+            x0
+          </div>
+          <div id="qa-combo-tier-badge" class="qa-badge" style="background:#2b1119; color:#b59a8d; border-color:#5a1524;">
+            尚未觸發連擊
+          </div>
+          <!-- 暫態 Combo 彈出容器 -->
+          <div id="qa-combo-pop-anchor" style="position:relative; width:100%; height:40px; margin-top:10px;"></div>
+        </div>
+        <!-- 右側：連擊階梯控制 -->
+        <div class="qa-panel-ctrl">
+          <div class="qa-btn-group">
+            <button type="button" class="qa-action-btn" id="btn-combo-inc">
+              <span>⚡ 連擊累加 +1 (Increment)</span>
+              <span class="qa-status-pill" data-mod="FX">FX.comboPop</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-combo-3">
+              <span>🔥 躍升至 3 連擊 (Tier 2)</span>
+              <span class="qa-status-pill" data-mod="FX">FX.comboPop</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-combo-7">
+              <span>⚔️ 躍升至 7 連擊 (Tier 3)</span>
+              <span class="qa-status-pill" data-mod="FX">FX.comboPop</span>
+            </button>
+            <button type="button" class="qa-action-btn gold" id="btn-combo-12">
+              <span>👑 躍升至 12 連擊 (Tier Max)</span>
+              <span class="qa-status-pill" data-mod="FX">FX.comboPop</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-combo-reset">
+              <span>🔄 重置連擊計數 (Reset)</span>
+              <span class="qa-status-pill">Reset</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 5: 各女傑技能施放按鈕 (Each Skill Cast Button) -->
+    <div class="qa-review-card" id="card-skills-demo">
+      <div class="qa-card-title-row">
+        <span class="qa-card-label">女傑專屬技能施放展示 (Skill Cast Buttons)</span>
+        <span class="qa-card-tag">PixelFX & FX.burst & Audio</span>
+      </div>
+      <div class="qa-side-by-side">
+        <!-- 左側：技能特效畫布與施放資訊 -->
+        <div class="qa-panel-view">
+          <div class="qa-skill-canvas-wrap">
+            <canvas id="qa-skill-canvas" width="180" height="180"></canvas>
+          </div>
+          <div id="qa-skill-info-box" style="margin-top:8px; font-size:12px; text-align:center;">
+            <b id="qa-skill-cur-name" style="color:var(--qa-gold-bright);">點擊右側按鈕測試技能施放</b>
+            <div id="qa-skill-cur-desc" style="color:#b59a8d; font-size:11px; margin-top:2px;">整合 PixelFX 畫布像素特效與全螢幕音效</div>
+          </div>
+        </div>
+        <!-- 右側：五位女傑技能按鈕 -->
+        <div class="qa-panel-ctrl">
+          <div class="qa-btn-group">
+            <button type="button" class="qa-action-btn" data-skill-cast="peek">
+              <span>🟣 薇爾妲【魔眼窺視】</span>
+              <span class="qa-status-pill" data-mod="FX">FX / AudioEngine</span>
+            </button>
+            <button type="button" class="qa-action-btn" data-skill-cast="freeze">
+              <span>🔴 卡蓮娜【緋焰停滯】</span>
+              <span class="qa-status-pill" data-mod="FX">FX / AudioEngine</span>
+            </button>
+            <button type="button" class="qa-action-btn" data-skill-cast="time">
+              <span>🔵 艾莉絲【從容斡旋】</span>
+              <span class="qa-status-pill" data-mod="FX">FX / AudioEngine</span>
+            </button>
+            <button type="button" class="qa-action-btn" data-skill-cast="match">
+              <span>🟢 塞拉斯【戰術推演】</span>
+              <span class="qa-status-pill" data-mod="FX">FX / AudioEngine</span>
+            </button>
+            <button type="button" class="qa-action-btn gold" data-skill-cast="combo">
+              <span>🟡 萊娜【騎士誓約】</span>
+              <span class="qa-status-pill" data-mod="FX">FX / AudioEngine</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 6: 頭目預警與受擊動態 (Boss Telegraph / Hit) -->
+    <div class="qa-review-card" id="card-boss-demo">
+      <div class="qa-card-title-row">
+        <span class="qa-card-label">首領機制預警與重擊受擊 (Boss Telegraph & Hit)</span>
+        <span class="qa-card-tag">Crimson Flash & Camera Shake</span>
+      </div>
+      <div class="qa-side-by-side">
+        <!-- 左側：首領舞台 -->
+        <div class="qa-panel-view" id="qa-boss-panel">
+          <div class="qa-boss-stage">
+            <div class="qa-boss-avatar" id="qa-boss-avatar">♛</div>
+            <div style="font-weight:800; color:#ff8a9b; font-size:14px; margin-top:4px;">暗夜審判官 • 特蕾莎</div>
+            <div class="qa-boss-hp-track">
+              <div class="qa-boss-hp-fill" id="qa-boss-hp"></div>
+            </div>
+            <div id="qa-boss-telegraph-sign" style="opacity:0; font-size:12px; font-weight:800; color:#ff4d6d; margin-top:6px; letter-spacing:1px; transition:opacity 0.2s;">
+              ⚠️ 怒意沸騰：洗牌預警！
+            </div>
+          </div>
+        </div>
+        <!-- 右側：首領控制鈕 -->
+        <div class="qa-panel-ctrl">
+          <div class="qa-btn-group">
+            <button type="button" class="qa-action-btn crimson" id="btn-boss-telegraph">
+              <span>⚠️ 釋放首領預警 (Telegraph Alert)</span>
+              <span class="qa-status-pill" data-mod="FX">FX.flash / Audio</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-boss-hit">
+              <span>💥 玩家遭受重擊 (Boss Hit Shake)</span>
+              <span class="qa-status-pill" data-mod="FX">FX.shake</span>
+            </button>
+            <button type="button" class="qa-action-btn gold" id="btn-boss-counter">
+              <span>🛡️ 招架反擊破綻 (Player Counter)</span>
+              <span class="qa-status-pill" data-mod="FX">FX.floatText</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-boss-reset">
+              <span>🔄 重置首領狀態 (Reset Boss)</span>
+              <span class="qa-status-pill">Reset</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 7: 通關星等結算 (Level Clear) -->
+    <div class="qa-review-card" id="card-clear-demo">
+      <div class="qa-card-title-row">
+        <span class="qa-card-label">關卡勝利與三星結算 (Level Clear Fanfare)</span>
+        <span class="qa-card-tag">Stars Pop & Fanfare Audio</span>
+      </div>
+      <div class="qa-side-by-side">
+        <!-- 左側：結算展示看板 -->
+        <div class="qa-panel-view">
+          <div class="qa-clear-stars-stage">
+            <div class="stars" id="qa-clear-stars">
+              <span id="star-1">★</span>
+              <span id="star-2">★</span>
+              <span id="star-3">★</span>
+            </div>
+            <div id="qa-clear-title" style="font-size:18px; font-weight:900; color:var(--qa-gold-bright); letter-spacing:2px;">
+              關卡勝利！
+            </div>
+            <div style="font-size:11px; color:#b59a8d; margin-top:4px;">
+              通關時間 01:14 • 錯誤 0 次 • 記憶力 S 級
+            </div>
+          </div>
+        </div>
+        <!-- 右側：勝利觸發按鈕 -->
+        <div class="qa-panel-ctrl">
+          <div class="qa-btn-group">
+            <button type="button" class="qa-action-btn gold" id="btn-clear-3star">
+              <span>🏆 觸發 3 星大捷結算 (3-Star Victory)</span>
+              <span class="qa-status-pill" data-mod="AudioEngine">AudioEngine.play</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-clear-2star">
+              <span>⭐ 觸發 2 星及格結算 (2-Star Clear)</span>
+              <span class="qa-status-pill" data-mod="AudioEngine">AudioEngine.play</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-clear-confetti">
+              <span>🎊 灑落金箔彩帶 (Confetti Burst)</span>
+              <span class="qa-status-pill" data-mod="FX">FX.burst</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-clear-reset">
+              <span>🔄 重置結算星等 (Reset)</span>
+              <span class="qa-status-pill">Reset</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 8: 畫面轉場效果 (Screen Transition) -->
+    <div class="qa-review-card" id="card-trans-demo">
+      <div class="qa-card-title-row">
+        <span class="qa-card-label">畫面切換與絲綢薄紗轉場 (Screen Transitions)</span>
+        <span class="qa-card-tag">FX.transition & Veil</span>
+      </div>
+      <div class="qa-side-by-side">
+        <!-- 左側：畫面切換模擬器 -->
+        <div class="qa-panel-view" style="padding:0;">
+          <div class="qa-trans-viewport" id="qa-trans-screen">
+            <span id="qa-trans-screen-label">主城大廳 (Home Screen)</span>
+          </div>
+        </div>
+        <!-- 右側：轉場測試按鈕 -->
+        <div class="qa-panel-ctrl">
+          <div class="qa-btn-group">
+            <button type="button" class="qa-action-btn" id="btn-trans-veil">
+              <span>🌌 絲綢面紗轉場 (Silk Veil)</span>
+              <span class="qa-status-pill" data-mod="FX">FX.transition</span>
+            </button>
+            <button type="button" class="qa-action-btn crimson" id="btn-trans-battle">
+              <span>⚔️ 戰鬥入場面紗 (Battle Veil)</span>
+              <span class="qa-status-pill" data-mod="FX">FX.transition</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-trans-fade">
+              <span>🎬 淡入切換 (Screen Enter Fade)</span>
+              <span class="qa-status-pill">CSS Enter</span>
+            </button>
+            <button type="button" class="qa-action-btn" id="btn-trans-zoom">
+              <span>🔍 縮放切換 (Screen Enter Zoom)</span>
+              <span class="qa-status-pill">CSS Zoom</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- 3. QA 互動即時日誌紀錄 (Activity Log) -->
+  <section class="qa-log-box">
+    <div class="qa-log-title">
+      <span>審查操作即時紀錄 (QA Action & Module Diagnostic Log)</span>
+      <button type="button" id="btn-clear-log" class="qa-status-pill" style="cursor:pointer;">清空日誌</button>
+    </div>
+    <div class="qa-log-content" id="qa-log-list">
+      <div class="qa-log-entry">[System] QA 審查面板已初始化，等待指令……</div>
+    </div>
+  </section>
+
+</main>
+
+<!-- 全域 Toast 提示窗容器 -->
+<div id="qa-toast-container"></div>
+
+<!-- 全域暫態 FX 容器 -->
+<div id="qa-transient-layer" class="fx-layer"></div>
+
+<script>
+/* ==========================================================================
+   記憶帝國：QA 審查核心邏輯與自動巡迴引擎 (review.html)
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  // 小工具
+  function $(id) { return document.getElementById(id); }
+  function qsa(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+
+  // 1. 全域模組呼叫與防禦性容錯
+  function hasMethod(obj, name) {
+    return obj && typeof obj[name] === 'function';
+  }
+
+  function logEntry(msg, isSuccess, isMissing) {
+    var list = $('qa-log-list');
+    if (!list) return;
+    var row = document.createElement('div');
+    row.className = 'qa-log-entry' + (isMissing ? ' missing' : isSuccess ? ' success' : '');
+    var now = new Date();
+    var timeStr = '[' + ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2) + ':' + ('0' + now.getSeconds()).slice(-2) + '] ';
+    row.textContent = timeStr + msg;
+    list.prepend(row);
+  }
+
+  function showToast(text, isMissing) {
+    var box = $('qa-toast-container');
+    if (!box) return;
+    var t = document.createElement('div');
+    t.className = 'qa-toast' + (isMissing ? ' missing' : '');
+    t.textContent = text;
+    box.appendChild(t);
+    setTimeout(function () {
+      t.style.opacity = '0';
+      t.style.transition = 'opacity 0.25s ease';
+      setTimeout(function () { t.remove(); }, 250);
+    }, 2400);
+  }
+
+  /**
+   * 核心防禦呼叫：呼叫指定模組方法。若模組或方法不存在，顯示 'module missing'。
+   * @param {string} moduleName - 'FX' | 'AudioEngine' | 'HeroineUI' 等
+   * @param {Array<string>} methodNames - 嘗試呼叫之方法名列表
+   * @param {Array<any>} args - 呼叫參數
+   * @param {HTMLElement} [btnElement] - 觸發之按鈕（用於標示 status pill）
+   * @param {Function} [localFallback] - 本地視覺動效（讓審查即使在缺乏後端時仍可看到卡牌/動畫）
+   */
+  function dispatchModuleCall(moduleName, methodNames, args, btnElement, localFallback) {
+    var mod = window[moduleName];
+    var called = false;
+    var invokedMethod = null;
+
+    if (mod) {
+      for (var i = 0; i < methodNames.length; i++) {
+        var mName = methodNames[i];
+        if (hasMethod(mod, mName)) {
+          try {
+            mod[mName].apply(mod, args || []);
+            called = true;
+            invokedMethod = mName;
+            break;
+          } catch (err) {
+            console.warn('[review QA] ' + moduleName + '.' + mName + ' error:', err);
+          }
+        }
+      }
+    }
+
+    // 更新按鈕上的狀態膠囊
+    var pill = btnElement ? btnElement.querySelector('.qa-status-pill') : null;
+
+    if (called) {
+      if (pill) {
+        pill.textContent = moduleName + '.' + invokedMethod + ' [OK]';
+        pill.className = 'qa-status-pill ok';
+      }
+      logEntry('成功呼叫 ' + moduleName + '.' + invokedMethod + '()', true, false);
+      showToast('✔ ' + moduleName + '.' + invokedMethod + ' 呼叫成功', false);
+    } else {
+      if (pill) {
+        pill.textContent = 'module missing';
+        pill.className = 'qa-status-pill missing';
+      }
+      logEntry('呼叫失敗：' + moduleName + ' (module missing)', false, true);
+      showToast('⚠️ module missing: ' + moduleName, true);
+    }
+
+    // 無論模組是否存在，本地視覺 fallback 照常觸發，供 UI 驗收
+    if (typeof localFallback === 'function') {
+      try { localFallback(called); } catch (e) { console.warn('localFallback err:', e); }
+    }
+
+    return called;
+  }
+
+  // 2. 檢測全域模組並更新頂部指標燈
+  function checkAllModules() {
+    var checkMap = {
+      'mod-fx': !!window.FX,
+      'mod-ae': !!window.AudioEngine,
+      'mod-hui': !!window.HeroineUI,
+      'mod-pfx': !!(window.PixelFX && window.PixelFX.FX_LIB),
+      'mod-data': !!window.GAME_DATA,
+      'mod-cz': !!window.CONTENT_ZH
+    };
+
+    for (var id in checkMap) {
+      var el = $(id);
+      if (el) {
+        if (checkMap[id]) {
+          el.className = 'qa-mod-item is-ok';
+          el.title = '模組已就緒';
+        } else {
+          el.className = 'qa-mod-item is-missing';
+          el.title = 'module missing';
+        }
+      }
+    }
+  }
+
+  // 3. 色彩樣卡測試
+  qsa('.qa-swatch-test-btn').forEach(function (btn) {
+    btn.onclick = function () {
+      var act = btn.getAttribute('data-action');
+      if (act === 'swatch-crimson') {
+        dispatchModuleCall('FX', ['flash', 'vignette'], ['crimson'], btn, function () {
+          triggerVignetteFlash('crimson');
+        });
+      } else if (act === 'swatch-gold') {
+        dispatchModuleCall('FX', ['flash', 'vignette'], ['gold'], btn, function () {
+          triggerVignetteFlash('gold');
+        });
+      } else if (act === 'swatch-purple' || act === 'swatch-amethyst') {
+        dispatchModuleCall('FX', ['flash', 'vignette'], ['arcane'], btn, function () {
+          triggerVignetteFlash('arcane');
+        });
+      } else if (act === 'swatch-void') {
+        dispatchModuleCall('FX', ['transition', 'veil'], [''], btn, function () {
+          triggerVeilTransition('');
+        });
+      }
+    };
+  });
+
+  function triggerVignetteFlash(tone) {
+    var layer = $('qa-transient-layer') || document.body;
+    var v = document.createElement('div');
+    v.className = 'fx-vignette-flash is-' + (tone || 'gold');
+    layer.appendChild(v);
+    setTimeout(function () { v.remove(); }, 600);
+  }
+
+  function triggerVeilTransition(kind) {
+    var layer = $('qa-transient-layer') || document.body;
+    var v = document.createElement('div');
+    v.className = 'fx-transition-veil' + (kind ? ' is-' + kind : '');
+    layer.appendChild(v);
+    setTimeout(function () { v.remove(); }, 400);
+  }
+
+  // 4. 女傑待機與立繪動態展示
+  var HEROINE_DATA = {
+    verda: { name: '薇爾妲·諾克特', title: '冷傲魔女軍官', img: 'assets/heroines/verda.webp', sm: 'assets/heroines/verda-sm.webp', skill: '魔眼窺視', lines: { head: '「……摸頭？別把我當成下級士兵對待。」', shoulder: '「這點作戰強度還動搖不了我。」', hand: '「擊掌？哼，若能擊退敵軍倒也無妨。」', cheer: '「漂亮，繼續保持這份敏銳。」' } },
+    karena: { name: '卡蓮娜·緋焰', title: '熱血機甲騎士', img: 'assets/heroines/karena.webp', sm: 'assets/heroines/karena-sm.webp', skill: '緋焰停滯', lines: { head: '「哇啊！頭髮被你揉亂了啦！」', shoulder: '「交給我吧！機甲動力百分百運轉！」', hand: '「來！擊個響亮的大掌，氣勢衝到底！」', cheer: '「燃起來了！下一張在哪？！」' } },
+    elys: { name: '艾莉絲·羅亞', title: '優雅外交官', img: 'assets/heroines/elys.webp', sm: 'assets/heroines/elys-sm.webp', skill: '從容斡旋', lines: { head: '「呵呵，閣下的手掌意外地令人感到安心呢。」', shoulder: '「深呼吸，外交與戰場皆需要絕對的優雅。」', hand: '「同盟成立，請多多指教囉。」', cheer: '「真是優雅從容的連擊節奏。」' } },
+    selas: { name: '塞拉斯·薇恩', title: '冷酷參謀官', img: 'assets/heroines/selas.webp', sm: 'assets/heroines/selas-sm.webp', skill: '戰術推演', lines: { head: '「……肢體接觸不在戰術推演模型中，請退後半步。」', shoulder: '「心跳率穩定，隨時可展開精準算力。」', hand: '「確認合作協議，失誤率已下修 12%。」', cheer: '「完全符合最優演算法推導。」' } },
+    reina: { name: '萊娜·克洛斯', title: '忠誠騎士團長', img: 'assets/heroines/reina.webp', sm: 'assets/heroines/reina-sm.webp', skill: '騎士誓約', lines: { head: '「團長之榮譽……唔，偶爾被你這樣對待倒也不壞。」', shoulder: '「我這副肩鎧，可隨時為殿下抵擋所有矢石。」', hand: '「誓約之印！我等利劍與榮耀與共！」', cheer: '「騎士誓約之光，照亮牌面！」' } }
+  };
+
+  var curHeroineId = 'verda';
+
+  function switchHeroine(id) {
+    if (!HEROINE_DATA[id]) return;
+    curHeroineId = id;
+    var data = HEROINE_DATA[id];
+    var img = $('qa-heroine-img');
+    if (img) img.src = data.img;
+    var bubble = $('qa-idle-bubble');
+    if (bubble) bubble.textContent = data.lines.head;
+    var tapAvatar = $('qa-tap-avatar');
+    if (tapAvatar) tapAvatar.src = data.sm;
+    var tapHName = $('qa-tap-hname');
+    if (tapHName) tapHName.textContent = data.name;
+    var tapHTitle = $('qa-tap-htitle');
+    if (tapHTitle) tapHTitle.textContent = data.title + ' • 專屬技能：' + data.skill;
+    var tapQuote = $('qa-tap-quote');
+    if (tapQuote) tapQuote.textContent = data.lines.shoulder;
+  }
+
+  qsa('[data-heroine]').forEach(function (btn) {
+    btn.onclick = function () {
+      switchHeroine(btn.getAttribute('data-heroine'));
+    };
+  });
+
+  // 待機動態模式
+  $('btn-anim-standard').onclick = function () {
+    var img = $('qa-heroine-img');
+    if (img) img.className = 'breathe-standard';
+  };
+  $('btn-anim-deep').onclick = function () {
+    var img = $('qa-heroine-img');
+    if (img) img.className = 'breathe-deep';
+  };
+  $('btn-anim-none').onclick = function () {
+    var img = $('qa-heroine-img');
+    if (img) img.className = '';
+  };
+
+  // 服裝濾鏡
+  $('btn-outfit-def').onclick = function () {
+    var img = $('qa-heroine-img');
+    if (img) { img.style.filter = ''; img.style.boxShadow = ''; }
+  };
+  $('btn-outfit-sum').onclick = function () {
+    var img = $('qa-heroine-img');
+    if (img) { img.style.filter = 'saturate(1.15) brightness(1.08) hue-rotate(-8deg)'; }
+  };
+  $('btn-outfit-yuk').onclick = function () {
+    var img = $('qa-heroine-img');
+    if (img) { img.style.filter = 'saturate(1.1) sepia(0.12)'; }
+  };
+
+  // 5. 觸碰互動與語音反應
+  function triggerHeroineTap(zone, btnElement) {
+    var data = HEROINE_DATA[curHeroineId];
+    var line = data.lines[zone] || data.lines.head;
+    $('qa-tap-zone-lbl').textContent = zone.toUpperCase();
+    $('qa-tap-quote').textContent = line;
+    var b = $('qa-idle-bubble');
+    if (b) b.textContent = line;
+
+    // 呼叫 HeroineUI.tap / AudioEngine.play
+    dispatchModuleCall('HeroineUI', ['tap', 'onTap', 'react'], [curHeroineId, zone], btnElement, function () {
+      // 本地視覺動效：立繪微晃與浮動字樣
+      var stage = $('qa-idle-stage');
+      if (stage) {
+        stage.classList.remove('fx-shake-sm');
+        void stage.offsetWidth;
+        stage.classList.add('fx-shake-sm');
+      }
+      showFloatingText(stage || document.body, '+2 好感', 'rose');
+    });
+
+    // 同步嘗試音效
+    dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['chime'], null);
+  }
+
+  qsa('[data-tap-btn]').forEach(function (btn) {
+    btn.onclick = function () {
+      var zone = btn.getAttribute('data-tap-btn');
+      triggerHeroineTap(zone, btn);
+    };
+  });
+
+  // 點擊立繪熱區
+  qsa('.qa-tap-zone').forEach(function (z) {
+    z.onclick = function () {
+      var zone = z.getAttribute('data-zone');
+      triggerHeroineTap(zone, null);
+    };
+  });
+
+  $('btn-toggle-zones').onclick = function () {
+    var tz = $('qa-idle-tapzones');
+    if (tz) tz.classList.toggle('show-debug');
+  };
+
+  // 6. 卡牌翻轉／配對／配對失敗展示
+  var card1 = $('demo-card-1');
+  var card2 = $('demo-card-2');
+  var card3 = $('demo-card-3');
+  var card4 = $('demo-card-4');
+
+  function resetAllCards() {
+    [card1, card2, card3, card4].forEach(function (c) {
+      if (!c) return;
+      c.classList.remove('open', 'matched', 'fx-card-pulse', 'v3-shake', 'fogged');
+    });
+    $('qa-card-status-text').textContent = '卡牌已重置為背面朝上';
+  }
+
+  $('btn-card-reset').onclick = resetAllCards;
+
+  $('btn-card-flip').onclick = function () {
+    var btn = this;
+    dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['flip'], btn, function () {
+      card1.classList.toggle('open');
+      $('qa-card-status-text').textContent = 'Card 1 翻牌狀態：' + (card1.classList.contains('open') ? '正面' : '背面');
+    });
+  };
+
+  $('btn-card-match').onclick = function () {
+    var btn = this;
+    card1.classList.add('open');
+    card2.classList.add('open');
+    $('qa-card-status-text').textContent = '成功配對！紅心 A 與 方塊 A 吻合';
+
+    dispatchModuleCall('FX', ['cardPulse', 'pulse'], [card1], btn, function () {
+      card1.classList.add('fx-card-pulse', 'matched');
+      card2.classList.add('fx-card-pulse', 'matched');
+      dispatchModuleCall('FX', ['burst', 'matchBurst'], [window.innerWidth / 2, window.innerHeight / 2, { kind: 'match' }], null);
+    });
+
+    dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['match'], null);
+  };
+
+  $('btn-card-mismatch').onclick = function () {
+    var btn = this;
+    card1.classList.add('open');
+    card3.classList.add('open');
+    $('qa-card-status-text').textContent = '配對失敗：紅心 A 與 黑桃 K 不相符，即將覆蓋';
+
+    dispatchModuleCall('FX', ['shake'], [card1, 'sm'], btn, function () {
+      card1.classList.add('v3-shake');
+      card3.classList.add('v3-shake');
+      setTimeout(function () {
+        card1.classList.remove('open', 'v3-shake');
+        card3.classList.remove('open', 'v3-shake');
+        $('qa-card-status-text').textContent = '卡牌已覆蓋還原';
+      }, 700);
+    });
+
+    dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['mismatch'], null);
+  };
+
+  $('btn-card-fog').onclick = function () {
+    card4.classList.toggle('fogged');
+    var isFog = card4.classList.contains('fogged');
+    $('qa-card-status-text').textContent = isFog ? 'Card 4 進入迷霧狀態（模糊濾鏡生效）' : 'Card 4 迷霧散去';
+  };
+
+  // 7. 連擊動效展示 (Combo Demo)
+  var currentCombo = 0;
+
+  function setCombo(num, btnElement) {
+    currentCombo = num;
+    var cnt = $('qa-combo-counter');
+    if (cnt) cnt.textContent = 'x' + num;
+
+    var badge = $('qa-combo-tier-badge');
+    var tierClass = '';
+    if (num >= 10) {
+      badge.textContent = '👑 究極連擊 (Tier Max)';
+      badge.style.background = 'linear-gradient(135deg, #a3122a, #6b1422)';
+      badge.style.color = '#fffdf6';
+      tierClass = 'tier-max';
+    } else if (num >= 6) {
+      badge.textContent = '⚔️ 狂暴連擊 (Tier 3)';
+      badge.style.background = 'linear-gradient(135deg, #7a0b1e, #3a0d18)';
+      badge.style.color = '#ffe6a3';
+      tierClass = 'tier-3';
+    } else if (num >= 3) {
+      badge.textContent = '🔥 熾熱連擊 (Tier 2)';
+      badge.style.background = 'linear-gradient(135deg, #4a1424, #2b1119)';
+      badge.style.color = '#e8c26a';
+      tierClass = 'tier-2';
+    } else if (num > 0) {
+      badge.textContent = '⚡ 初始連擊 (Tier 1)';
+      badge.style.background = '#2b1119';
+      badge.style.color = '#b59a8d';
+      tierClass = '';
+    } else {
+      badge.textContent = '尚未觸發連擊';
+      badge.style.background = '#2b1119';
+      badge.style.color = '#b59a8d';
+    }
+
+    if (num > 0) {
+      dispatchModuleCall('FX', ['comboPop', 'combo'], [num], btnElement, function () {
+        // 本地彈出 Combo 氣泡
+        var anchor = $('qa-combo-pop-anchor');
+        if (anchor) {
+          anchor.innerHTML = '';
+          var pop = document.createElement('div');
+          pop.className = 'fx-combo-pop ' + tierClass;
+          pop.textContent = num + ' 連擊！';
+          pop.style.left = '50%';
+          pop.style.top = '50%';
+          anchor.appendChild(pop);
+          setTimeout(function () { pop.remove(); }, 920);
+        }
+      });
+
+      dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['combo', { combo: num }], null);
+    }
+  }
+
+  $('btn-combo-inc').onclick = function () { setCombo(currentCombo + 1, this); };
+  $('btn-combo-3').onclick = function () { setCombo(3, this); };
+  $('btn-combo-7').onclick = function () { setCombo(7, this); };
+  $('btn-combo-12').onclick = function () { setCombo(12, this); };
+  $('btn-combo-reset').onclick = function () { setCombo(0, null); };
+
+  // 8. 女傑技能施放展示
+  var SKILL_INFO = {
+    peek: { name: '魔眼窺視 (Peek)', hero: '薇爾妲', desc: '看穿所有暗牌，揭開牌面迷霧', fxColor: '#9b59ff' },
+    freeze: { name: '緋焰停滯 (Freeze)', hero: '卡蓮娜', desc: '凍結倒數計時 5 秒，從容推演', fxColor: '#d4243e' },
+    time: { name: '從容斡旋 (Time Add)', hero: '艾莉絲', desc: '斡旋戰場，立即延長作戰時間', fxColor: '#6ad7ff' },
+    match: { name: '戰術推演 (Auto Match)', hero: '塞拉斯', desc: '推演棋局，自動鎖定並消除一對卡牌', fxColor: '#7fd18b' },
+    combo: { name: '騎士誓約 (Double Combo)', hero: '萊娜', desc: '誓約出鞘，下三次連擊點數加倍', fxColor: '#ffcf4a' }
+  };
+
+  qsa('[data-skill-cast]').forEach(function (btn) {
+    btn.onclick = function () {
+      var sk = btn.getAttribute('data-skill-cast');
+      var info = SKILL_INFO[sk];
+      $('qa-skill-cur-name').textContent = info.hero + ' • ' + info.name;
+      $('qa-skill-cur-desc').textContent = info.desc;
+
+      dispatchModuleCall('FX', ['skill', 'burst'], [window.innerWidth / 2, window.innerHeight / 2, { kind: sk }], btn, function () {
+        // 本地畫布模擬法陣脈衝
+        drawSkillCanvasFlash(info.fxColor);
+        triggerVignetteFlash(sk === 'freeze' ? 'crimson' : sk === 'peek' ? 'arcane' : 'gold');
+      });
+
+      dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['skill'], null);
+    };
+  });
+
+  function drawSkillCanvasFlash(color) {
+    var cvs = $('qa-skill-canvas');
+    if (!cvs) return;
+    var ctx = cvs.getContext('2d');
+    var w = cvs.width, h = cvs.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // 圓形法陣
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 70, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, 50, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 放射芒線
+    for (var i = 0; i < 8; i++) {
+      var angle = (i * Math.PI) / 4;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * 20, Math.sin(angle) * 20);
+      ctx.lineTo(Math.cos(angle) * 65, Math.sin(angle) * 65);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    setTimeout(function () {
+      ctx.clearRect(0, 0, w, h);
+    }, 600);
+  }
+
+  // 9. 首領預警與重擊受擊 (Boss Telegraph & Hit)
+  $('btn-boss-telegraph').onclick = function () {
+    var btn = this;
+    var sign = $('qa-boss-telegraph-sign');
+    if (sign) sign.style.opacity = '1';
+
+    dispatchModuleCall('FX', ['flash', 'vignette'], ['crimson'], btn, function () {
+      triggerVignetteFlash('crimson');
+      var bossPanel = $('qa-boss-panel');
+      if (bossPanel) {
+        bossPanel.classList.remove('fx-shake-sm');
+        void bossPanel.offsetWidth;
+        bossPanel.classList.add('fx-shake-sm');
+      }
+    });
+
+    dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['boss'], null);
+
+    setTimeout(function () {
+      if (sign) sign.style.opacity = '0';
+    }, 1800);
+  };
+
+  $('btn-boss-hit').onclick = function () {
+    var btn = this;
+    var hp = $('qa-boss-hp');
+    if (hp) hp.style.width = '45%';
+
+    dispatchModuleCall('FX', ['shake'], [document.body, 'lg'], btn, function () {
+      document.body.classList.remove('fx-shake');
+      void document.body.offsetWidth;
+      document.body.classList.add('fx-shake');
+      showFloatingText($('qa-boss-panel') || document.body, '-680 HP CRIT!', 'crimson');
+    });
+
+    dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['fail'], null);
+  };
+
+  $('btn-boss-counter').onclick = function () {
+    var btn = this;
+    var hp = $('qa-boss-hp');
+    if (hp) hp.style.width = '20%';
+
+    dispatchModuleCall('FX', ['flash'], ['gold'], btn, function () {
+      triggerVignetteFlash('gold');
+      showFloatingText($('qa-boss-panel') || document.body, '招架成功！反擊 1200 點', 'gold');
+    });
+
+    dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['match'], null);
+  };
+
+  $('btn-boss-reset').onclick = function () {
+    var hp = $('qa-boss-hp');
+    if (hp) hp.style.width = '85%';
+    var sign = $('qa-boss-telegraph-sign');
+    if (sign) sign.style.opacity = '0';
+  };
+
+  // 10. 通關星等結算 (Level Clear)
+  function triggerClearFanfare(starCount, btnElement) {
+    var s1 = $('star-1'), s2 = $('star-2'), s3 = $('star-3');
+    [s1, s2, s3].forEach(function (s) { if (s) s.className = ''; });
+
+    dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['clear'], btnElement, function () {
+      triggerVignetteFlash('gold');
+    });
+
+    // 依序彈出星星
+    setTimeout(function () {
+      if (s1 && starCount >= 1) {
+        s1.className = 'on';
+        dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['star'], null);
+      }
+    }, 200);
+
+    setTimeout(function () {
+      if (s2 && starCount >= 2) {
+        s2.className = 'on';
+        dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['star'], null);
+      }
+    }, 550);
+
+    setTimeout(function () {
+      if (s3 && starCount >= 3) {
+        s3.className = 'on';
+        dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['star'], null);
+        dispatchModuleCall('AudioEngine', ['play', 'sfx'], ['levelup'], null);
+      }
+    }, 900);
+  }
+
+  $('btn-clear-3star').onclick = function () { triggerClearFanfare(3, this); };
+  $('btn-clear-2star').onclick = function () { triggerClearFanfare(2, this); };
+  $('btn-clear-confetti').onclick = function () {
+    var btn = this;
+    dispatchModuleCall('FX', ['burst'], [window.innerWidth / 2, window.innerHeight / 2, { kind: 'clear' }], btn, function () {
+      triggerVignetteFlash('gold');
+      showFloatingText(document.body, '✦ 榮耀大捷 ✦', 'gold');
+    });
+  };
+  $('btn-clear-reset').onclick = function () {
+    ['star-1', 'star-2', 'star-3'].forEach(function (id) {
+      var s = $(id); if (s) s.className = '';
+    });
+  };
+
+  // 11. 畫面轉場效果 (Screen Transition)
+  var screens = ['主城大廳 (Home Screen)', '冒險地圖 (Map Nodes)', '翻牌決戰 (Battle Arena)', '女傑殿堂 (Gallery Roster)'];
+  var curScrIdx = 0;
+
+  $('btn-trans-veil').onclick = function () {
+    var btn = this;
+    dispatchModuleCall('FX', ['transition', 'veil'], [''], btn, function () {
+      triggerVeilTransition('');
+      curScrIdx = (curScrIdx + 1) % screens.length;
+      $('qa-trans-screen-label').textContent = screens[curScrIdx];
+    });
+  };
+
+  $('btn-trans-battle').onclick = function () {
+    var btn = this;
+    dispatchModuleCall('FX', ['transition', 'veil'], ['battle'], btn, function () {
+      triggerVeilTransition('battle');
+      curScrIdx = 2; // 決戰
+      $('qa-trans-screen-label').textContent = screens[curScrIdx];
+    });
+  };
+
+  $('btn-trans-fade').onclick = function () {
+    var scr = $('qa-trans-screen');
+    if (!scr) return;
+    scr.classList.remove('fx-screen-enter');
+    void scr.offsetWidth;
+    scr.classList.add('fx-screen-enter');
+    curScrIdx = (curScrIdx + 1) % screens.length;
+    $('qa-trans-screen-label').textContent = screens[curScrIdx];
+  };
+
+  $('btn-trans-zoom').onclick = function () {
+    var scr = $('qa-trans-screen');
+    if (!scr) return;
+    scr.classList.remove('fx-screen-enter-zoom');
+    void scr.offsetWidth;
+    scr.classList.add('fx-screen-enter-zoom');
+    curScrIdx = (curScrIdx + 1) % screens.length;
+    $('qa-trans-screen-label').textContent = screens[curScrIdx];
+  };
+
+  // 浮動文字輔助工具
+  function showFloatingText(anchor, text, tone) {
+    var rect = anchor.getBoundingClientRect();
+    var x = rect.left + rect.width / 2;
+    var y = rect.top + rect.height / 2;
+    var f = document.createElement('div');
+    f.className = 'fx-float-text' + (tone ? ' is-' + tone : '');
+    f.textContent = text;
+    f.style.left = x + 'px';
+    f.style.top = y + 'px';
+    document.body.appendChild(f);
+    setTimeout(function () { f.remove(); }, 850);
+  }
+
+  // 12. 清空日誌
+  $('btn-clear-log').onclick = function () {
+    var l = $('qa-log-list');
+    if (l) l.innerHTML = '';
+  };
+
+  $('btn-refresh-status').onclick = function () {
+    checkAllModules();
+    showToast('全域模組狀態已刷新', false);
+  };
+
+  // 13. 自動巡迴播放序列引擎 (?autoplay=1)
+  var autoplayTimer = null;
+  var isAutoplayRunning = false;
+
+  var AUTOPLAY_BEATS = [
+    {
+      name: '1. 色彩規範巡迴：帝國緋紅暗角測試',
+      cardId: 'swatch-crimson',
+      action: function () {
+        $('swatch-crimson').querySelector('button').click();
+      }
+    },
+    {
+      name: '2. 色彩規範巡迴：帝國純金光環測試',
+      cardId: 'swatch-gold',
+      action: function () {
+        $('swatch-gold').querySelector('button').click();
+      }
+    },
+    {
+      name: '3. 女傑切換：選取卡蓮娜與深層律動',
+      cardId: 'card-heroine-idle',
+      action: function () {
+        switchHeroine('karena');
+        $('btn-anim-deep').click();
+      }
+    },
+    {
+      name: '4. 觸碰反應：拍肩鼓勵 (Shoulder Tap)',
+      cardId: 'card-heroine-tap',
+      action: function () {
+        $('card-heroine-tap').querySelector('[data-tap-btn="shoulder"]').click();
+      }
+    },
+    {
+      name: '5. 卡牌翻轉演示：單張翻牌',
+      cardId: 'card-card-demo',
+      action: function () {
+        $('btn-card-flip').click();
+      }
+    },
+    {
+      name: '6. 卡牌配對演示：成功配對吻合',
+      cardId: 'card-card-demo',
+      action: function () {
+        $('btn-card-match').click();
+      }
+    },
+    {
+      name: '7. 卡牌失配演示：卡牌晃動覆蓋',
+      cardId: 'card-card-demo',
+      action: function () {
+        $('btn-card-mismatch').click();
+      }
+    },
+    {
+      name: '8. 連擊階梯爬升：躍升至 7 連擊 (Tier 3)',
+      cardId: 'card-combo-demo',
+      action: function () {
+        $('btn-combo-7').click();
+      }
+    },
+    {
+      name: '9. 連擊究極爆發：躍升至 12 連擊 (Tier Max)',
+      cardId: 'card-combo-demo',
+      action: function () {
+        $('btn-combo-12').click();
+      }
+    },
+    {
+      name: '10. 技能施放：薇爾妲【魔眼窺視】',
+      cardId: 'card-skills-demo',
+      action: function () {
+        $('card-skills-demo').querySelector('[data-skill-cast="peek"]').click();
+      }
+    },
+    {
+      name: '11. 首領怒意警示：釋放預警 (Telegraph)',
+      cardId: 'card-boss-demo',
+      action: function () {
+        $('btn-boss-telegraph').click();
+      }
+    },
+    {
+      name: '12. 首領重擊打擊：玩家招架反擊破綻',
+      cardId: 'card-boss-demo',
+      action: function () {
+        $('btn-boss-counter').click();
+      }
+    },
+    {
+      name: '13. 關卡大捷慶典：觸發 3 星勝利結算',
+      cardId: 'card-clear-demo',
+      action: function () {
+        $('btn-clear-3star').click();
+      }
+    },
+    {
+      name: '14. 轉場效果：絲綢薄紗轉場 (Silk Veil)',
+      cardId: 'card-trans-demo',
+      action: function () {
+        $('btn-trans-veil').click();
+      }
+    }
+  ];
+
+  function startAutoplay() {
+    if (isAutoplayRunning) return;
+    isAutoplayRunning = true;
+    var bar = $('qa-autoplay-bar');
+    if (bar) bar.className = 'active';
+    var lbl = $('btn-ap-lbl');
+    if (lbl) lbl.textContent = '⏹ 停止巡迴審查 (Stop)';
+
+    var stepIdx = 0;
+    var totalSteps = AUTOPLAY_BEATS.length;
+
+    function runNextStep() {
+      if (!isAutoplayRunning) return;
+      if (stepIdx >= totalSteps) {
+        stopAutoplay();
+        logEntry('=== 自動巡迴審查序列執行完成 ===', true, false);
+        showToast('🎉 自動巡迴審查完成！', false);
+        return;
+      }
+
+      var beat = AUTOPLAY_BEATS[stepIdx];
+      var pct = Math.round(((stepIdx + 1) / totalSteps) * 100);
+
+      // 更新進度條
+      var stepTxt = $('ap-step-text');
+      if (stepTxt) stepTxt.textContent = '[' + (stepIdx + 1) + '/' + totalSteps + '] ' + beat.name;
+      var fill = $('ap-progress-fill');
+      if (fill) fill.style.width = pct + '%';
+
+      // 高亮當前卡片並滾動至可見區域
+      qsa('.qa-review-card, .qa-swatch-card').forEach(function (c) { c.classList.remove('is-active-step'); });
+      var targetCard = $(beat.cardId);
+      if (targetCard) {
+        targetCard.classList.add('is-active-step');
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      // 執行動作
+      try { beat.action(); } catch (err) { console.warn('Autoplay action error:', err); }
+
+      stepIdx++;
+      autoplayTimer = setTimeout(runNextStep, 1600);
+    }
+
+    runNextStep();
+  }
+
+  function stopAutoplay() {
+    isAutoplayRunning = false;
+    if (autoplayTimer) {
+      clearTimeout(autoplayTimer);
+      autoplayTimer = null;
+    }
+    var bar = $('qa-autoplay-bar');
+    if (bar) bar.className = '';
+    var lbl = $('btn-ap-lbl');
+    if (lbl) lbl.textContent = '▶ 開始自動巡迴審查 (Autoplay)';
+    qsa('.qa-review-card, .qa-swatch-card').forEach(function (c) { c.classList.remove('is-active-step'); });
+  }
+
+  $('btn-toggle-autoplay').onclick = function () {
+    if (isAutoplayRunning) stopAutoplay();
+    else startAutoplay();
+  };
+
+  $('btn-stop-autoplay').onclick = stopAutoplay;
+
+  // 14. 頁面載入完成後的自我檢測與 ?autoplay=1 響應
+  window.addEventListener('DOMContentLoaded', function () {
+    checkAllModules();
+
+    // 檢查 URL 參數
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('autoplay') === '1') {
+      logEntry('偵測到 URL ?autoplay=1，將於 800ms 後自動啟動巡迴序列……', false, false);
+      setTimeout(function () {
+        startAutoplay();
+      }, 800);
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>
