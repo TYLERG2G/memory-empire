@@ -1,0 +1,15 @@
+{
+  "license": "Original pixel art generated for 記憶帝國 (code-drawn). All rights for this project.",
+  "frames": [
+    "idle0",
+    "idle1",
+    "attack",
+    "hit",
+    "victory"
+  ],
+  "frame_size": [
+    32,
+    32
+  ],
+  "notes": "Modest coats/armor/dresses; no revealing outfits."
+}

@@ -163,6 +163,13 @@
   var S = load();
   if (S.migratedFrom) { try { localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
   var battle = null;
+  function BS() { return window.BattleStage || null; }
+  function bsCall(name, arg) {
+    var b = BS();
+    if (!b || typeof b[name] !== 'function') return;
+    try { b[name](arg); } catch (err) { if (window.console) console.warn('[BattleStage]', name, err); }
+  }
+
   var galleryId = null;
   var currentScreen = 'home';
   var started = false;
@@ -875,6 +882,14 @@
     updateTimeUI();
     updateSkillBtn();
     go('battle', { veil: cfg.boss ? 'boss' : 'battle' });
+    bsCall('start', {
+      heroine: h,
+      chapter: cfg.chapter || 1,
+      boss: !!cfg.boss,
+      bossName: cfg.bossName || '',
+      pairsTotal: cfg.sets,
+      stageN: cfg.n || 1
+    });
     Snd.bgm(cfg.boss ? 'boss' : 'battle');
     if (cfg.boss) {
       Snd.play('boss'); vibe([40, 60, 40]); Fx.flash('crimson');
@@ -1072,6 +1087,7 @@
     } else Snd.play('match');
     vibe(18);
     var ce = $('b-combo'); if (ce) { ce.classList.remove('pop'); void ce.offsetWidth; ce.classList.add('pop'); }
+    bsCall('onMatch', { combo: b.combo, gain: gain, remainingPairs: Math.max(0, b.cfg.sets - b.matched) });
     updateBattleHUD();
     if (b.matched >= b.cfg.sets) later(function () { endBattle(true); }, 450);
   }
@@ -1087,6 +1103,7 @@
     Snd.play('mismatch'); vibe([25, 30, 25]);
     if (b.miss === 1 || b.miss % 4 === 0) cheer('miss');
     Fx.shake($('board'));
+    bsCall('onMiss', { miss: b.miss, missLimit: b.missLimit });
     var ml = $('b-miss'); if (ml) Fx.floatText(ml, '失誤', 'crimson');
     var delay = b.cfg.flipBack || 600;
     later(function () {
@@ -1134,6 +1151,7 @@
     S.stats.skillsUsed += 1;
     Snd.play('skill'); vibe([10, 20, 40]); Fx.flash('arcane');
     cheer('skill');
+    bsCall('onSkill', { skill: h.skill, heroine: h });
     if (h.skill === 'peek') {
       banner('魔眼窺視！');
       b.lock = true;
@@ -1294,11 +1312,13 @@
       safeRun(function () { vibe([20, 40, 20, 40, 60]); });
       safeRun(function () { Fx.burst($('board'), 'clear'); Fx.flash('gold'); });
       safeRun(function () { cheer('win'); });
+      safeRun(function () { bsCall('onWin'); });
     } else {
       safeRun(function () { Snd.play('fail'); });
       safeRun(function () { vibe([80]); });
       safeRun(function () { Fx.flash('crimson'); });
       safeRun(function () { cheer('lose'); });
+      safeRun(function () { bsCall('onLose', reason); });
     }
   }
 

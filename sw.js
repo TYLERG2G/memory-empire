@@ -1,5 +1,5 @@
-/* 記憶帝國：女傑翻牌 — Service Worker v4e1（UI v4） */
-const CACHE = 'MEMORY_RPG_v4e1';
+/* 記憶帝國：女傑翻牌 — Service Worker v4f（battle-stage） */
+const CACHE = 'MEMORY_RPG_v4f';
 // 核心殼層：缺一即安裝失敗
 const CORE = [
   './',
@@ -19,12 +19,14 @@ const OPTIONAL = [
   './css/fx.css',
   './css/heroine.css',
   './css/ui-v4.css',
+  './css/battle-stage.css',
   './assets/icons/icons.svg',
   './js/content_zh.js',
   './js/audio.js',
   './js/fx.js',
   './js/story.js',
   './js/heroine.js',
+  './js/battle-stage.js',
   './js/vendor/pixelfx/pixelfx.bundle.js',
   './assets/sfx/mouth-pop.ogg',
   './assets/sfx/plop.ogg',
@@ -40,7 +42,13 @@ const OPTIONAL = [
   './assets/heroines/selas.webp',
   './assets/heroines/selas-sm.webp',
   './assets/heroines/reina.webp',
-  './assets/heroines/reina-sm.webp'
+  './assets/heroines/reina-sm.webp',
+  './assets/battle/heroines/verda_idle0.png',
+  './assets/battle/heroines/karena_idle0.png',
+  './assets/battle/bg/ch1.png',
+  './assets/battle/monsters/ch1_mob_a.png',
+  './assets/battle/monsters/default_mob.png',
+  './assets/battle/monsters/default_boss.png'
 ];
 self.addEventListener('install', (e) => {
   e.waitUntil(

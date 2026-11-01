@@ -1,0 +1,239 @@
+/* battle-stage.css — 戰鬥舞台（女傑 vs 怪物）
+ * 須在 ui-v4.css 之後載入。覆寫 ui-v4 的「舞台全隱藏」規則；
+ * 矮機只縮不藏（最小 64px），牌盤仍以 flex 吃剩餘高度。 */
+
+#scr-battle .battle-stage{
+  display:grid!important;
+  --stage-h:96px; --hero-sz:60px; --foe-sz:56px; --boss-sz:76px;
+  --k:#b07cff;
+  position:relative;flex:0 0 auto;
+  height:var(--stage-h);min-height:64px;max-height:110px;
+  margin:0 0 6px;padding:4px 10px 6px;
+  grid-template-columns:1fr minmax(48px,1.3fr) 1fr;
+  grid-template-rows:100%;
+  align-items:end;gap:4px;
+  border-radius:var(--r-md,12px);overflow:hidden;pointer-events:none;
+  isolation:isolate;contain:layout paint;
+  background:#120810;
+  box-shadow:inset 0 0 0 1px rgba(232,194,106,.30),0 2px 8px rgba(0,0,0,.45);
+}
+#scr-battle .battle-stage .bs-label{display:none!important}
+
+/* ── 背景（視差緩移） ── */
+#scr-battle .bs-bg{
+  position:absolute;inset:-2px -8%;z-index:0;
+  background-repeat:no-repeat;background-size:cover;background-position:50% 100%;
+  image-rendering:pixelated;
+  animation:bs-pan 22s ease-in-out infinite alternate;
+}
+#scr-battle .bs-bg::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(10,4,8,.05) 40%,rgba(10,4,8,.55))}
+#scr-battle .bs-bg[data-ch="1"]{background-image:url(../assets/battle/bg/ch1.png);
+  background-image:image-set(url(../assets/battle/bg/ch1.png) 1x,url(../assets/battle/bg/ch1@3x.png) 3x)}
+#scr-battle .bs-bg[data-ch="2"]{background-image:url(../assets/battle/bg/ch2.png);
+  background-image:image-set(url(../assets/battle/bg/ch2.png) 1x,url(../assets/battle/bg/ch2@3x.png) 3x)}
+#scr-battle .bs-bg[data-ch="3"]{background-image:url(../assets/battle/bg/ch3.png);
+  background-image:image-set(url(../assets/battle/bg/ch3.png) 1x,url(../assets/battle/bg/ch3@3x.png) 3x)}
+#scr-battle .bs-bg[data-ch="4"]{background-image:url(../assets/battle/bg/ch4.png);
+  background-image:image-set(url(../assets/battle/bg/ch4.png) 1x,url(../assets/battle/bg/ch4@3x.png) 3x)}
+#scr-battle .bs-bg[data-ch="5"]{background-image:url(../assets/battle/bg/ch5.png);
+  background-image:image-set(url(../assets/battle/bg/ch5.png) 1x,url(../assets/battle/bg/ch5@3x.png) 3x)}
+@keyframes bs-pan{from{transform:translateX(-3%)}to{transform:translateX(3%)}}
+
+/* ── 兩側 ── */
+#scr-battle .battle-stage .bs-side{
+  position:relative;z-index:1;height:100%;min-height:0;
+  background:none;box-shadow:none;border-radius:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+}
+#scr-battle .battle-stage .bs-hero,#scr-battle .battle-stage .bs-foe{background:none}
+
+#scr-battle .bs-sprite{
+  flex:none;background-repeat:no-repeat;background-position:50% 100%;background-size:contain;
+  image-rendering:pixelated;image-rendering:crisp-edges;
+  transform-origin:50% 100%;will-change:transform;
+  filter:drop-shadow(0 2px 0 rgba(0,0,0,.55));
+}
+#scr-battle .bs-hero-sprite{
+  width:var(--hero-sz);height:var(--hero-sz);max-height:calc(100% - 12px);aspect-ratio:1;
+  animation:bs-bob 1s steps(2,end) infinite;
+}
+#scr-battle .bs-name{
+  flex:none;font-size:10px;line-height:12px;letter-spacing:1px;white-space:nowrap;
+  color:#f3e2b0;text-shadow:0 1px 0 #000,0 0 4px rgba(0,0,0,.8);
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;
+}
+
+#scr-battle .bs-foe-sprite{
+  width:var(--foe-sz);height:var(--foe-sz);max-height:calc(100% - 16px);aspect-ratio:1;
+  transform:scaleX(1);
+  animation:bs-bob 1.2s steps(2,end) infinite;
+}
+#scr-battle .bs-foe-sprite[data-kind="boss"]{width:var(--boss-sz);height:var(--boss-sz)}
+
+.battle-stage .foe-meta{
+  flex:none;width:100%;max-width:92px;display:flex;flex-direction:column;align-items:stretch;gap:1px;
+  margin-bottom:1px;
+}
+.battle-stage .foe-name{
+  font-size:9px;line-height:11px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:#ffd9a0;text-shadow:0 1px 0 #000;
+}
+#scr-battle .battle-stage .foe-hp{
+  position:relative;left:auto;right:auto;top:auto;
+  height:6px;border-radius:3px;overflow:hidden;
+  background:#1a0a0e;box-shadow:inset 0 0 0 1px rgba(232,194,106,.55),0 1px 0 #000;
+}
+#scr-battle .battle-stage .foe-hp i{
+  display:block;height:100%;width:100%;
+  background:linear-gradient(90deg,#8e1028 0%,#d4243e 45%,#e8c26a 100%);
+  box-shadow:inset 0 1px 0 rgba(255,241,194,.45);
+  transition:width .28s cubic-bezier(.2,.8,.2,1);
+}
+#scr-battle .battle-stage .foe-hp.low i{background:linear-gradient(90deg,#5a0614,#d4243e)}
+#scr-battle .battle-stage.is-boss .foe-meta{max-width:110px}
+#scr-battle .battle-stage.is-boss .foe-name{color:#ff8a9a;font-weight:700}
+
+/* ── 中央特效欄 ── */
+#scr-battle .bs-fx{position:relative;z-index:2;align-self:stretch;height:100%;overflow:visible}
+
+/* 投射物 */
+.battle-stage .bs-proj{
+  position:absolute;left:-30%;bottom:34%;width:14px;height:6px;border-radius:6px;
+  background:var(--k);box-shadow:0 0 6px var(--k),0 0 12px var(--k);
+  animation:bs-fly .2s linear forwards;
+}
+.battle-stage .bs-proj.k-bolt{width:10px;height:10px;border-radius:50%;
+  background:radial-gradient(circle,#fff 0 25%,#b07cff 45%,rgba(176,124,255,0) 72%);
+  box-shadow:0 0 10px #b07cff}
+.battle-stage .bs-proj.k-dagger{width:16px;height:3px;border-radius:0 3px 3px 0;
+  background:linear-gradient(90deg,rgba(91,227,138,0),#5be38a 40%,#eaffef);box-shadow:0 0 6px #5be38a;
+  animation-name:bs-fly-spin}
+.battle-stage .bs-proj.k-beam{left:-30%;width:160%;height:5px;border-radius:3px;transform-origin:0 50%;
+  background:linear-gradient(90deg,rgba(79,227,255,.2),#4fe3ff 30%,#effcff 60%,#4fe3ff);
+  box-shadow:0 0 8px #4fe3ff,0 0 16px rgba(79,227,255,.6);
+  animation:bs-beam .24s ease-out forwards}
+.battle-stage .bs-proj.strong{transform:scale(1.6);filter:brightness(1.3)}
+.battle-stage .bs-proj.k-beam.strong{height:9px}
+@keyframes bs-fly{from{left:-30%;opacity:.9}to{left:115%;opacity:1}}
+@keyframes bs-fly-spin{from{left:-30%}to{left:115%}}
+@keyframes bs-beam{0%{transform:scaleX(0);opacity:1}60%{transform:scaleX(1);opacity:1}100%{transform:scaleX(1);opacity:0}}
+
+/* 近戰斬擊弧 */
+.battle-stage .bs-slash{
+  position:absolute;z-index:3;left:50%;bottom:22%;width:44px;height:44px;margin-left:-22px;
+  border-radius:50%;border:3px solid transparent;border-top-color:var(--k);border-right-color:var(--k);
+  filter:drop-shadow(0 0 4px var(--k));
+  animation:bs-slash .26s ease-out forwards;
+}
+.battle-stage .bs-slash.k-rush{border-top-color:#ff4a4a;border-right-color:#ffb08a;filter:drop-shadow(0 0 5px #ff4a4a)}
+.battle-stage .bs-slash.k-slash{border-top-color:#ffd34a;border-right-color:#fff3c0;filter:drop-shadow(0 0 5px #ffd34a)}
+.battle-stage .bs-slash.strong{width:60px;height:60px;margin-left:-30px;border-width:4px}
+@keyframes bs-slash{0%{transform:rotate(-120deg) scale(.6);opacity:0}30%{opacity:1}100%{transform:rotate(40deg) scale(1.1);opacity:0}}
+
+/* 技能閃光 */
+.battle-stage .bs-fx::before{
+  content:"";position:absolute;inset:-20% -40%;opacity:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 60%,var(--k) 0,transparent 65%);
+  mix-blend-mode:screen;
+}
+.battle-stage .bs-fx.is-skill::before{animation:bs-skill .6s ease-out}
+@keyframes bs-skill{0%{opacity:0;transform:scale(.4)}25%{opacity:.95;transform:scale(1.05)}100%{opacity:0;transform:scale(1.4)}}
+
+/* 傷害數字 */
+.battle-stage .bs-dmg{
+  position:absolute;z-index:4;left:50%;top:22%;transform:translateX(-50%);
+  font:700 13px/1 system-ui,sans-serif;color:#fff1c2;
+  text-shadow:0 1px 0 #000,1px 0 0 #000,-1px 0 0 #000,0 -1px 0 #000;
+  pointer-events:none;white-space:nowrap;
+  animation:bs-dmg .7s ease-out forwards;
+}
+.battle-stage .bs-dmg.crit{font-size:17px;color:#ffd34a;text-shadow:0 1px 0 #6b1422,1px 0 0 #6b1422,-1px 0 0 #6b1422,0 0 6px #ff5a6e}
+@keyframes bs-dmg{0%{opacity:0;transform:translate(-50%,6px) scale(.6)}20%{opacity:1;transform:translate(-50%,-4px) scale(1.2)}100%{opacity:0;transform:translate(-50%,-20px) scale(1)}}
+
+/* ── 動作 ── */
+@keyframes bs-bob{0%{transform:translateY(0)}100%{transform:translateY(-1px)}}
+
+.battle-stage .bs-hero-sprite[data-pose="attack"]{animation:bs-cast .28s ease-out}
+.battle-stage .bs-hero-sprite.is-lunge{animation:bs-lunge .28s cubic-bezier(.2,.9,.3,1)}
+@keyframes bs-cast{0%{transform:translateX(0)}35%{transform:translateX(5px) scale(1.04)}100%{transform:translateX(0)}}
+@keyframes bs-lunge{0%{transform:translateX(0)}40%{transform:translateX(28px)}100%{transform:translateX(0)}}
+
+.battle-stage .bs-hero-sprite.is-hurt{animation:bs-hurt-l .3s ease-out}
+@keyframes bs-hurt-l{0%{filter:brightness(3) saturate(0)}30%{transform:translateX(-5px)}60%{transform:translateX(2px);filter:brightness(1.4) hue-rotate(-30deg)}100%{transform:none;filter:none}}
+.battle-stage .bs-hero-sprite.is-down{transform:translateY(2px) rotate(-8deg);filter:grayscale(.6) brightness(.8);animation:none}
+.battle-stage .bs-hero-sprite[data-pose="victory"]{animation:bs-jump .5s ease-out}
+@keyframes bs-jump{0%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+
+.battle-stage .bs-foe-sprite.is-hit{animation:bs-hit .24s ease-out}
+.battle-stage .bs-foe-sprite.is-hit-lg{animation:bs-hit-lg .32s ease-out}
+@keyframes bs-hit{0%{filter:brightness(3) saturate(0);transform:translateX(0)}35%{transform:translateX(6px)}100%{filter:none;transform:translateX(0)}}
+@keyframes bs-hit-lg{0%{filter:brightness(4) saturate(0);transform:translateX(0) scale(1.06)}30%{transform:translateX(11px) rotate(4deg)}60%{filter:brightness(1.6) hue-rotate(-20deg)}100%{filter:none;transform:none}}
+
+.battle-stage .bs-foe-sprite.is-attack{animation:bs-foe-atk .32s ease-in-out}
+@keyframes bs-foe-atk{0%{transform:none}25%{transform:translateX(4px) rotate(4deg)}55%{transform:translateX(-16px) rotate(-7deg)}100%{transform:none}}
+
+.battle-stage .bs-foe-sprite.is-intro{animation:bs-intro .7s cubic-bezier(.2,.9,.3,1)}
+@keyframes bs-intro{0%{transform:scale(1.5);filter:brightness(4) saturate(0);opacity:0}40%{opacity:1}100%{transform:none;filter:none}}
+#scr-battle .battle-stage.is-boss-flash::after{
+  content:"";position:absolute;inset:0;z-index:5;pointer-events:none;
+  background:radial-gradient(circle at 75% 60%,rgba(255,90,110,.55),transparent 60%);
+  animation:bs-flash .6s ease-out forwards}
+@keyframes bs-flash{0%{opacity:1}100%{opacity:0}}
+
+.battle-stage .bs-foe-sprite.is-dead{animation:bs-die .6s ease-in forwards}
+@keyframes bs-die{0%{filter:brightness(3) saturate(0);opacity:1}100%{opacity:0;transform:translateY(6px) scaleY(.7);filter:grayscale(1)}}
+#scr-battle .battle-stage.is-win .foe-meta{opacity:.35;transition:opacity .4s}
+#scr-battle .battle-stage.is-lose .bs-bg{filter:saturate(.4) brightness(.7);transition:filter .4s}
+
+/* 舞台震動 */
+#scr-battle .battle-stage.is-shake{animation:bs-shake .24s linear}
+#scr-battle .battle-stage.is-shake-lg{animation:bs-shake-lg .32s linear}
+@keyframes bs-shake{0%,100%{transform:none}25%{transform:translate(-2px,1px)}50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,0)}}
+@keyframes bs-shake-lg{0%,100%{transform:none}20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-3px,1px)}80%{transform:translate(2px,0)}}
+
+/* Hitstop：僅凍結舞台動畫（視覺），不影響遊戲計時 */
+#scr-battle.bs-hitstop .battle-stage,
+#scr-battle.bs-hitstop .battle-stage *,
+#scr-battle.bs-hitstop .battle-stage *::before{animation-play-state:paused!important;pointer-events:none}
+
+/* ── 尺寸：矮機只縮不藏 ── */
+@media (max-height:760px){
+  #scr-battle .battle-stage{--stage-h:88px;--hero-sz:56px;--foe-sz:52px;--boss-sz:66px}
+}
+@media (max-height:700px){
+  #scr-battle .battle-stage{--stage-h:80px;--hero-sz:52px;--foe-sz:48px;--boss-sz:60px;min-height:72px;max-height:88px;margin-bottom:4px}
+}
+@media (max-height:620px){
+  #scr-battle .battle-stage{--stage-h:68px;--hero-sz:44px;--foe-sz:42px;--boss-sz:50px;min-height:64px;padding:2px 8px 3px}
+  #scr-battle .bs-name{font-size:9px;line-height:10px}
+  .battle-stage .foe-name{display:none}
+}
+@media (orientation:landscape) and (max-height:430px){
+  #scr-battle .battle-stage{--stage-h:64px;--hero-sz:42px;--foe-sz:40px;--boss-sz:48px;min-height:64px;max-height:64px;padding:2px 8px}
+  #scr-battle .bs-name,.battle-stage .foe-name{display:none}
+}
+@media (min-height:880px){
+  #scr-battle .battle-stage{--stage-h:108px;--hero-sz:64px;--foe-sz:60px;--boss-sz:84px}
+}
+
+/* ── 減少動態 ── */
+@media (prefers-reduced-motion:reduce){
+  #scr-battle .bs-bg,
+  #scr-battle .bs-hero-sprite,
+  #scr-battle .bs-foe-sprite,
+  #scr-battle .battle-stage.is-shake,
+  #scr-battle .battle-stage.is-shake-lg,
+  .battle-stage .bs-hero-sprite.is-lunge,
+  .battle-stage .bs-hero-sprite[data-pose],
+  .battle-stage .bs-foe-sprite.is-attack,
+  .battle-stage .bs-foe-sprite.is-intro{animation:none!important;transform:none}
+  .battle-stage .bs-foe-sprite.is-hit,
+  .battle-stage .bs-foe-sprite.is-hit-lg{animation:bs-flash-rm .24s ease-out!important}
+  .battle-stage .bs-foe-sprite.is-dead{animation:none!important;opacity:0;transition:opacity .3s}
+  .battle-stage .bs-proj,.battle-stage .bs-slash{animation-duration:.01s!important}
+  .battle-stage .bs-dmg{animation:bs-dmg-rm .6s linear forwards}
+  #scr-battle .battle-stage .foe-hp i{transition:none}
+}
+@keyframes bs-flash-rm{0%{filter:brightness(2.2)}100%{filter:none}}
+@keyframes bs-dmg-rm{0%,70%{opacity:1}100%{opacity:0}}

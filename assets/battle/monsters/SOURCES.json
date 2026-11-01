@@ -1,0 +1,87 @@
+{
+  "ch1_mob_a": {
+    "src_index": 4,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch1_mob_b": {
+    "src_index": 0,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch1_boss": {
+    "src_index": 3,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch2_mob_a": {
+    "src_index": 2,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch2_mob_b": {
+    "src_index": 67,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch2_boss": {
+    "src_index": 96,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch3_mob_a": {
+    "src_index": 35,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch3_mob_b": {
+    "src_index": 103,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch3_boss": {
+    "src_index": 45,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch4_mob_a": {
+    "src_index": 46,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch4_mob_b": {
+    "src_index": 56,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch4_boss": {
+    "src_index": 128,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch5_mob_a": {
+    "src_index": 19,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch5_mob_b": {
+    "src_index": 34,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "ch5_boss": {
+    "src_index": 123,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "default_mob": {
+    "src_index": 10,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  },
+  "default_boss": {
+    "src_index": 30,
+    "license": "CC0",
+    "pack": "tiny-creatures (Clint Bellanger / Kenney style)"
+  }
+}
