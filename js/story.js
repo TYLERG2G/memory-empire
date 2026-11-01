@@ -456,7 +456,7 @@
           paragraphs.map(function (para) { return '<p>' + esc(para) + '</p>'; }).join('') +
         '</div>' +
         (quote ? '<div class="st-quote">' + esc(quote) + '</div>' : '') +
-        '<button type="button" class="btn btn-gold" id="story-intro-ok" style="width:100%">⚔️ 踏入征途</button>' +
+        '<button type="button" class="btn btn-gold" id="story-intro-ok" style="width:100%">踏入征途</button>' +
       '</div>';
 
     overlay.classList.remove('hidden');

@@ -263,3 +263,85 @@ b{color:var(--sb-ink)}
 
 #btn-fight .cost{display:none!important}
 .res-energy.is-hidden{display:none!important}
+
+/* ── Story / VN overlays (override heroine.css dark crimson) ── */
+#story-overlay.heroine-overlay,
+.heroine-overlay{
+  background:rgba(90,70,110,.28)!important;
+  backdrop-filter:blur(8px);
+}
+#story-overlay .ho-card,
+.heroine-overlay .ho-card{
+  background:linear-gradient(175deg,#fffdf8 0%,#f7efe6 55%,#f3e8f0 100%)!important;
+  border:1.5px solid var(--sb-line)!important;
+  box-shadow:0 16px 46px rgba(60,40,80,.18), inset 0 1px 0 #fff!important;
+  color:var(--sb-ink)!important;
+}
+#story-overlay .st-banner{
+  background:linear-gradient(180deg,#efe6f6,#e4d8ec)!important;
+  border-bottom:1px solid var(--sb-line)!important;
+}
+#story-overlay .st-banner img{
+  opacity:.88!important;filter:saturate(1.05) brightness(1.05)!important;
+}
+#story-overlay .st-banner-veil{
+  background:linear-gradient(180deg,rgba(255,252,248,.05) 0%,rgba(255,252,248,.55) 55%,rgba(247,239,230,.92) 100%)!important;
+}
+#story-overlay .st-kicker{color:var(--sb-gold)!important;text-shadow:none!important}
+#story-overlay .st-title{
+  color:#5a3d18!important;text-shadow:0 1px 0 #fff,0 2px 8px rgba(201,162,74,.25)!important;
+}
+#story-overlay .st-prose p{
+  color:var(--sb-ink)!important;text-shadow:none!important;
+}
+#story-overlay .st-quote{
+  background:rgba(201,162,74,.10)!important;
+  border:1px solid rgba(201,162,74,.35)!important;
+  color:#7a5a20!important;
+}
+.vn-intro{
+  background:rgba(255,253,248,.85)!important;
+  border-left:2px solid var(--sb-gold)!important;
+  color:var(--sb-ink)!important;
+}
+.vn-speech{
+  background:linear-gradient(145deg,#fffdf8,#f3e8f0)!important;
+  border:1px solid var(--sb-line)!important;
+  color:var(--sb-ink)!important;
+}
+.vn-kicker,.vn-title{color:#5a3d18!important}
+.vn-speaker{color:var(--sb-lavender)!important}
+.ho-close{
+  background:rgba(255,253,248,.9)!important;
+  border:1px solid var(--sb-line)!important;
+  color:var(--sb-ink)!important;
+}
+
+/* Settings rows / fav gift chips already cream; ensure text ink */
+#scr-settings .set-row,
+#scr-settings .set-group{color:var(--sb-ink)!important}
+#scr-settings .set-row span,
+#scr-settings label{color:var(--sb-ink)!important}
+
+/* Soft switches / buy affordance */
+.switch{
+  background:rgba(120,96,140,.18)!important;border-color:var(--sb-line)!important;
+}
+.switch::after{background:#fff!important;box-shadow:0 1px 3px rgba(60,40,80,.2)}
+.switch:checked{background:linear-gradient(90deg,#c9a6e8,#9a6fc4)!important;border-color:rgba(154,111,196,.5)!important}
+.switch:checked::after{background:#fffdf8!important}
+#scr-shop .shop-item .btn[disabled],
+#scr-roster .btn[disabled],
+#scr-home .btn[disabled]{
+  background:linear-gradient(180deg,#f4eef6,#e8e0ec)!important;
+  color:var(--sb-ink-3)!important;border-color:var(--sb-line)!important;opacity:.85;
+}
+#scr-shop .shop-item .btn-gold:not([disabled]){
+  background:linear-gradient(180deg,#fff6e0,#f0d9a0)!important;color:#5a3d18!important;
+}
+#heroine-gift-overlay h3{color:#5a3d18!important}
+#heroine-gift-overlay .gift-fav-tag{
+  background:rgba(201,162,74,.18)!important;color:#7a5a20!important;
+  border:1px solid rgba(201,162,74,.35)!important;border-radius:999px;padding:1px 6px;font-size:10px;
+}
+#heroine-gift-overlay .gift-meta{color:var(--sb-ink-2)!important}

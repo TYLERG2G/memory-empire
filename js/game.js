@@ -1860,7 +1860,7 @@
       var count = S.inv[it.id] || 0;
       html += '<div class="shop-item"><div class="si-ico">' + itemIco(it, 'item-ico-lg') + '</div><div class="si-body"><b>' + esc(it.name) + '</b><div class="muted small">' + esc(it.desc) + '</div>' +
         (shopTab === 'consumables' || shopTab === 'gifts' ? (count ? '<div class="owned">持有 ×' + count + '</div>' : '') : (owned ? '<div class="owned">已擁有</div>' : '')) + '</div>' +
-        '<button class="btn btn-sm btn-gold" data-buy="' + it.id + '"' + (owned || S.gold < it.price ? ' disabled' : '') + '>' + (owned ? '✓' : '🪙' + it.price) + '</button></div>';
+        '<button class="btn btn-sm btn-gold" data-buy="' + it.id + '"' + (owned || S.gold < it.price ? ' disabled' : '') + '>' + (owned ? '✓' : it.price + '金') + '</button></div>';
     });
     list.innerHTML = html;
     qsa('[data-buy]', list).forEach(function (b) { b.onclick = function () { buy(shopTab, b.getAttribute('data-buy')); }; });

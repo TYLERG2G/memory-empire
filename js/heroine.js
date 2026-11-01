@@ -740,7 +740,7 @@
     if (giftBtn) {
       var giftCap = (D && D.CONFIG && D.CONFIG.GIFT_DAILY_CAP) || 3;
       var giftsUsed = (dc.gift && dc.gift[h.id]) || 0;
-      giftBtn.textContent = '🎁 贈禮 (' + Math.max(0, giftCap - giftsUsed) + '/' + giftCap + ')';
+      giftBtn.textContent = '贈禮 (' + Math.max(0, giftCap - giftsUsed) + '/' + giftCap + ')';
     }
 
     var selBtn = $('hg-select');
@@ -1097,20 +1097,20 @@
       var disabled = used >= cap || (count <= 0 && gold < g.price);
       return '<button type="button" class="gift-card' + (count > 0 ? ' is-owned' : '') + (isFav ? ' is-fav' : '') +
         '" data-gift="' + esc(g.id) + '"' + (disabled ? ' disabled' : '') + '>' +
-        (isFav ? '<span class="gift-fav-tag">♥ 喜愛</span>' : '') +
+        (isFav ? '<span class="gift-fav-tag">喜愛</span>' : '') +
         itemIcoLocal(g, 'item-ico-md') + '<b>' + esc(g.name) + '</b>' +
-        '<span class="gift-meta">' + (count > 0 ? ('持有 ×' + count + '（直接贈送）') : ('🪙' + g.price + ' 購贈')) + '</span></button>';
+        '<span class="gift-meta">' + (count > 0 ? ('持有 ×' + count + '（直接贈送）') : (g.price + '金 購贈')) + '</span></button>';
     }).join('');
 
     overlay.innerHTML =
       '<div class="ho-card" role="dialog" aria-modal="true">' +
         '<button type="button" class="ho-close" id="hg-gift-close" aria-label="關閉">✕</button>' +
-        '<h3 style="color:var(--h-gold-bright);margin-bottom:4px">🎁 致贈心意予 ' + esc(h.name) + '</h3>' +
-        '<p class="muted small">今日已贈 <b>' + used + '/' + cap + '</b> · 持有金幣 <b style="color:var(--h-gold-bright)">🪙' + gold + '</b>' +
+        '<h3 style="color:var(--h-gold-bright);margin-bottom:4px">致贈心意予 ' + esc(h.name) + '</h3>' +
+        '<p class="muted small">今日已贈 <b>' + used + '/' + cap + '</b> · 持有金幣 <b style="color:var(--h-gold-bright)">' + gold + ' 金</b>' +
           (favNames ? '<br>鍾愛之物：<span class="fav-gift-row">' + favNames + '</span>' : '') + '</p>' +
         '<div class="gift-grid">' + cardsHtml + '</div>' +
         '<div class="btn-row" style="margin-top:8px">' +
-          '<button type="button" class="btn secondary btn-sm" id="hg-goto-shop">🛒 前往帝國商會</button>' +
+          '<button type="button" class="btn secondary btn-sm" id="hg-goto-shop">前往帝國商會</button>' +
           '<button type="button" class="btn btn-sm" id="hg-gift-cancel">返回鑑賞</button>' +
         '</div>' +
       '</div>';

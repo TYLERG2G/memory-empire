@@ -1,5 +1,5 @@
-/* 記憶帝國：女傑翻牌 — Service Worker v4h2 shell-bright WM-training faces+result */
-const CACHE = 'MEMORY_RPG_v4h2';
+/* 記憶帝國：女傑翻牌 — Service Worker v4h2a shell-bright story/switch WM-training faces+result */
+const CACHE = 'MEMORY_RPG_v4h2a';
 // 核心殼層：缺一即安裝失敗
 const CORE = [
   './',
