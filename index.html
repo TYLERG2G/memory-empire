@@ -185,43 +185,47 @@ img.outfit-yukata{filter:saturate(1.1) sepia(.12)}
 
   <main id="screens">
     <!-- 主城 -->
-    <section id="scr-home" class="screen active home-v4 home-bright">
-      <div class="hero-stage" id="home-hero-stage">
-        <img id="home-hero-img" alt="點擊鑑賞" title="點擊鑑賞" src="assets/heroines/verda.webp" style="cursor:pointer">
-        <div class="hero-plate">
-          <div id="home-hero-title" class="h-title"></div>
-          <div id="home-hero-name" class="h-name"></div>
-          <div id="home-hero-skill" class="h-skill"></div>
-        </div>
-      </div>
-      <h1 class="game-title game-title--float">記憶帝國<span>女傑翻牌</span></h1>
-      <div id="home-greet" class="greet-bubble"></div>
-      <div class="home-dock">
-        <div class="train-panel" id="home-train-panel" hidden>
-          <button type="button" class="train-cta" id="btn-train-cta" aria-label="今日訓練">
-            <span class="train-diamond" aria-hidden="true"><i>◆</i></span>
-            <span><b>今日訓練</b><small id="train-cta-sub">工作記憶翻牌 · 點擊開始</small></span>
-          </button>
-          <div class="train-meta">
-            <span class="train-chip" id="train-streak-chip">連續 <b id="train-streak">0</b> 天</span>
-            <span class="train-chip" id="train-load-chip">負荷 Lv.<b id="train-load">0</b></span>
+    <section id="scr-home" class="screen active home-v5 home-bright">
+      <div class="home-layout">
+        <aside class="home-cutin" id="home-hero-stage">
+          <div class="home-cutin-frame">
+            <img id="home-hero-img" class="home-cutin-img" alt="點擊鑑賞" title="點擊鑑賞" src="assets/heroines/cutouts/verda.png" style="cursor:pointer">
+          </div>
+          <div class="home-nameplate" id="home-hero-plate">
+            <div id="home-hero-title" class="h-title"></div>
+            <div id="home-hero-name" class="h-name"></div>
+            <div id="home-hero-skill" class="h-skill" hidden></div>
+          </div>
+        </aside>
+        <div class="home-main" id="home-dock">
+          <div id="home-greet" class="greet-bubble home-greet" hidden></div>
+          <div class="train-panel" id="home-train-panel">
+            <button type="button" class="train-cta" id="btn-train-cta" aria-label="今日訓練">
+              <span class="train-diamond" aria-hidden="true"><i>◆</i></span>
+              <span class="train-cta-copy"><b>今日訓練</b><small id="train-cta-sub">工作記憶翻牌 · 點擊開始</small></span>
+            </button>
+            <div class="train-meta">
+              <span class="train-chip" id="train-streak-chip">連續 <b id="train-streak">0</b> 天</span>
+              <span class="train-chip" id="train-load-chip">負荷 Lv.<b id="train-load">0</b></span>
+            </div>
             <div class="train-span" id="train-span-wrap">
               <div class="lbl">工作記憶跨度</div>
-              <svg id="train-span-svg" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <svg id="train-span-svg" viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <div class="train-span-empty" id="train-span-empty">完成一場訓練後，這裡會顯示跨度趨勢</div>
             </div>
           </div>
-        </div>
-        <div class="stage-info glass-chip">
-          <div><span id="home-chapter"></span> · 第 <b id="home-stage">1</b> 關</div>
-          <div class="muted" id="home-stage-detail"></div>
-          <div class="muted">登入連續 <b id="home-streak">0</b> 天 · <svg class="ico ico-xs" aria-hidden="true"><use href="#ico-star"></use></svg> <b id="home-stars">0</b></div>
-        </div>
-        <button id="btn-fight" class="btn btn-gold btn-big btn-cta"><svg class="ico ico-lg" aria-hidden="true"><use href="#ico-battle"></use></svg><span>繼續征途</span><small class="cost"><svg class="ico ico-xs" aria-hidden="true"><use href="#ico-energy"></use></svg>1</small></button>
-        <div class="mode-grid mode-chips">
-          <button id="btn-daily" class="chip"><svg class="ico" aria-hidden="true"><use href="#ico-daily"></use></svg><span>每日</span><small id="daily-sub">今日未完成</small></button>
-          <button id="btn-endless" class="chip"><svg class="ico" aria-hidden="true"><use href="#ico-endless"></use></svg><span>無盡</span><small id="endless-sub">體力2</small></button>
-          <button id="btn-map" class="chip"><svg class="ico" aria-hidden="true"><use href="#ico-map"></use></svg><span>地圖</span><small>選擇關卡</small></button>
-          <button id="btn-board" class="chip"><svg class="ico" aria-hidden="true"><use href="#ico-trophy"></use></svg><span>排行</span><small>無盡紀錄</small></button>
+          <div class="stage-info glass-chip">
+            <div><span id="home-chapter"></span> · 第 <b id="home-stage">1</b> 關</div>
+            <div class="muted" id="home-stage-detail"></div>
+            <div class="muted">登入連續 <b id="home-streak">0</b> 天 · <svg class="ico ico-xs" aria-hidden="true"><use href="#ico-star"></use></svg> <b id="home-stars">0</b></div>
+          </div>
+          <button id="btn-fight" class="btn btn-gold btn-big btn-cta is-hidden" hidden aria-hidden="true"><span>繼續征途</span></button>
+          <div class="mode-grid mode-chips">
+            <button id="btn-daily" class="chip mode-plate"><svg class="ico" aria-hidden="true"><use href="#ico-daily"></use></svg><span>每日</span><small id="daily-sub">今日未完成</small></button>
+            <button id="btn-endless" class="chip mode-plate"><svg class="ico" aria-hidden="true"><use href="#ico-endless"></use></svg><span>無盡</span><small id="endless-sub">訓練負荷</small></button>
+            <button id="btn-map" class="chip mode-plate"><svg class="ico" aria-hidden="true"><use href="#ico-map"></use></svg><span>地圖</span><small>選擇關卡</small></button>
+            <button id="btn-board" class="chip mode-plate"><svg class="ico" aria-hidden="true"><use href="#ico-trophy"></use></svg><span>排行</span><small>無盡紀錄</small></button>
+          </div>
         </div>
       </div>
     </section>
@@ -297,12 +301,12 @@ img.outfit-yukata{filter:saturate(1.1) sepia(.12)}
     <section id="scr-settings" class="screen">
       <h2 class="scr-title">設定</h2>
       <div class="set-list">
-        <div class="set-row"><span>🔔 音效</span><span class="vol"><input type="range" id="set-sfx-vol" min="0" max="1" step="0.05"><input type="checkbox" id="set-sfx" class="switch"></span></div>
-        <div class="set-row"><span>🎼 音樂</span><span class="vol"><input type="range" id="set-bgm-vol" min="0" max="1" step="0.05"><input type="checkbox" id="set-bgm" class="switch"></span></div>
-        <label class="set-row"><span>📳 震動回饋</span><input type="checkbox" id="set-vibrate" class="switch"></label>
-        <label class="set-row"><span>💢 失誤震屏</span><input type="checkbox" id="set-shake" class="switch"></label>
-        <div class="set-row"><span>📊 統計</span><span id="set-stats" class="muted small"></span></div>
-        <div class="set-row"><span>📱 安裝</span><span class="muted small">於瀏覽器選單選擇「加入主畫面」即可離線遊玩</span></div>
+        <div class="set-row"><span class="set-label"><i class="set-ico set-ico-sfx" aria-hidden="true"></i>音效</span><span class="vol"><input type="range" id="set-sfx-vol" min="0" max="1" step="0.05"><input type="checkbox" id="set-sfx" class="switch"></span></div>
+        <div class="set-row"><span class="set-label"><i class="set-ico set-ico-bgm" aria-hidden="true"></i>音樂</span><span class="vol"><input type="range" id="set-bgm-vol" min="0" max="1" step="0.05"><input type="checkbox" id="set-bgm" class="switch"></span></div>
+        <label class="set-row"><span class="set-label"><i class="set-ico set-ico-vibrate" aria-hidden="true"></i>震動回饋</span><input type="checkbox" id="set-vibrate" class="switch"></label>
+        <label class="set-row"><span class="set-label"><i class="set-ico set-ico-shake" aria-hidden="true"></i>失誤震屏</span><input type="checkbox" id="set-shake" class="switch"></label>
+        <div class="set-row"><span class="set-label"><i class="set-ico set-ico-stats" aria-hidden="true"></i>統計</span><span id="set-stats" class="muted small"></span></div>
+        <div class="set-row"><span class="set-label"><i class="set-ico set-ico-install" aria-hidden="true"></i>安裝</span><span class="muted small">於瀏覽器選單選擇「加入主畫面」即可離線遊玩</span></div>
         <button id="btn-reset" class="btn btn-danger">重置所有進度</button>
         <p class="muted small center" id="set-version">記憶帝國：女傑翻牌 v3.0</p>
       </div>

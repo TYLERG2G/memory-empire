@@ -680,8 +680,8 @@
     var h = heroine(S.selected);
     var img = $('home-hero-img');
     if (img) {
-      img.src = 'assets/heroines/' + h.id + '.webp';
-      img.className = 'breathe ' + outfitClass(h.id);
+      img.src = 'assets/heroines/cutouts/' + h.id + '.png';
+      img.className = 'home-cutin-img breathe ' + outfitClass(h.id);
     }
     setText('home-hero-title', h.title);
     setText('home-hero-name', h.name);
@@ -697,7 +697,6 @@
     var boardPrev = adaptiveBoardFor(n);
     var cShow = boardPrev ? D.stageConfig(n, { board: boardPrev }) : c;
     setText('home-stage-detail', cShow.cols + '×' + cShow.rows + ' · ' + cShow.sets + ' 組' + (cShow.setSize === 3 ? '（三張一組）' : '') + ' · 限時 ' + cShow.time + ' 秒 · 失誤上限 ' + cShow.missLimit +
-      ' · 負荷 Lv.' + ((S.training && S.training.load) || 0) +
       (cShow.boss ? ' · ♛ 頭目：' + (cShow.bossName || '') + '（' + (D.bossMech(cShow.boss) || {}).name + '）' : '') + (done ? ' · 戰役已全破' : ''));
     setText('home-streak', S.streak);
     setText('home-stars', totalStars());
@@ -717,31 +716,40 @@
       if (window.Training && typeof Training.summary === 'function') sum = Training.summary(S);
       else if (window.GameAPI && typeof GameAPI.trainingSummary === 'function') sum = GameAPI.trainingSummary();
     } catch (e) { sum = null; }
-    if (!sum) { panel.hidden = true; return; }
     panel.hidden = false;
-    setText('train-streak', sum.streak || 0);
-    setText('train-load', sum.load || 0);
+    panel.removeAttribute('hidden');
+    setText('train-streak', (sum && sum.streak) || 0);
+    setText('train-load', (sum && sum.load) || 0);
     var sub = $('train-cta-sub');
     if (sub) {
-      var sess = sum.sessionsToday || 0;
-      var span = (sum.avgSpan7 != null && isFinite(sum.avgSpan7)) ? ('跨度 ' + (Math.round(sum.avgSpan7 * 10) / 10)) : '建立你的記憶基線';
-      sub.textContent = '今日 ' + sess + ' 場 · 負荷 Lv.' + (sum.load || 0) + ' · ' + span;
+      if (!sum) sub.textContent = '工作記憶翻牌 · 點擊開始';
+      else {
+        var sess = sum.sessionsToday || 0;
+        var span = (sum.avgSpan7 != null && isFinite(sum.avgSpan7)) ? ('跨度 ' + (Math.round(sum.avgSpan7 * 10) / 10)) : '建立記憶基線';
+        sub.textContent = '今日 ' + sess + ' 場 · 負荷 Lv.' + (sum.load || 0) + ' · ' + span;
+      }
     }
+    var empty = $('train-span-empty');
     var svg = $('train-span-svg');
+    var trend = (sum && sum.spanTrend) ? sum.spanTrend.filter(function (p) { return p && p.span != null && isFinite(p.span); }).slice(-7) : [];
     if (svg) {
-      var trend = (sum.spanTrend || []).filter(function (p) { return p && p.span != null && isFinite(p.span); }).slice(-7);
       if (trend.length < 2) {
-        svg.innerHTML = '<polyline fill="none" stroke="#c9b8d8" stroke-width="2" points="4,28 116,28" /><circle cx="60" cy="28" r="3" fill="#9a6fc4" />';
+        svg.innerHTML = '<polyline fill="none" stroke="#d4c4e0" stroke-width="2" points="8,32 192,32" /><circle cx="100" cy="32" r="3" fill="#c9b8d8" />';
+        if (empty) { empty.classList.remove('is-hidden'); empty.hidden = false; }
       } else {
         var vals = trend.map(function (p) { return +p.span; });
         var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
         if (hi <= lo) { hi = lo + 1; }
+        lo = Math.min(lo, 0);
         var pts = vals.map(function (v, i) {
-          var x = 4 + i * (112 / Math.max(1, vals.length - 1));
-          var y = 32 - ((v - lo) / (hi - lo)) * 26;
+          var x = 8 + i * (184 / Math.max(1, vals.length - 1));
+          var y = 40 - ((v - lo) / (hi - lo)) * 28;
           return x.toFixed(1) + ',' + y.toFixed(1);
         }).join(' ');
-        svg.innerHTML = '<polyline fill="none" stroke="#9a6fc4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="' + pts + '" />';
+        var last = pts.split(' ').pop().split(',');
+        svg.innerHTML = '<polyline fill="none" stroke="#9a6fc4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" points="' + pts + '" />'
+          + '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="3.2" fill="#9a6fc4" />';
+        if (empty) { empty.classList.add('is-hidden'); empty.hidden = true; }
       }
     }
   }
@@ -757,7 +765,7 @@
       var got = 0;
       for (var i = 0; i < SPC; i++) got += S.stars[first + i] || 0;
       html += '<div class="chapter' + (locked ? ' locked' : '') + '"><div class="chapter-head"><b>第' + ch.id + '章・' + esc(ch.name) + '</b><small>' + esc(ch.sub) + ' · ★' + got + '/' + SPC * 3 +
-        (locked ? '' : ' · <a href="#" data-intro="' + ch.id + '" style="color:var(--gold)">序章</a>') + '</small></div><div class="nodes">';
+        (locked ? ' · 通關前章解鎖' : ' · <a href="#" data-intro="' + ch.id + '" style="color:var(--sb-gold,#c9a24a)">序章</a>') + '</small></div><div class="nodes">';
       for (var j = 0; j < SPC; j++) {
         var n = first + j;
         var boss = n % 5 === 0;
@@ -1615,16 +1623,16 @@
       var canUnlock = !unlocked && S.lv >= h.reqLv && S.gold >= h.cost;
       var lv = S.skills[h.id] || 1, cdLv = S.skillCd[h.id] || 0;
       var card = document.createElement('div');
-      card.className = 'roster-card' + (unlocked ? '' : ' locked') + (S.selected === h.id ? ' selected' : '');
+      card.className = 'roster-card hcard' + (unlocked ? '' : ' locked') + (S.selected === h.id ? ' is-selected selected' : '');
       var cdText = h.skill === 'combo' ? '被動技能' : '冷卻 ' + D.skillCooldown(h.skill, cdLv) + ' 秒';
+      var skillLine = unlocked ? esc(D.skillDesc(h.skill, lv)) : ('解鎖：Lv' + h.reqLv + (h.cost ? ' · ' + h.cost + ' 金' : ' · 免費'));
       card.innerHTML =
-        '<button type="button" class="rc-img-btn"><img class="' + outfitClass(h.id) + '" src="assets/heroines/' + h.id + '.webp" alt=""><span class="rc-view-hint">' + (unlocked ? '互動' : '🔒') + '</span></button>' +
+        '<button type="button" class="rc-art rc-img-btn" aria-label="鑑賞"><img class="' + outfitClass(h.id) + '" src="assets/heroines/cutouts/' + h.id + '.png" alt=""></button>' +
         '<div class="rc-body"><div class="rc-title">' + esc(h.title) + (S.fav[h.id] ? ' ★' : '') + '</div><div class="rc-name">' + esc(h.name) + '</div>' +
-        '<div class="rc-hearts">' + (unlocked ? heartsHTML(S.bond[h.id] || 0) + ' <small class="muted">' + (S.bond[h.id] || 0) + '/' + BOND_PTS_MAX + '</small>' : '') + '</div>' +
-        '<div class="muted small">' + (unlocked ? esc(h.skillName) + '：' + esc(D.skillDesc(h.skill, lv)) + '<br>' + cdText +
-          '<div class="pips">威力 ' + pips(lv, CONFIG.SKILL_MAX) + (h.skill === 'combo' ? '' : '<br>冷卻 ' + pips(cdLv, CONFIG.CD_MAX)) + '</div>' :
-          '解鎖：Lv' + h.reqLv + (h.cost ? ' · ' + h.cost + ' 金' : ' · 免費')) + '</div>' +
-        '<div class="rc-actions tree"></div></div>';
+        '<div class="rc-skill">' + skillLine + '</div>' +
+        (unlocked ? ('<div class="rc-meta">' + heartsHTML(S.bond[h.id] || 0) + ' ' + (S.bond[h.id] || 0) + '/' + BOND_PTS_MAX + ' · ' + cdText +
+          '<div class="pips">威力 ' + pips(lv, CONFIG.SKILL_MAX) + (h.skill === 'combo' ? '' : ' · 冷卻 ' + pips(cdLv, CONFIG.CD_MAX)) + '</div></div>') : '') +
+        '</div><div class="rc-actions tree"></div>';
       var actions = qs('.rc-actions', card);
       qs('.rc-img-btn', card).onclick = function () { if (unlocked) openGallery(h.id); else toast('尚未解鎖'); };
       if (!unlocked) {
@@ -1636,7 +1644,7 @@
           renderRoster(); refreshTop();
         }));
       } else {
-        actions.appendChild(mkBtn(S.selected === h.id ? '出戰中' : '選為出戰', 'btn btn-sm' + (S.selected === h.id ? ' btn-gold' : ''), S.selected === h.id, function () {
+        actions.appendChild(mkBtn(S.selected === h.id ? '出戰中' : '選為出戰', 'btn btn-sm' + (S.selected === h.id ? ' btn-gold is-active' : ''), S.selected === h.id, function () {
           S.selected = h.id; save(); renderRoster(); toast('出戰：' + h.name);
         }));
         actions.appendChild(mkBtn('互動', 'btn btn-sm', false, function () { openGallery(h.id); }));
