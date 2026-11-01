@@ -362,18 +362,139 @@
   };
 
   /* ════════════════ 共用 UI ════════════════ */
-  function toast(msg) {
-    var box = $('toasts'); if (!box) return;
-    var el = document.createElement('div');
-    el.className = 'toast';
-    el.textContent = msg;
-    box.appendChild(el);
-    requestAnimationFrame(function () { el.classList.add('show'); });
-    setTimeout(function () {
-      el.classList.remove('show');
-      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
-    }, 2000);
+  /* ════════════════ Toast 佇列（UI v4：一次 1 則） ════════════════ */
+  var ICON_PREFIX = [
+    // [emoji 前綴, icon id, 樣式 class]
+    ['🏆', 'trophy', 't-ach'], ['💗', 'heart', 't-bond'], ['💖', 'heart', 't-bond'],
+    ['🎁', 'gift', 't-bond'], ['👘', 'gallery', 't-unlock'], ['👑', 'roster', 't-unlock'],
+    ['★', 'star', ''], ['⚡', 'energy', 't-warn'], ['🪙', 'gold', '']
+  ];
+  var TOAST_CFG = { dur: 2200, durLong: 3000, shortenTo: 600, gap: 120, max: 5, mergeMs: 1500 };
+  var toastQ = [];          // 待顯示：{ msg, icon, cls, prio, dur, n }
+  var toastCur = null;      // 顯示中：{ item, el, timer, endAt, shownAt, remain }
+
+  function icoHTML(id, cls) {
+    return '<svg class="ico' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#ico-' + id + '"></use></svg>';
   }
+
+  function toastNormalize(msg, opts) {
+    msg = String(msg == null ? '' : msg);
+    opts = opts || {};
+    var icon = opts.icon || null, cls = opts.cls || '';
+    for (var i = 0; i < ICON_PREFIX.length; i++) {
+      var p = ICON_PREFIX[i];
+      if (msg.indexOf(p[0]) === 0) {
+        msg = msg.slice(p[0].length).replace(/^[\s️]+/, '');
+        icon = icon || p[1]; cls = cls || p[2];
+        break;
+      }
+    }
+    var prio = opts.prio || (cls === 't-ach' || cls === 't-unlock' ? 'high' : 'normal');
+    var dur = opts.dur || (msg.length > 18 || prio === 'high' ? TOAST_CFG.durLong : TOAST_CFG.dur);
+    return { msg: msg, icon: icon, cls: cls, prio: prio, dur: dur, n: 1 };
+  }
+
+  function toast(msg, opts) {
+    var item = toastNormalize(msg, opts);
+    if (!item.msg) return;
+    var now = Date.now();
+    // 1) 與顯示中的那則相同：合併並延長
+    if (toastCur && !toastCur.leaving && toastCur.item.msg === item.msg && now - toastCur.shownAt < TOAST_CFG.mergeMs) {
+      toastCur.item.n++; toastPaintCount(toastCur);
+      toastArm(toastCur, Math.max(toastCur.endAt - now, 900));
+      return;
+    }
+    // 2) 與佇列中某則相同：合併
+    for (var i = 0; i < toastQ.length; i++) {
+      if (toastQ[i].msg === item.msg) { toastQ[i].n++; return; }
+    }
+    // 3) 入列（high 插到所有 high 之後、normal 之前）
+    if (item.prio === 'high') {
+      var at = 0; while (at < toastQ.length && toastQ[at].prio === 'high') at++;
+      toastQ.splice(at, 0, item);
+    } else toastQ.push(item);
+    // 4) 超過上限時丟掉最舊的非 high
+    while (toastQ.length > TOAST_CFG.max) {
+      var drop = -1;
+      for (var j = 0; j < toastQ.length; j++) if (toastQ[j].prio !== 'high') { drop = j; break; }
+      toastQ.splice(drop === -1 ? toastQ.length - 1 : drop, 1);
+    }
+    // 5) 有 high 在排隊時，縮短目前這則（不打斷）
+    if (toastCur && !toastCur.leaving && item.prio === 'high' && toastCur.item.prio !== 'high') {
+      toastArm(toastCur, Math.min(toastCur.endAt - now, TOAST_CFG.shortenTo));
+    }
+    toastPump();
+  }
+
+  function toastPump() {
+    if (toastCur || !toastQ.length) return;
+    var box = $('toasts'); if (!box) { toastQ.length = 0; return; }
+    var item = toastQ.shift();
+    var el = document.createElement('div');
+    el.className = 'toast' + (item.cls ? ' ' + item.cls : '');
+    el.style.pointerEvents = 'auto';
+    var txt = document.createElement('span');
+    txt.className = 't-msg'; txt.textContent = item.msg;          // 文字一律 textContent，避免 XSS
+    if (item.icon) el.insertAdjacentHTML('afterbegin', icoHTML(item.icon));
+    el.appendChild(txt);
+    box.appendChild(el);
+    var cur = toastCur = { item: item, el: el, timer: 0, endAt: 0, shownAt: Date.now(), remain: 0 };
+    toastPaintCount(cur);
+    el.addEventListener('click', function () { if (toastCur === cur) toastDismiss(cur); });
+    requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add('show'); }); });
+    if (document.hidden) cur.remain = item.dur;                     // 背景中：回前景再開始計時
+    else toastArm(cur, item.dur);
+  }
+
+  function toastArm(cur, ms) {
+    clearTimeout(cur.timer);
+    ms = Math.max(0, ms | 0);
+    if (document.hidden) {
+      cur.remain = ms;
+      cur.endAt = Date.now() + ms;
+      cur.timer = 0;
+      return;
+    }
+    cur.remain = 0;
+    cur.endAt = Date.now() + ms;
+    cur.timer = setTimeout(function () { toastDismiss(cur); }, ms);
+  }
+
+  function toastPaintCount(cur) {
+    var b = cur.el.querySelector('.t-more');
+    if (cur.item.n < 2) { if (b) b.parentNode.removeChild(b); return; }
+    if (!b) { b = document.createElement('span'); b.className = 't-more'; cur.el.appendChild(b); }
+    b.textContent = '×' + cur.item.n;
+  }
+
+  function toastDismiss(cur) {
+    if (!cur || cur.leaving) return;
+    cur.leaving = true;
+    clearTimeout(cur.timer);
+    cur.el.classList.remove('show'); cur.el.classList.add('leave');
+    var done = false;
+    function fin() {
+      if (done) return; done = true;
+      if (cur.el.parentNode) cur.el.parentNode.removeChild(cur.el);
+      if (toastCur === cur) toastCur = null;
+      setTimeout(toastPump, TOAST_CFG.gap);
+    }
+    cur.el.addEventListener('transitionend', fin, { once: true });
+    setTimeout(fin, 320);   // reduced-motion 或 transitionend 未觸發時的保險
+  }
+
+  function toastClear() {   // 例如重置進度時呼叫
+    toastQ.length = 0;
+    if (toastCur) toastDismiss(toastCur);
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    var cur = toastCur; if (!cur || cur.leaving) return;
+    if (document.hidden) {
+      if (cur.endAt) cur.remain = Math.max(0, cur.endAt - Date.now());
+      clearTimeout(cur.timer);
+    } else toastArm(cur, Math.max(cur.remain || 0, 1200));
+  });
   var modalOnClose = null;
   function openModal(html, onClose) {
     $('modal-card').innerHTML = html;
@@ -514,7 +635,13 @@
     var eta = energyEta();
     setText('tb-etimer', eta ? ' +' + eta : '');
     var m = $('tb-mute');
-    if (m) m.textContent = S.settings.sfx || S.settings.bgm ? '🔊' : '🔇';
+    if (m) {
+      var soundOn = !!(S.settings.sfx || S.settings.bgm);
+      var u = m.querySelector('use');
+      if (u) u.setAttribute('href', soundOn ? '#ico-sound-on' : '#ico-sound-off');   // 勿用 textContent，會清掉 svg
+      else m.textContent = soundOn ? '🔊' : '🔇';   // sprite 缺席時的後備
+      m.classList.toggle('is-off', !soundOn);
+    }
   }
 
   /* ════════════════ 主城 ════════════════ */
@@ -1525,13 +1652,25 @@
   }
 
   /* ════════════════ 成就、排行、設定 ════════════════ */
+  // UI v4：成就 id → 自製圖示（取代 data.js 的 emoji；data.js 不動）
+  function achIco(id) {
+    id = String(id || '');
+    if (id === 'stage50' || /^lv\d/.test(id)) return 'crown';
+    if (/^stage\d/.test(id)) return 'map';
+    if (/^(perfect|star|three)/.test(id)) return 'star';
+    if (/^combo/.test(id)) return 'battle';
+    if (/^skill/.test(id)) return 'skill';
+    if (/^(streak|daily)/.test(id)) return 'daily';
+    if (/^endless/.test(id)) return 'endless';
+    return 'trophy';   // first_win、boss* 及其他
+  }
   function renderAch() {
     var got = Object.keys(S.achievements).length;
     setText('ach-summary', '已解鎖 ' + got + ' / ' + ACHIEVEMENTS.length);
     var list = $('ach-list'); if (!list) return;
     list.innerHTML = ACHIEVEMENTS.map(function (a) {
       var ok = !!S.achievements[a.id];
-      return '<div class="ach-item' + (ok ? '' : ' locked') + '"><div class="ico">' + a.icon + '</div><div><b>' + esc(a.name) + '</b><div class="muted small">' + esc(a.desc) + (ok ? ' ✓' : ' · 獎 ' + a.reward + ' 金') + '</div></div></div>';
+      return '<div class="ach-item' + (ok ? '' : ' locked') + '"><div class="ach-ico">' + icoHTML(achIco(a.id)) + '</div><div><b>' + esc(a.name) + '</b><div class="muted small">' + esc(a.desc) + (ok ? ' <span class="ach-ok">' + icoHTML('check') + '</span>' : ' · 獎 ' + a.reward + ' 金') + '</div></div></div>';
     }).join('');
   }
   function showLeaderboard() {
@@ -1676,7 +1815,7 @@
   /* ════════════════ 標題畫面 ════════════════ */
   function setupTitle() {
     var ts = $('title-screen');
-    setText('ts-ver', D.VERSION || 'v3.0');
+    setText('ts-ver', 'v3.1-ui');   // UI v4 殼層版本標記
     if (!ts) { started = true; return; }
     var art = qs('.ts-art', ts);
     if (art) art.style.backgroundImage = "url('assets/heroines/" + heroine(S.selected).id + ".webp')";
@@ -1712,6 +1851,7 @@
     inventory: function () { return S.inv; },
     dayCounters: day,
     toast: toast,
+    toastClear: toastClear,
     sfx: function (n, o) { Snd.play(n, o); },
     duck: function (v) { Snd.duck(v); },
     vibe: vibe,

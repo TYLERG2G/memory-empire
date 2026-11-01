@@ -1,0 +1,341 @@
+/* ═══════════════════════════════════════════════════════════════════
+   記憶帝國：女傑翻牌 — UI v4（P0）
+   以覆寫方式套用於 style.css / fx.css / heroine.css 之後；舊檔不動，移除本檔即回滾。
+   規格：/workspace/me-ui-redesign/spec-claude.md §3
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Tokens ─────────────────────────────────────────────────────── */
+:root{
+  /* 色票：帝國暗紅＋暗金 */
+  --c-ink-0:#0b0306; --c-ink-1:#12060b; --c-ink-2:#1d0a12; --c-ink-3:#2a0f1a;
+  --c-ruby:#a3122a; --c-ruby-hi:#d4243e; --c-ruby-glow:#ff4d66;
+  --c-gold-5:#fff1c2; --c-gold-4:#ffdf8e; --c-gold-3:#e8c26a; --c-gold-2:#c79a3e; --c-gold-1:#9c7a2e; --c-gold-0:#5e4514;
+  --c-ice:#8fd8ff; --c-violet:#b07cff;
+  --c-text:#f7ede2; --c-text-2:#cdb6a8; --c-text-3:#8c726a;
+  --c-ok:#7ee0a1; --c-danger:#ff5a6e;
+
+  /* 舊變數別名 */
+  --gold:var(--c-gold-3); --gold2:var(--c-gold-4); --gold-d:var(--c-gold-1);
+  --red:var(--c-ruby); --red2:var(--c-ruby-hi); --text:var(--c-text); --muted:var(--c-text-2);
+
+  /* 材質 */
+  --glass-bg:linear-gradient(180deg,rgba(58,22,34,.72),rgba(20,7,12,.82));
+  --glass-blur:blur(14px) saturate(1.3);
+  --glass-hi:inset 0 1px 0 rgba(255,241,194,.18);
+  --gold-rim:linear-gradient(180deg,#fff1c2,#c79a3e 40%,#5e4514 70%,#e8c26a);
+  --gold-face:linear-gradient(180deg,#fff1c2 0%,#ffdf8e 18%,#e8c26a 48%,#b8862e 78%,#8a6420 100%);
+
+  /* 陰影深度 */
+  --sh-1:0 2px 6px rgba(0,0,0,.45);
+  --sh-2:0 6px 18px rgba(0,0,0,.55),0 1px 0 rgba(255,241,194,.06);
+  --sh-3:0 14px 40px rgba(0,0,0,.7),0 2px 0 rgba(255,241,194,.08);
+  --glow-gold:0 0 18px rgba(232,194,106,.45);
+
+  /* 字型 */
+  --ff-display:"Noto Serif TC","Songti TC",serif;
+  --ff-ui:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --ff-num:"Noto Sans TC",ui-rounded,system-ui,sans-serif;
+  --fs-xs:11px; --fs-sm:13px; --fs-md:15px; --fs-lg:18px; --fs-xl:22px; --fs-2xl:28px; --fs-hero:44px;
+
+  /* 間距／圓角 */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:28px;
+  --r-sm:8px; --r-md:12px; --r-lg:18px; --r-xl:24px; --r-pill:999px;
+
+  /* 動態 */
+  --ease-out:cubic-bezier(.2,.8,.2,1); --ease-spring:cubic-bezier(.3,1.5,.5,1);
+  --dur-1:.12s; --dur-2:.24s; --dur-3:.4s;
+
+  /* 版面（safe-area 變數沿用 style.css 的 --sat/--sab/--sal/--sar） */
+  --toph:52px; --navh:64px; --dock-gap:10px;
+  --dock-bottom:calc(var(--sab) + var(--dock-gap));
+  --ico:22px;
+}
+html,body{font-family:var(--ff-ui);font-feature-settings:"palt";-webkit-font-smoothing:antialiased;background:var(--c-ink-0)}
+b,.num,#tb-gold,#tb-energy,#b-score,#b-time,#b-pairs,#b-miss{font-variant-numeric:tabular-nums}
+.scr-title,.game-title,.h-name,.r-title,.hg-name,.ts-logo{font-family:var(--ff-display);font-weight:900}
+
+/* ── 2. Icon ───────────────────────────────────────────────────────
+   icons.svg 的 symbol 已自帶漸層填色與描邊（#ig-*），此處不設 fill/stroke，
+   以免繼承值替沒有 stroke 屬性的子路徑加上描邊。 */
+#icon-sprite{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+svg.ico{width:var(--ico);height:var(--ico);flex:none;display:inline-block;vertical-align:-.2em;overflow:visible}
+svg.ico.ico-xs{--ico:14px} svg.ico.ico-sm{--ico:18px} svg.ico.ico-lg{--ico:28px} svg.ico.ico-xl{--ico:40px}
+
+/* ── 3. Glass 面板 ─────────────────────────────────────────────────── */
+.glass,.chapter,.hcard,.roster-card,.shop-item,.ach-item,.set-row,.result-box,.modal-card,.hg-panel,.stage-info.glass-chip{
+  position:relative;background:var(--glass-bg);
+  -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+  border:1px solid transparent;border-radius:var(--r-lg);
+  background-clip:padding-box;box-shadow:var(--sh-2),var(--glass-hi)}
+.glass::before,.chapter::before,.hcard::before,.roster-card::before,.shop-item::before,.ach-item::before,.set-row::before,
+.result-box::before,.modal-card::before,.hg-panel::before,.stage-info.glass-chip::before{
+  content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;pointer-events:none;
+  background:var(--gold-rim);opacity:.55;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude}
+.result-box::after,.modal-card::after{
+  content:"";position:absolute;inset:5px;border-radius:calc(var(--r-lg) - 4px);pointer-events:none;
+  border:1px solid rgba(232,194,106,.18);
+  background:
+    radial-gradient(circle at 0 0,rgba(232,194,106,.5) 0 2px,transparent 3px),
+    radial-gradient(circle at 100% 0,rgba(232,194,106,.5) 0 2px,transparent 3px),
+    radial-gradient(circle at 0 100%,rgba(232,194,106,.5) 0 2px,transparent 3px),
+    radial-gradient(circle at 100% 100%,rgba(232,194,106,.5) 0 2px,transparent 3px)}
+.result-box,.modal-card,.hg-panel{box-shadow:var(--sh-3),var(--glass-hi)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .glass,.chapter,.hcard,.roster-card,.shop-item,.ach-item,.set-row,.stage-info.glass-chip{background:rgba(29,10,18,.94)}
+}
+
+/* 成就列表（game.js 輸出 .ach-item / .ach-ico） */
+.ach-item{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3);margin-bottom:0;text-align:left}
+.ach-item b{color:var(--c-gold-4);font-weight:700}
+.ach-item.locked{opacity:.55;filter:saturate(.3)}
+.ach-ico{flex:none;width:44px;height:44px;display:grid;place-items:center;border-radius:50%;font-size:22px;line-height:1;
+  background:radial-gradient(circle at 50% 35%,#3a1622,#12060b);box-shadow:inset 0 0 0 1px rgba(232,194,106,.4),var(--sh-1)}
+.ach-ico svg.ico{--ico:26px}
+.ach-item .ach-ok svg.ico{--ico:14px;vertical-align:-.15em}
+
+/* ── 4. Topbar（玻璃資源條） ───────────────────────────────────────── */
+#topbar{background:linear-gradient(180deg,rgba(18,6,11,.88),rgba(18,6,11,.4));
+  -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+  border-bottom:0;box-shadow:0 1px 0 rgba(232,194,106,.18),0 8px 24px rgba(0,0,0,.35)}
+.tb-res{align-items:center;gap:8px}
+.res{position:relative;height:28px;gap:4px;padding:0 10px 0 4px;border:0;border-radius:var(--r-pill);
+  background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.35));
+  box-shadow:inset 0 0 0 1px rgba(232,194,106,.35),inset 0 1px 0 rgba(255,241,194,.12)}
+.res svg.ico{--ico:20px;filter:drop-shadow(0 0 4px rgba(232,194,106,.5))}
+.res b{font-size:var(--fs-sm);color:var(--c-gold-4)}
+.res .sep{color:var(--c-text-3);font-size:var(--fs-xs)}
+.res #tb-emax{font-size:var(--fs-xs);color:var(--c-text-2)}
+.res-energy .regen-ring{position:absolute;left:2px;top:2px;width:24px;height:24px;border-radius:50%;pointer-events:none;
+  background:conic-gradient(var(--c-ice) calc(var(--regen,0)*1turn),transparent 0);
+  -webkit-mask:radial-gradient(circle,transparent 10px,#000 10.5px);mask:radial-gradient(circle,transparent 10px,#000 10.5px)}
+.tb-btn{width:32px;height:32px;border:0;border-radius:50%;color:var(--c-gold-4);display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 30%,rgba(58,22,34,.9),rgba(0,0,0,.7));
+  box-shadow:inset 0 0 0 1px rgba(232,194,106,.4),var(--sh-1);transition:transform var(--dur-1)}
+.tb-btn svg.ico{--ico:18px}
+.tb-btn.is-off svg.ico{opacity:.7}
+.tb-btn:active{transform:scale(.9)}
+.lv-badge{font-family:var(--ff-display);background:var(--gold-face);box-shadow:inset 0 1px 0 #fff8,0 1px 0 #0008}
+.xpbar{height:6px;border:0;box-shadow:inset 0 1px 2px #000,inset 0 0 0 1px rgba(232,194,106,.3)}
+
+/* ── 5. Dock nav ───────────────────────────────────────────────────── */
+#nav.dock{left:calc(var(--sal) + 12px);right:calc(var(--sar) + 12px);bottom:var(--dock-bottom);
+  height:var(--navh);padding:0 6px;border-radius:var(--r-xl);border:0;
+  background:linear-gradient(180deg,rgba(42,15,26,.82),rgba(12,4,8,.9));
+  -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+  box-shadow:var(--sh-3),inset 0 0 0 1px rgba(232,194,106,.28),inset 0 1px 0 rgba(255,241,194,.15);
+  transition:transform var(--dur-3) var(--ease-out)}
+#screens{padding-bottom:calc(var(--dock-bottom) + var(--navh) + 8px)}
+#nav.dock button{position:relative;z-index:1;gap:3px;font-size:var(--fs-xs);letter-spacing:1px;color:var(--c-text-3);
+  transition:color var(--dur-2),transform var(--dur-1)}
+#nav.dock button svg.ico{--ico:24px;opacity:.6;filter:saturate(.35);
+  transition:transform var(--dur-2) var(--ease-spring),opacity var(--dur-2),filter var(--dur-2)}
+#nav.dock button:active{transform:scale(.92)}
+#nav.dock button.active{color:var(--c-gold-4)}
+#nav.dock button.active svg.ico{opacity:1;transform:translateY(-3px);filter:drop-shadow(0 0 6px rgba(255,223,142,.7))}
+#nav.dock button i{display:none}
+#nav.dock > .dock-glow{flex:none!important;width:auto;height:auto;pointer-events:none}
+.dock-glow{position:absolute;bottom:6px;width:calc((100% - 12px)/5);left:calc(6px + var(--i,0)*(100% - 12px)/5);height:100%;
+  pointer-events:none;font-style:normal;transition:left var(--dur-3) var(--ease-out),opacity var(--dur-2);
+  background:radial-gradient(60% 40% at 50% 100%,rgba(255,223,142,.45),transparent 70%)}
+.dock-glow::after{content:"";position:absolute;left:30%;right:30%;bottom:-2px;height:3px;border-radius:2px;
+  background:var(--c-gold-4);box-shadow:0 0 10px var(--c-gold-4)}
+#nav:has(> [data-go="map"].active){--i:1} #nav:has(> [data-go="roster"].active){--i:2}
+#nav:has(> [data-go="shop"].active){--i:3} #nav:has(> [data-go="ach"].active){--i:4}
+#nav:not(:has(> button.active)) .dock-glow{opacity:0}
+/* 戰鬥／結算：dock 滑出而非 display:none */
+body.no-nav #nav.dock{display:flex;transform:translateY(calc(100% + var(--dock-bottom) + 24px));pointer-events:none}
+
+/* ── 6. 按鈕／CTA／chip ────────────────────────────────────────────── */
+.btn{font-family:var(--ff-ui);border-radius:var(--r-md);
+  transition:transform var(--dur-1),box-shadow var(--dur-1),filter var(--dur-2)}
+.btn:not(.btn-gold):not(.btn-red):not(.btn-danger){border:0;color:var(--c-text);
+  background:linear-gradient(180deg,#4a1a2a,#2a0f1a);
+  box-shadow:inset 0 0 0 1px rgba(232,194,106,.35),inset 0 1px 0 rgba(255,241,194,.15),0 3px 0 #0a0306,var(--sh-1)}
+.btn:not(.btn-gold):not(.btn-red):not(.btn-danger):not(:disabled):active{transform:translateY(2px);
+  box-shadow:inset 0 0 0 1px rgba(232,194,106,.35),0 1px 0 #0a0306;filter:brightness(1.1)}
+.btn:disabled{filter:grayscale(.85) brightness(.55);transform:none}
+.btn:focus-visible,.chip:focus-visible,.tb-btn:focus-visible,#nav button:focus-visible{outline:2px solid var(--c-gold-4);outline-offset:2px}
+
+.btn-gold{border:0;color:#2a0a12;background:var(--gold-face);text-shadow:0 1px 0 rgba(255,241,194,.6);
+  box-shadow:inset 0 1px 0 #fff8,inset 0 -2px 0 rgba(94,69,20,.5),inset 0 0 0 1px #fff1c2,0 4px 0 var(--c-gold-0),0 6px 16px rgba(0,0,0,.5)}
+.btn-gold:not(:disabled):active{transform:translateY(3px);
+  box-shadow:inset 0 1px 0 #fff6,inset 0 0 0 1px #fff1c2,0 1px 0 var(--c-gold-0)}
+
+.btn-cta{position:relative;overflow:hidden;height:58px;padding:0 16px;display:flex;align-items:center;justify-content:center;gap:10px;
+  font-family:var(--ff-display);font-size:var(--fs-xl);letter-spacing:4px;border-radius:var(--r-lg);
+  animation:ctaBreath 2.6s ease-in-out infinite}
+.btn-cta .cost{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:2px;
+  font-family:var(--ff-num);font-size:var(--fs-sm);font-weight:700;letter-spacing:0;padding:2px 8px;border-radius:var(--r-pill);background:rgba(42,10,18,.25)}
+.btn-cta::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);
+  transform:translateX(-120%);animation:ctaSheen 3.2s ease-in-out infinite 1s}
+.btn-cta:disabled,.btn-cta:disabled::after{animation:none}
+@keyframes ctaBreath{50%{box-shadow:inset 0 1px 0 #fff8,inset 0 0 0 1px #fff1c2,0 4px 0 var(--c-gold-0),0 0 28px rgba(255,223,142,.65)}}
+@keyframes ctaSheen{60%,100%{transform:translateX(120%)}}
+.btn-cta:active{animation-play-state:paused}
+
+.mode-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-2);margin-top:0}
+.chip{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:8px 2px 6px;border-radius:var(--r-md);
+  background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  box-shadow:inset 0 0 0 1px rgba(232,194,106,.3);color:var(--c-gold-4);font-size:var(--fs-xs);
+  transition:transform var(--dur-1)}
+.chip svg.ico{--ico:22px}
+.chip span{color:var(--c-text);font-weight:700}
+.chip small{font-size:10px;color:var(--c-text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.chip:active{transform:scale(.94)}
+
+/* ── 7. 主城：全高女傑舞台 ─────────────────────────────────────────── */
+#scr-home.home-v4{position:relative;padding:0;overflow:hidden}
+#app #scr-home.home-v4 .hero-stage{position:absolute;inset:0;margin:0;max-width:none;width:100%;height:100%;
+  aspect-ratio:auto;min-height:0;border:0;border-radius:0;box-shadow:none}
+#app #scr-home.home-v4 .hero-stage > img{object-position:50% 12%}
+/* 底部暗幕掛在 screen 上（不佔用 .hero-stage::after，避免蓋掉 heroine.css 的服裝光暈） */
+#app #scr-home.home-v4 .hero-stage{z-index:1}
+#scr-home.home-v4::after{content:"";position:absolute;left:0;right:0;bottom:0;height:58%;z-index:2;pointer-events:none;
+  background:linear-gradient(180deg,transparent 0%,rgba(11,3,6,.6) 45%,rgba(11,3,6,.9) 80%,#0b0306 100%)}
+#scr-home.home-v4 .hero-plate{z-index:3;left:calc(var(--sal) + 16px);right:auto;bottom:auto;top:34px;padding:0;background:none;
+  text-shadow:0 2px 8px #000,0 0 2px #000;pointer-events:none}
+#scr-home.home-v4 .h-name{font-size:var(--fs-2xl);color:var(--c-gold-5);letter-spacing:2px}
+#scr-home.home-v4 .h-skill{max-width:62vw;font-size:var(--fs-xs);color:var(--c-text-2);line-height:1.5}
+.game-title--float{position:absolute;top:8px;left:calc(var(--sal) + 16px);z-index:4;margin:0;text-align:left;
+  font-size:var(--fs-md);letter-spacing:4px;opacity:.85;pointer-events:none}
+.game-title--float span{display:inline;font-size:var(--fs-xs);margin-left:6px;letter-spacing:3px}
+#app #scr-home.home-v4 #home-greet.greet-bubble{position:absolute;margin:0;right:calc(var(--sar) + 14px);top:30%;max-width:62%;z-index:4;text-align:left;
+  font-size:var(--fs-sm);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+  background:rgba(12,4,8,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  /* 上下留白用透明 border（overflow 只裁到 padding box），避免 line-clamp 的下一行露出 */
+  padding:0 14px;border:8px solid transparent;border-left:0;border-right:0;line-height:1.5;
+  border-color:transparent;
+  background:rgba(12,4,8,.66);box-shadow:0 0 0 1px rgba(232,194,106,.45),var(--sh-2)}
+#app #scr-home.home-v4 #home-greet.greet-bubble:empty{display:none}
+/* 矮螢幕：泡泡改貼在 home-dock 上方（dock 高 ≈ stage-info 56 + CTA 52 + chips 70 + gaps） */
+@media (max-height:700px){ #app #scr-home.home-v4 #home-greet.greet-bubble{top:auto;bottom:228px;-webkit-line-clamp:2} }
+@media (max-height:600px){ #app #scr-home.home-v4 #home-greet.greet-bubble{bottom:154px} #scr-home.home-v4 .h-skill{display:none} }
+.home-dock{position:absolute;left:calc(var(--sal) + 14px);right:calc(var(--sar) + 14px);bottom:12px;z-index:5;
+  display:flex;flex-direction:column;gap:var(--sp-2)}
+.home-dock .stage-info{margin:0;padding:8px 12px;font-size:var(--fs-sm);line-height:1.5;border-radius:var(--r-md);text-align:left}
+.home-dock .stage-info #home-stage{font-size:var(--fs-md)}
+.home-dock .stage-info svg.ico{vertical-align:-.15em}
+@media (max-height:700px){
+  .home-dock .stage-info #home-stage-detail{display:none}
+  .btn-cta{height:52px}
+}
+@media (max-height:600px){ .home-dock .stage-info{display:none} }
+
+/* ── 8. 戰鬥 HUD ───────────────────────────────────────────────────── */
+.hud-top{padding:4px 0}
+.btn-icon{display:grid;place-items:center;border:0;color:var(--c-gold-4);
+  background:radial-gradient(circle at 50% 30%,rgba(58,22,34,.9),rgba(0,0,0,.7));
+  box-shadow:inset 0 0 0 1px rgba(232,194,106,.45),var(--sh-1)}
+.btn-icon svg.ico{--ico:20px}
+.btn-icon:active{transform:scale(.9)}
+.bh-stage{font-family:var(--ff-display);font-size:var(--fs-lg);color:var(--c-gold-4);text-shadow:0 0 10px rgba(232,194,106,.4)}
+.bh-score{display:flex;flex-direction:column;align-items:flex-end;line-height:1}
+.bh-score small{font-size:9px;letter-spacing:2px;color:var(--c-text-3)}
+.bh-score b{font-size:var(--fs-xl);color:var(--c-gold-4)}
+.timebar{height:14px;border:0;border-radius:var(--r-pill);background:#000c;
+  box-shadow:inset 0 1px 3px #000,inset 0 0 0 1px rgba(232,194,106,.45),0 0 0 2px rgba(0,0,0,.4)}
+.timefill{background:linear-gradient(180deg,rgba(255,255,255,.35),transparent 50%),linear-gradient(90deg,var(--c-ruby-hi),var(--c-gold-3) 60%,var(--c-gold-5));
+  border-radius:inherit;box-shadow:0 0 10px rgba(232,194,106,.6)}
+.timebar .ticks{position:absolute;inset:0;pointer-events:none;font-style:normal;
+  background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),rgba(0,0,0,.55) calc(10% - 1px) 10%)}
+.timebar::after{content:"";position:absolute;left:0;top:0;bottom:0;width:20%;pointer-events:none;
+  background:linear-gradient(90deg,rgba(255,77,102,.25),transparent);border-right:1px solid rgba(255,77,102,.6)}
+.timebar span{font-size:10px;line-height:14px;z-index:1}
+.hud-stats{align-items:center;margin:6px 0 8px}
+.hud-stats .stat{display:flex;flex-direction:column;align-items:center;line-height:1.1;min-width:64px;padding:4px 8px;border-radius:var(--r-sm);
+  background:rgba(0,0,0,.4);box-shadow:inset 0 0 0 1px rgba(232,194,106,.2)}
+.hud-stats .stat small{font-size:10px;color:var(--c-text-3)}
+.hud-stats .stat b{font-size:var(--fs-md)}
+.combo{font-family:var(--ff-display);font-size:var(--fs-lg);color:var(--c-gold-4);text-shadow:0 0 12px rgba(255,90,42,.8),0 2px 0 #6b1020}
+.combo.pop{animation:comboPop .4s var(--ease-spring)}
+@keyframes comboPop{0%{transform:scale(1)}40%{transform:scale(1.7)}100%{transform:scale(1)}}
+.v3-combo{font-family:var(--ff-display);font-size:56px;-webkit-text-stroke:1px #6b1020;
+  background:var(--gold-face);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;
+  filter:drop-shadow(0 0 12px rgba(255,90,42,.9)) drop-shadow(0 3px 0 #3a0610)}
+/* 牌背／牌面 */
+.back{border:0;border-radius:var(--r-sm);
+  background:
+    radial-gradient(circle at 50% 50%,rgba(255,223,142,.35) 0 10%,transparent 11%),
+    radial-gradient(circle at 50% 50%,transparent 30%,rgba(232,194,106,.35) 31% 33%,transparent 34%),
+    conic-gradient(from 45deg at 50% 50%,#5a0f1c 0 25%,#3d0a14 0 50%,#5a0f1c 0 75%,#3d0a14 0),
+    repeating-linear-gradient(45deg,rgba(232,194,106,.08) 0 1px,transparent 1px 6px);
+  background-size:auto,auto,14px 14px,auto;
+  box-shadow:inset 0 0 0 2px #1a0a12,inset 0 0 0 3px var(--c-gold-2),inset 0 0 0 5px #1a0a12,inset 0 0 0 6px rgba(232,194,106,.45),
+    inset 0 8px 16px rgba(255,241,194,.08),0 4px 10px rgba(0,0,0,.6)}
+.card.fog-mark .back{box-shadow:inset 0 0 0 3px var(--c-gold-2),inset 0 0 18px #c8d0ff55,0 4px 10px rgba(0,0,0,.6)}
+.back-crest{color:var(--c-gold-4)}
+.back-crest svg.ico{--ico:40%;filter:drop-shadow(0 0 6px rgba(232,194,106,.7))}
+.front{border:0;box-shadow:inset 0 0 0 1.5px var(--c-gold-2),0 4px 10px rgba(0,0,0,.6)}
+.card:active .card-inner{transform:scale(.96)}
+.card.open:active .card-inner,.card.matched:active .card-inner{transform:rotateY(180deg)}
+
+/* ── 9. Toast / Modal ──────────────────────────────────────────────── */
+#toasts{top:calc(var(--sat) + var(--toph) + 8px);gap:0}
+.toast{display:flex;align-items:center;gap:8px;max-width:min(88%,360px);padding:9px 16px 9px 10px;
+  font-size:var(--fs-sm);line-height:1.4;color:var(--c-gold-5);border:0;border-radius:var(--r-pill);
+  background:linear-gradient(180deg,rgba(58,22,34,.92),rgba(18,6,11,.94));
+  -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+  box-shadow:inset 0 0 0 1px rgba(232,194,106,.5),var(--sh-2);
+  animation:none;opacity:0;transform:translateY(-12px) scale(.96);cursor:pointer;
+  transition:opacity var(--dur-2) var(--ease-out),transform var(--dur-2) var(--ease-out)}
+.toast.show{opacity:1;transform:none}
+.toast.leave{opacity:0;transform:translateY(-8px) scale(.98)}
+.toast svg.ico{--ico:18px}
+.toast.t-ach,.toast.t-unlock{box-shadow:inset 0 0 0 1px rgba(255,223,142,.85),var(--sh-2),var(--glow-gold)}
+.toast.t-warn{box-shadow:inset 0 0 0 1px rgba(255,90,110,.6),var(--sh-2)}
+.toast .t-more{margin-left:4px;font-size:10px;padding:1px 6px;border-radius:var(--r-pill);background:rgba(232,194,106,.2);color:var(--c-gold-4)}
+
+.modal{background:rgba(6,2,4,.55);-webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2)}
+.modal .modal-card{animation:modalIn var(--dur-3) var(--ease-spring)}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.94)}}
+.hero-gallery{-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);background:rgba(6,2,4,.6)}
+.hg-close svg.ico{--ico:18px}
+.hg-actions .btn svg.ico{--ico:16px;vertical-align:-.2em;margin-right:2px}
+
+/* ── 10. Safe-area 補強 ────────────────────────────────────────────── */
+#topbar{padding-left:calc(var(--sal) + 12px);padding-right:calc(var(--sar) + 12px)}
+.screen{padding-left:calc(var(--sal) + 14px);padding-right:calc(var(--sar) + 14px)}
+#scr-home.home-v4{padding:0}
+@media (display-mode:standalone){ :root{--dock-gap:6px} }
+
+/* ── 11. Reduced motion ────────────────────────────────────────────── */
+@media (prefers-reduced-motion:reduce){
+  .btn-cta,.btn-cta::after,.combo.pop,.modal .modal-card{animation:none}
+  .toast,#nav.dock,.dock-glow{transition-duration:.01s}
+}
+
+/* ── REFERENCE_ADDENDUM：戰鬥舞台／地圖／衣櫥／職業預留 ── */
+.battle-stage{
+  position:relative;flex:none;min-height:96px;max-height:120px;margin:0 0 8px;
+  border-radius:var(--r-md);overflow:hidden;pointer-events:none;
+  background:
+    linear-gradient(180deg,rgba(58,22,34,.35),rgba(12,4,8,.55)),
+    repeating-linear-gradient(90deg,transparent 0 11px,rgba(232,194,106,.04) 11px 12px);
+  box-shadow:inset 0 0 0 1px rgba(232,194,106,.28),var(--sh-1);
+  display:grid;grid-template-columns:1fr 1.2fr 1fr;align-items:end;gap:4px;padding:8px 10px 10px}
+.battle-stage .bs-side{height:72%;border-radius:8px;background:rgba(0,0,0,.25);
+  box-shadow:inset 0 0 0 1px rgba(232,194,106,.15)}
+.battle-stage .bs-hero{background:linear-gradient(180deg,rgba(176,124,255,.18),rgba(0,0,0,.2))}
+.battle-stage .bs-foe{background:linear-gradient(180deg,rgba(212,36,62,.18),rgba(0,0,0,.2));position:relative}
+.battle-stage .bs-fx{align-self:stretch}
+.battle-stage .foe-hp{position:absolute;left:6px;right:6px;top:6px;height:5px;border-radius:4px;background:#0008;overflow:hidden}
+.battle-stage .foe-hp i{display:block;height:100%;width:70%;background:linear-gradient(90deg,#ff5a6e,#e8c26a)}
+.battle-stage .bs-label{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  font-size:10px;letter-spacing:2px;color:rgba(232,194,106,.45);white-space:nowrap;pointer-events:none}
+@media (max-height:700px){.battle-stage{min-height:80px;max-height:96px}}
+@media (max-height:620px){.battle-stage{min-height:72px}}
+
+.map-graph{margin:0 0 12px;min-height:88px;border-radius:var(--r-md);
+  background:linear-gradient(160deg,rgba(58,22,34,.4),rgba(12,4,8,.7));
+  box-shadow:inset 0 0 0 1px rgba(232,194,106,.25);display:flex;align-items:center;justify-content:center}
+.map-graph-hint{font-size:11px;letter-spacing:2px;color:rgba(232,194,106,.4)}
+
+.class-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--r-pill);
+  font-size:10px;letter-spacing:1px;border:1px solid rgba(232,194,106,.45);background:rgba(0,0,0,.35);color:var(--c-gold-4)}
+.outfit-badge{margin-left:6px;font-size:10px;padding:1px 7px;border-radius:var(--r-pill);
+  background:linear-gradient(#ffe39a,#d7a743);color:#2a0a12;font-weight:800}
+.outfit-rail{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.outfit-rail .outfit-chip{flex:none}

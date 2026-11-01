@@ -1,0 +1,325 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+  <title>記憶帝國：女傑翻牌 — 帝國暗金圖示集 (Imperial Noir Icon Sprite)</title>
+  <defs>
+    <!-- 帝國暗金主填色 (#ffdf8e → #9c7a2e) -->
+    <linearGradient id="ig-gold" x1="0.18" y1="0.06" x2="0.82" y2="0.96">
+      <stop offset="0%" stop-color="#ffdf8e"/>
+      <stop offset="48%" stop-color="#d8a848"/>
+      <stop offset="100%" stop-color="#9c7a2e"/>
+    </linearGradient>
+
+    <!-- 帝國暗金沉雕深部 (凹面與底座層次) -->
+    <linearGradient id="ig-gold-deep" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#c99e44"/>
+      <stop offset="100%" stop-color="#694d18"/>
+    </linearGradient>
+
+    <!-- 帝國暗金半透明琉璃填色 (建築／面板／器物內腔) -->
+    <linearGradient id="ig-gold-soft" x1="0.2" y1="0.05" x2="0.8" y2="0.95">
+      <stop offset="0%" stop-color="#ffdf8e" stop-opacity="0.34"/>
+      <stop offset="55%" stop-color="#e8c26a" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#9c7a2e" stop-opacity="0.08"/>
+    </linearGradient>
+
+    <!-- 皇家寶石切面漸層 (緋金雙色晶體) -->
+    <linearGradient id="ig-gem" x1="0.15" y1="0.05" x2="0.85" y2="0.95">
+      <stop offset="0%" stop-color="#ffe7a8"/>
+      <stop offset="38%" stop-color="#e87a54"/>
+      <stop offset="76%" stop-color="#c4223c"/>
+      <stop offset="100%" stop-color="#7a1022"/>
+    </linearGradient>
+
+    <!-- 能量琥珀紅漸層 (Amber-Crimson Energy：濃郁琥珀橘紅至緋紅) -->
+    <linearGradient id="ig-energy" x1="0.22" y1="0.04" x2="0.80" y2="0.96">
+      <stop offset="0%" stop-color="#ffd978"/>
+      <stop offset="36%" stop-color="#ff681c"/>
+      <stop offset="76%" stop-color="#d4243e"/>
+      <stop offset="100%" stop-color="#8f0d22"/>
+    </linearGradient>
+
+    <!-- 愛心羈絆柔紅漸層 (Soft Rose-Crimson Heart) -->
+    <linearGradient id="ig-heart" x1="0.22" y1="0.08" x2="0.78" y2="0.95">
+      <stop offset="0%" stop-color="#ffb0c4"/>
+      <stop offset="48%" stop-color="#e6496d"/>
+      <stop offset="100%" stop-color="#9b1430"/>
+    </linearGradient>
+
+    <!-- 空心愛心微霧底 -->
+    <linearGradient id="ig-heart-soft" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#ff9eb5" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#9b1430" stop-opacity="0.05"/>
+    </linearGradient>
+
+    <!-- 中性暗金漸層 (鎖／關閉／靜音／空槽) -->
+    <linearGradient id="ig-neutral" x1="0.2" y1="0.08" x2="0.8" y2="0.95">
+      <stop offset="0%" stop-color="#dfd0b0"/>
+      <stop offset="52%" stop-color="#a8946e"/>
+      <stop offset="100%" stop-color="#6b5b3e"/>
+    </linearGradient>
+
+    <!-- 中性暗金半透明內腔 -->
+    <linearGradient id="ig-neutral-soft" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#dfd0b0" stop-opacity="0.24"/>
+      <stop offset="100%" stop-color="#6b5b3e" stop-opacity="0.07"/>
+    </linearGradient>
+
+    <!-- 撲克紅花色 (緋紅寶石釉面，深淺牌桌皆清晰) -->
+    <linearGradient id="ig-suit-red" x1="0.2" y1="0.08" x2="0.8" y2="0.94">
+      <stop offset="0%" stop-color="#ff758f"/>
+      <stop offset="48%" stop-color="#d4243e"/>
+      <stop offset="100%" stop-color="#7d0b1e"/>
+    </linearGradient>
+
+    <!-- 撲克黑花色 (黑曜金邊琺瑯，白牌面與暗底皆清晰) -->
+    <linearGradient id="ig-suit-dark" x1="0.2" y1="0.06" x2="0.82" y2="0.95">
+      <stop offset="0%" stop-color="#4e392b"/>
+      <stop offset="50%" stop-color="#23131a"/>
+      <stop offset="100%" stop-color="#0d0408"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 1. ico-gold : 帝國皇鑄金幣 -->
+  <symbol id="ico-gold" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9.25" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="12" cy="12" r="6.5" fill="url(#ig-gold-deep)" stroke="#ffdf8e" stroke-width="1.15" stroke-opacity="0.85"/>
+    <path d="M12 7.6 L14.3 12 L12 16.4 L9.7 12 Z" fill="url(#ig-gold)" stroke="#fff3c4" stroke-width="1.1" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- 2. ico-gem : 帝冠切面寶石 -->
+  <symbol id="ico-gem" viewBox="0 0 24 24">
+    <path d="M7.4 3.75 H16.6 L20.5 9.2 L12 20.4 L3.5 9.2 Z" fill="url(#ig-gem)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M3.8 9.2 H20.2 M7.4 3.75 L9.3 9.2 L12 20.1 M16.6 3.75 L14.7 9.2 L12 20.1 M9.3 9.2 L12 4.1 L14.7 9.2" fill="none" stroke="#ffdf8e" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.82"/>
+  </symbol>
+
+  <!-- 3. ico-energy : 琥珀紅雷霆體力 -->
+  <symbol id="ico-energy" viewBox="0 0 24 24">
+    <path d="M13.8 2.5 L5.4 13.1 H11.5 L10.1 21.5 L18.6 10.7 H12.5 Z" fill="url(#ig-energy)" stroke="#f3aa4e" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12.9 5.9 L8.2 11.9 H11.8" fill="none" stroke="#ffeab8" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
+  </symbol>
+
+  <!-- 4. ico-heart : 羈絆柔紅實心愛心 -->
+  <symbol id="ico-heart" viewBox="0 0 24 24">
+    <path d="M12 20.3 C12 20.3 3.5 14.8 3.5 8.9 C3.5 5.8 5.9 3.6 8.7 3.6 C10.4 3.6 11.4 4.4 12 5.6 C12.6 4.4 13.6 3.6 15.3 3.6 C18.1 3.6 20.5 5.8 20.5 8.9 C20.5 14.8 12 20.3 12 20.3 Z" fill="url(#ig-heart)" stroke="#f2a2b4" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M6.4 8.2 C6.4 6.8 7.4 5.8 8.8 5.8" fill="none" stroke="#ffe4ec" stroke-width="1.25" stroke-linecap="round" stroke-opacity="0.85"/>
+  </symbol>
+
+  <!-- 5. ico-heart-empty : 羈絆空心愛心槽 -->
+  <symbol id="ico-heart-empty" viewBox="0 0 24 24">
+    <path d="M12 20.3 C12 20.3 3.5 14.8 3.5 8.9 C3.5 5.8 5.9 3.6 8.7 3.6 C10.4 3.6 11.4 4.4 12 5.6 C12.6 4.4 13.6 3.6 15.3 3.6 C18.1 3.6 20.5 5.8 20.5 8.9 C20.5 14.8 12 20.3 12 20.3 Z" fill="url(#ig-heart-soft)" stroke="#c78c9b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- 6. ico-gift : 皇家緞帶禮匣 -->
+  <symbol id="ico-gift" viewBox="0 0 24 24">
+    <path d="M5 11.2 V19.1 C5 19.9 5.6 20.5 6.4 20.5 H17.6 C18.4 20.5 19 19.9 19 19.1 V11.2" fill="url(#ig-gold-soft)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="3.5" y="7.4" width="17" height="3.8" rx="1.2" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.75" stroke-linejoin="round"/>
+    <path d="M12 7.4 V20.5" fill="none" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round"/>
+    <path d="M12 7.4 C9.1 7.4 7.4 5.8 8.1 4.2 C8.8 2.8 11.1 3.7 12 7.4 Z" fill="url(#ig-heart)" stroke="#e8c26a" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M12 7.4 C14.9 7.4 16.6 5.8 15.9 4.2 C15.2 2.8 12.9 3.7 12 7.4 Z" fill="url(#ig-heart)" stroke="#e8c26a" stroke-width="1.6" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- 7. ico-shop : 帝國商會亭閣 -->
+  <symbol id="ico-shop" viewBox="0 0 24 24">
+    <path d="M4.8 10.6 V19.1 C4.8 19.9 5.4 20.5 6.2 20.5 H17.8 C18.6 20.5 19.2 19.9 19.2 19.1 V10.6" fill="url(#ig-gold-soft)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M9.6 20.5 V15.2 C9.6 13.9 10.7 13 12 13 C13.3 13 14.4 13.9 14.4 15.2 V20.5" fill="url(#ig-gold-deep)" stroke="#e8c26a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M3 8.8 L5.3 3.8 H18.7 L21 8.8 C20.6 11.1 17.5 11.1 16.5 8.8 C15.6 11.1 12.9 11.1 12 8.8 C11.1 11.1 8.4 11.1 7.5 8.8 C6.5 11.1 3.4 11.1 3 8.8 Z" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- 8. ico-gallery : 鎏金繪卷畫框 -->
+  <symbol id="ico-gallery" viewBox="0 0 24 24">
+    <rect x="3.5" y="3.5" width="17" height="17" rx="2.6" fill="url(#ig-gold-soft)" stroke="#e8c26a" stroke-width="1.75" stroke-linejoin="round"/>
+    <circle cx="8.6" cy="8.6" r="1.75" fill="url(#ig-gold)" stroke="#ffdf8e" stroke-width="1.1"/>
+    <path d="M4.2 18.2 L9.6 12.6 L13.4 16.1 L16.3 13.4 L19.8 17.4 V18.2 C19.8 19.5 18.9 20.2 17.8 20.2 H6.2 C5.1 20.2 4.2 19.5 4.2 18.2 Z" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- 9. ico-settings : 精密星盤齒輪 -->
+  <symbol id="ico-settings" viewBox="0 0 24 24">
+    <path d="M10.52 4.85 L10.88 2.57 L13.12 2.57 L13.48 4.85 L16.01 5.9 L17.88 4.54 L19.46 6.12 L18.1 7.99 L19.15 10.52 L21.43 10.88 L21.43 13.12 L19.15 13.48 L18.1 16.01 L19.46 17.88 L17.88 19.46 L16.01 18.1 L13.48 19.15 L13.12 21.43 L10.88 21.43 L10.52 19.15 L7.99 18.1 L6.12 19.46 L4.54 17.88 L5.9 16.01 L4.85 13.48 L2.57 13.12 L2.57 10.88 L4.85 10.52 L5.9 7.99 L4.54 6.12 L6.12 4.54 L7.99 5.9 Z" fill="url(#ig-gold-soft)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="12" cy="12" r="3.25" fill="url(#ig-gold)" stroke="#ffdf8e" stroke-width="1.5"/>
+  </symbol>
+
+  <!-- 10. ico-sound-on : 帝國號角音量開 -->
+  <symbol id="ico-sound-on" viewBox="0 0 24 24">
+    <path d="M3.8 9.6 H7.4 L12.4 5.2 V18.8 L7.4 14.4 H3.8 C3.3 14.4 3 14 3 13.5 V10.5 C3 10 3.3 9.6 3.8 9.6 Z" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M15.8 9.2 C17.1 10.7 17.1 13.3 15.8 14.8" fill="none" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round"/>
+    <path d="M18.6 6.7 C20.9 9.6 20.9 14.4 18.6 17.3" fill="none" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- 11. ico-sound-off : 靜音（中性金） -->
+  <symbol id="ico-sound-off" viewBox="0 0 24 24">
+    <path d="M3.8 9.6 H7.4 L12.4 5.2 V18.8 L7.4 14.4 H3.8 C3.3 14.4 3 14 3 13.5 V10.5 C3 10 3.3 9.6 3.8 9.6 Z" fill="url(#ig-neutral-soft)" stroke="#c2ab7c" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M16 9.5 L20.5 14.5 M20.5 9.5 L16 14.5" fill="none" stroke="#c2ab7c" stroke-width="1.75" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- 12. ico-back : 帝國羽飾返回箭頭 -->
+  <symbol id="ico-back" viewBox="0 0 24 24">
+    <path d="M10.5 5.5 L4 12 L10.5 18.5" fill="none" stroke="#e8c26a" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4.6 12 H18.5" fill="none" stroke="#e8c26a" stroke-width="1.85" stroke-linecap="round"/>
+    <path d="M19.2 10.3 L21 12 L19.2 13.7 L17.5 12 Z" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.3" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- 13. ico-close : 關閉（中性金雕花叉號） -->
+  <symbol id="ico-close" viewBox="0 0 24 24">
+    <path d="M6.3 6.3 L17.7 17.7 M17.7 6.3 L6.3 17.7" fill="none" stroke="#c8b184" stroke-width="1.85" stroke-linecap="round"/>
+    <path d="M12 10.2 L13.8 12 L12 13.8 L10.2 12 Z" fill="url(#ig-neutral)" stroke="#dfd0b0" stroke-width="1.1" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- 14. ico-star : 實心勝利之星 -->
+  <symbol id="ico-star" viewBox="0 0 24 24">
+    <path d="M12 3 L14.47 8.9 L20.84 9.43 L15.99 13.6 L17.47 19.82 L12 16.5 L6.53 19.82 L8.01 13.6 L3.16 9.43 L9.53 8.9 Z" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 5.4 V12.3 L16.8 10.6" fill="none" stroke="#fff4d2" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65"/>
+  </symbol>
+
+  <!-- 15. ico-star-empty : 空心星等槽 -->
+  <symbol id="ico-star-empty" viewBox="0 0 24 24">
+    <path d="M12 3 L14.47 8.9 L20.84 9.43 L15.99 13.6 L17.47 19.82 L12 16.5 L6.53 19.82 L8.01 13.6 L3.16 9.43 L9.53 8.9 Z" fill="url(#ig-neutral-soft)" stroke="#b39c70" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- 16. ico-lock : 帝國封印鎖（中性金） -->
+  <symbol id="ico-lock" viewBox="0 0 24 24">
+    <path d="M8 10.5 V7.3 C8 5 9.8 3.4 12 3.4 C14.2 3.4 16 5 16 7.3 V10.5" fill="none" stroke="#c2ab7c" stroke-width="1.8" stroke-linecap="round"/>
+    <rect x="5.4" y="10.5" width="13.2" height="10" rx="2.4" fill="url(#ig-neutral)" stroke="#c2ab7c" stroke-width="1.75" stroke-linejoin="round"/>
+    <circle cx="12" cy="14.6" r="1.35" fill="#1a0a12"/>
+    <path d="M12 15.8 V17.9" fill="none" stroke="#1a0a12" stroke-width="1.65" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- 17. ico-trophy : 榮耀聖盃 -->
+  <symbol id="ico-trophy" viewBox="0 0 24 24">
+    <path d="M7.2 6 H4.7 C3.9 6 3.5 6.7 3.7 7.6 C4.1 9.6 5.5 10.9 7.4 11.1 M16.8 6 H19.3 C20.1 6 20.5 6.7 20.3 7.6 C19.9 9.6 18.5 10.9 16.6 11.1" fill="none" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7.2 4 H16.8 V9.3 C16.8 12.2 14.7 14.4 12 14.4 C9.3 14.4 7.2 12.2 7.2 9.3 Z" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 14.4 V17.8 M9.2 17.8 H14.8 M7.6 20.2 H16.4" fill="none" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 6.6 L13.2 8.7 L12 10.8 L10.8 8.7 Z" fill="#fff4d2" fill-opacity="0.8"/>
+  </symbol>
+
+  <!-- 18. ico-home : 帝都主城尖塔堡壘 (雙側塔樓 + 中央皇冠尖頂) -->
+  <symbol id="ico-home" viewBox="0 0 24 24">
+    <path d="M3.8 20.2 V11.2 H7.2 V8.6 L12 3.8 L16.8 8.6 V11.2 H20.2 V20.2 Z" fill="url(#ig-gold-soft)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 2.2 V3.8 M3.8 9.6 V11.2 M20.2 9.6 V11.2" fill="none" stroke="#ffdf8e" stroke-width="1.65" stroke-linecap="round"/>
+    <path d="M9.6 20.2 V14.9 C9.6 13.5 10.7 12.5 12 12.5 C13.3 12.5 14.4 13.5 14.4 14.9 V20.2 Z" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.65" stroke-linejoin="round"/>
+    <path d="M12 7.2 L13.1 8.5 L12 9.8 L10.9 8.5 Z" fill="#ffdf8e"/>
+  </symbol>
+
+  <!-- 19. ico-map : 征途三折戰略圖 -->
+  <symbol id="ico-map" viewBox="0 0 24 24">
+    <path d="M3.5 6.2 L9.1 4.2 L14.9 6.2 L20.5 4.2 V17.8 L14.9 19.8 L9.1 17.8 L3.5 19.8 Z" fill="url(#ig-gold-soft)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M9.1 4.4 V17.6 M14.9 6.4 V19.6" fill="none" stroke="#e8c26a" stroke-width="1.45" stroke-linecap="round" stroke-opacity="0.72"/>
+    <path d="M17.7 8.9 L18.9 10.7 L17.7 12.5 L16.5 10.7 Z" fill="url(#ig-gold)" stroke="#ffdf8e" stroke-width="1"/>
+    <path d="M6.3 13.5 C7.5 12 10.5 12.6 12 11.2" fill="none" stroke="#ffdf8e" stroke-width="1.35" stroke-linecap="round" stroke-dasharray="1.8 2.2"/>
+  </symbol>
+
+  <!-- 20. ico-roster : 女傑皇冠冕旒 -->
+  <symbol id="ico-roster" viewBox="0 0 24 24">
+    <path d="M4.6 18.4 H19.4 L20.7 9.2 L16.1 12.7 L12 5.4 L7.9 12.7 L3.3 9.2 Z" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5 20.4 H19" fill="none" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round"/>
+    <path d="M12 11.2 L13.5 13.5 L12 15.8 L10.5 13.5 Z" fill="url(#ig-heart)" stroke="#fff3c4" stroke-width="1" stroke-linejoin="round"/>
+    <circle cx="12" cy="4" r="1.05" fill="#ffdf8e"/>
+    <circle cx="3.1" cy="8" r="0.95" fill="#ffdf8e"/>
+    <circle cx="20.9" cy="8" r="0.95" fill="#ffdf8e"/>
+  </symbol>
+
+  <!-- 21. ico-battle : 帝國騎士雙劍交鋒 (修長劍刃 + 護手 + 劍柄配重球) -->
+  <symbol id="ico-battle" viewBox="0 0 24 24">
+    <!-- 左上至右下之劍 (後層) -->
+    <path d="M3.6 3.6 L7.2 4.7 L16.6 14.1 L14.1 16.6 L4.7 7.2 Z" fill="url(#ig-gold-deep)" stroke="#e8c26a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M18.3 12.5 L12.5 18.3 M15.4 15.4 L19.4 19.4" fill="none" stroke="#e8c26a" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="20.1" cy="20.1" r="1.05" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.1"/>
+    <!-- 右上至左下之劍 (前層主劍) -->
+    <path d="M20.4 3.6 L19.3 7.2 L9.9 16.6 L7.4 14.1 L16.8 4.7 Z" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M18.5 5.5 L9.3 14.7" fill="none" stroke="#fff4d2" stroke-width="0.9" stroke-linecap="round" stroke-opacity="0.7"/>
+    <path d="M5.7 12.5 L11.5 18.3 M8.6 15.4 L4.6 19.4" fill="none" stroke="#e8c26a" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="3.9" cy="20.1" r="1.05" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.1"/>
+  </symbol>
+
+  <!-- 22. ico-pause : 雙柱暫停 -->
+  <symbol id="ico-pause" viewBox="0 0 24 24">
+    <rect x="6.4" y="4.5" width="3.8" height="15" rx="1.5" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.75" stroke-linejoin="round"/>
+    <rect x="13.8" y="4.5" width="3.8" height="15" rx="1.5" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.75" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- 23. ico-skill : 秘術星芒陣 -->
+  <symbol id="ico-skill" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="6.4" fill="url(#ig-gold-soft)" stroke="#ffdf8e" stroke-width="1.2" stroke-opacity="0.7"/>
+    <path d="M12 2.6 L14.5 9.5 L21.4 12 L14.5 14.5 L12 21.4 L9.5 14.5 L2.6 12 L9.5 9.5 Z" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 9.6 L14.4 12 L12 14.4 L9.6 12 Z" fill="#fff4d2"/>
+  </symbol>
+
+  <!-- 24. ico-suit-spade : 皇家黑桃 ♠ -->
+  <symbol id="ico-suit-spade" viewBox="0 0 24 24">
+    <path d="M12 3.2 C12 3.2 4.3 10.1 4.3 14.2 C4.3 16.8 6.3 18.4 8.7 18.4 C10.2 18.4 11.3 17.6 12 16.5 C12.7 17.6 13.8 18.4 15.3 18.4 C17.7 18.4 19.7 16.8 19.7 14.2 C19.7 10.1 12 3.2 12 3.2 Z" fill="url(#ig-suit-dark)" stroke="#e8c26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 16.3 C11.5 18.4 10.4 19.8 8.7 20.6 H15.3 C13.6 19.8 12.5 18.4 12 16.3 Z" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M12 6.8 V14" fill="none" stroke="#ffdf8e" stroke-width="1.1" stroke-linecap="round" stroke-opacity="0.55"/>
+  </symbol>
+
+  <!-- 25. ico-suit-heart : 皇家紅心 ♥ -->
+  <symbol id="ico-suit-heart" viewBox="0 0 24 24">
+    <path d="M12 20.5 C12 20.5 3.8 14.8 3.8 9 C3.8 6 6.1 3.8 8.9 3.8 C10.5 3.8 11.5 4.6 12 5.8 C12.5 4.6 13.5 3.8 15.1 3.8 C17.9 3.8 20.2 6 20.2 9 C20.2 14.8 12 20.5 12 20.5 Z" fill="url(#ig-suit-red)" stroke="#e8c26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M6.6 8.3 C6.6 6.9 7.6 5.9 8.9 5.9" fill="none" stroke="#ffd6e0" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.75"/>
+  </symbol>
+
+  <!-- 26. ico-suit-diamond : 皇家方塊 ♦ -->
+  <symbol id="ico-suit-diamond" viewBox="0 0 24 24">
+    <path d="M12 2.8 C13.7 6.6 16.6 9.8 20.1 12 C16.6 14.2 13.7 17.4 12 21.2 C10.3 17.4 7.4 14.2 3.9 12 C7.4 9.8 10.3 6.6 12 2.8 Z" fill="url(#ig-suit-red)" stroke="#e8c26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 6.8 L15.8 12 L12 17.2 L8.2 12 Z" fill="none" stroke="#ffd6e0" stroke-width="1.05" stroke-linejoin="round" stroke-opacity="0.55"/>
+  </symbol>
+
+  <!-- 27. ico-suit-club : 皇家梅花 ♣ -->
+  <symbol id="ico-suit-club" viewBox="0 0 24 24">
+    <path d="M9.07 9.33 A3.65 3.65 0 1 1 14.93 9.33 A3.65 3.65 0 1 1 12.57 14.33 C12.7 16.8 13.5 19.3 15.2 20.5 H8.8 C10.5 19.3 11.3 16.8 11.43 14.33 A3.65 3.65 0 1 1 9.07 9.33 Z" fill="url(#ig-suit-dark)" stroke="#e8c26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="12" cy="11.5" r="1.2" fill="#e8c26a" fill-opacity="0.7"/>
+  </symbol>
+
+  <!-- 28. ico-check : 帝國確認勾選 -->
+  <symbol id="ico-check" viewBox="0 0 24 24">
+    <path d="M4.6 12.6 L9.6 17.8 L19.5 6.4" fill="none" stroke="#e8c26a" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5.2 12.4 L9.6 17 L18.9 6.8" fill="none" stroke="#ffdf8e" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.75"/>
+  </symbol>
+
+  <!-- 29. ico-plus : 帝國補充加號 -->
+  <symbol id="ico-plus" viewBox="0 0 24 24">
+    <path d="M12 4.8 V19.2 M4.8 12 H19.2" fill="none" stroke="#e8c26a" stroke-width="1.95" stroke-linecap="round"/>
+    <path d="M12 9.8 L14.2 12 L12 14.2 L9.8 12 Z" fill="url(#ig-gold)" stroke="#ffdf8e" stroke-width="1" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- ═══ 延伸 UI 圖示（替換主城／地圖／鑑賞室／鬼牌剩餘 Emoji） ═══ -->
+
+  <!-- 30. ico-daily : 每日挑戰日晷曆牌 (替換 🗓️) -->
+  <symbol id="ico-daily" viewBox="0 0 24 24">
+    <rect x="3.8" y="5.2" width="16.4" height="15.2" rx="2.4" fill="url(#ig-gold-soft)" stroke="#e8c26a" stroke-width="1.75" stroke-linejoin="round"/>
+    <path d="M3.8 9.6 H20.2 M8.2 3.4 V6.6 M15.8 3.4 V6.6" fill="none" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round"/>
+    <path d="M12 11.8 L13.8 15 L12 18.2 L10.2 15 Z" fill="url(#ig-gold)" stroke="#ffdf8e" stroke-width="1.05" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- 31. ico-endless : 無盡模式永恆雙環 (替換 ♾️) -->
+  <symbol id="ico-endless" viewBox="0 0 24 24">
+    <path d="M12 12 C10.2 9.2 8.4 7.8 6.4 7.8 C4.1 7.8 2.6 9.6 2.6 12 C2.6 14.4 4.1 16.2 6.4 16.2 C8.4 16.2 10.2 14.8 12 12 C13.8 9.2 15.6 7.8 17.6 7.8 C19.9 7.8 21.4 9.6 21.4 12 C21.4 14.4 19.9 16.2 17.6 16.2 C15.6 16.2 13.8 14.8 12 12 Z" fill="url(#ig-gold-soft)" stroke="#e8c26a" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 10.2 L13.5 12 L12 13.8 L10.5 12 Z" fill="url(#ig-gold)"/>
+  </symbol>
+
+  <!-- 32. ico-crown : 頭目緋金王冠 (替換 ♛) -->
+  <symbol id="ico-crown" viewBox="0 0 24 24">
+    <path d="M4.2 18.6 H19.8 L21 8.4 L16 12.4 L12 4.8 L8 12.4 L3 8.4 Z" fill="url(#ig-energy)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 11.4 L13.5 13.8 L12 16.2 L10.5 13.8 Z" fill="#fff3c4"/>
+  </symbol>
+
+  <!-- 33. ico-chat : 女傑交談語泡 (替換 💬) -->
+  <symbol id="ico-chat" viewBox="0 0 24 24">
+    <path d="M12 4.2 C6.9 4.2 3.2 7.3 3.2 11.3 C3.2 13.5 4.4 15.4 6.3 16.7 L5.2 20.2 L9.4 18.2 C10.2 18.4 11.1 18.5 12 18.5 C17.1 18.5 20.8 15.4 20.8 11.3 C20.8 7.3 17.1 4.2 12 4.2 Z" fill="url(#ig-gold-soft)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="8.6" cy="11.4" r="1.15" fill="#ffdf8e"/>
+    <circle cx="12" cy="11.4" r="1.15" fill="#ffdf8e"/>
+    <circle cx="15.4" cy="11.4" r="1.15" fill="#ffdf8e"/>
+  </symbol>
+
+  <!-- 34. ico-joker : 鬼牌小丑雙角冠 (替換 🃏) -->
+  <symbol id="ico-joker" viewBox="0 0 24 24">
+    <path d="M5.2 17.8 H18.8 L19.4 13.5 C19.9 9.7 17.2 7.2 14.6 9.8 L12 13 L9.4 9.8 C6.8 7.2 4.1 9.7 4.6 13.5 Z" fill="url(#ig-gem)" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4.8 19.8 H19.2" fill="none" stroke="#e8c26a" stroke-width="1.75" stroke-linecap="round"/>
+    <circle cx="4.2" cy="7.6" r="1.4" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.2"/>
+    <circle cx="19.8" cy="7.6" r="1.4" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.2"/>
+  </symbol>
+
+  <!-- 35. ico-crest : 帝國牌背玫瑰羅盤紋章 (替換 ✦) -->
+  <symbol id="ico-crest" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="7.4" fill="url(#ig-gold-soft)" stroke="#e8c26a" stroke-width="1.4" stroke-opacity="0.75"/>
+    <path d="M12 2.4 L14.3 9.7 L21.6 12 L14.3 14.3 L12 21.6 L9.7 14.3 L2.4 12 L9.7 9.7 Z" fill="url(#ig-gold)" stroke="#e8c26a" stroke-width="1.65" stroke-linejoin="round"/>
+    <circle cx="12" cy="12" r="2" fill="url(#ig-gem)" stroke="#fff3c4" stroke-width="1"/>
+  </symbol>
+</svg>

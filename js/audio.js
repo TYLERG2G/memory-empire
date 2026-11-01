@@ -233,7 +233,11 @@
       var btn = global.document.getElementById('tb-mute');
       if (btn) {
         var anyOn = !state.muted && (state.sfxEnabled || state.bgmEnabled);
-        btn.textContent = anyOn ? '🔊' : '🔇';
+        // UI v4：按鈕內是 <svg><use>，只切換 href，勿用 textContent 清掉 svg
+        var u = btn.querySelector('use');
+        if (u) u.setAttribute('href', anyOn ? '#ico-sound-on' : '#ico-sound-off');
+        else btn.textContent = anyOn ? '🔊' : '🔇';
+        btn.classList.toggle('is-off', !anyOn);
       }
     } catch (e) {}
   }
