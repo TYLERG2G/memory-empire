@@ -5,7 +5,7 @@
   if (!D) { console.error('GAME_DATA missing'); return; }
   var HEROINES = D.HEROINES, ACHIEVEMENTS = D.ACHIEVEMENTS, CONFIG = D.CONFIG;
   var pairsFor = D.pairsFor, timeFor = D.timeFor, xpNeed = D.xpNeed, upgradeCost = D.upgradeCost;
-  var skillValue = D.skillValue, skillDesc = D.skillDesc;
+  var skillValue = D.skillValue, skillDesc = D.skillDesc, dealPairs = D.dealPairs, bondTier = D.bondTier;
 
   function $(id) { return document.getElementById(id); }
   function qs(sel, root) { return (root || document).querySelector(sel); }
@@ -18,6 +18,9 @@
       stage: 1, maxStage: 1, streak: 0, bestStreak: 0, lastPlayDate: '',
       unlocked: { verda: true },
       skills: { verda: 1, karena: 1, elys: 1, selas: 1, reina: 1 },
+      bond: { verda: 0, karena: 0, elys: 0, selas: 0, reina: 0 },
+      outfit: { verda: 'default', karena: 'default', elys: 'default', selas: 'default', reina: 'default' },
+      talkToday: {},
       selected: 'verda',
       achievements: {},
       sound: false, vibrate: true,
@@ -28,14 +31,27 @@
   function load() {
     try {
       var raw = localStorage.getItem(CONFIG.SAVE_KEY);
-      if (!raw) return defaultState();
-      var s = Object.assign(defaultState(), JSON.parse(raw));
-      s.unlocked = Object.assign({ verda: true }, s.unlocked || {});
-      s.skills = Object.assign(defaultState().skills, s.skills || {});
-      s.stats = Object.assign(defaultState().stats, s.stats || {});
-      s.achievements = s.achievements || {};
-      return s;
+      if (!raw) {
+        // migrate v1 if present
+        var old = localStorage.getItem('memoryRPG_v1');
+        if (old) {
+          var s0 = Object.assign(defaultState(), JSON.parse(old));
+          return normalize(s0);
+        }
+        return defaultState();
+      }
+      return normalize(Object.assign(defaultState(), JSON.parse(raw)));
     } catch (e) { return defaultState(); }
+  }
+  function normalize(s) {
+    s.unlocked = Object.assign({ verda: true }, s.unlocked || {});
+    s.skills = Object.assign(defaultState().skills, s.skills || {});
+    s.bond = Object.assign(defaultState().bond, s.bond || {});
+    s.outfit = Object.assign(defaultState().outfit, s.outfit || {});
+    s.talkToday = s.talkToday || {};
+    s.stats = Object.assign(defaultState().stats, s.stats || {});
+    s.achievements = s.achievements || {};
+    return s;
   }
   function save() { try { localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
 
@@ -43,6 +59,7 @@
   var battle = null;
   var audioCtx = null;
   var energyTimer = null;
+  var galleryId = null;
 
   function heroine(id) {
     for (var i = 0; i < HEROINES.length; i++) if (HEROINES[i].id === id) return HEROINES[i];
@@ -91,7 +108,7 @@
     requestAnimationFrame(function () { el.classList.add('show'); });
     setTimeout(function () {
       el.classList.remove('show');
-      setTimeout(function () { el.remove(); }, 300);
+      setTimeout(function () { if (el.parentNode) el.remove(); }, 300);
     }, 1800);
   }
 
@@ -111,6 +128,15 @@
     } catch (e) {}
   }
   function vibe(ms) { if (S.vibrate && navigator.vibrate) navigator.vibrate(ms || 12); }
+
+  function addBond(id, amt) {
+    var cur = S.bond[id] || 0;
+    var next = Math.min(CONFIG.BOND_MAX, cur + (amt || 1));
+    if (next === cur) return false;
+    S.bond[id] = next;
+    checkAchievements();
+    return true;
+  }
 
   function checkAchievements() {
     ACHIEVEMENTS.forEach(function (a) {
@@ -166,16 +192,23 @@
     $('tb-etimer').textContent = energyEta() ? ('+' + energyEta()) : '';
   }
 
+  function outfitClass(id) {
+    return 'outfit-' + (S.outfit[id] || 'default');
+  }
+
   function renderHome() {
     var h = heroine(S.selected);
-    $('home-hero-img').src = 'assets/heroines/' + h.id + '.webp';
+    var img = $('home-hero-img');
+    img.src = 'assets/heroines/' + h.id + '.webp';
+    img.className = outfitClass(h.id);
     $('home-hero-title').textContent = h.title;
     $('home-hero-name').textContent = h.name;
     var lv = S.skills[h.id] || 1;
-    $('home-hero-skill').textContent = h.skillName + '：' + skillDesc(h.skill, lv);
+    var bond = S.bond[h.id] || 0;
+    $('home-hero-skill').textContent = h.skillName + '：' + skillDesc(h.skill, lv) + ' · 好感 ' + bond + '/' + CONFIG.BOND_MAX;
     $('home-stage').textContent = S.stage;
     var p = pairsFor(S.stage), t = timeFor(S.stage);
-    $('home-stage-detail').textContent = p + ' 組配對 · 限時 ' + t + ' 秒';
+    $('home-stage-detail').textContent = p + ' 組撲克配對 · 限時 ' + t + ' 秒';
     $('home-streak').textContent = S.streak;
     $('home-best').textContent = S.maxStage;
     $('btn-fight').disabled = S.energy < CONFIG.ENERGY_COST;
@@ -189,6 +222,15 @@
     return arr;
   }
 
+  function pokerFaceHTML(face) {
+    var color = face.color === 'red' ? 'red' : 'black';
+    return '<div class="poker-face ' + color + '" data-id="' + face.id + '">' +
+      '<div class="p-corner tl"><span class="p-rank">' + face.rank + '</span><span class="p-suit">' + face.suit + '</span></div>' +
+      '<div class="p-center">' + face.suit + '</div>' +
+      '<div class="p-corner br"><span class="p-rank">' + face.rank + '</span><span class="p-suit">' + face.suit + '</span></div>' +
+      '</div>';
+  }
+
   function startBattle() {
     regenEnergy();
     if (S.energy < CONFIG.ENERGY_COST) { toast('體力不足，請稍候回復'); return; }
@@ -199,13 +241,11 @@
     var h = heroine(S.selected);
     var pairs = pairsFor(S.stage);
     var time = timeFor(S.stage);
-    var ids = HEROINES.map(function (x) { return x.id; });
-    while (ids.length < pairs) ids = ids.concat(ids);
-    ids = shuffle(ids.slice(0, pairs));
+    var faces = dealPairs(pairs);
     var cards = [];
-    ids.forEach(function (id, idx) {
-      cards.push({ key: id + '-a-' + idx, pair: id, open: false, matched: false });
-      cards.push({ key: id + '-b-' + idx, pair: id, open: false, matched: false });
+    faces.forEach(function (face, idx) {
+      cards.push({ key: face.id + '-a-' + idx, pair: face.id, face: face, open: false, matched: false });
+      cards.push({ key: face.id + '-b-' + idx, pair: face.id, face: face, open: false, matched: false });
     });
     shuffle(cards);
 
@@ -219,7 +259,6 @@
       running: true
     };
 
-    // elys time skill is active on use; passive only for reina
     $('b-stage').textContent = battle.stage;
     $('b-score').textContent = '0';
     $('b-pairs').textContent = '0/' + pairs;
@@ -254,7 +293,10 @@
       el.type = 'button';
       el.className = 'card' + (c.open || c.matched ? ' open' : '') + (c.matched ? ' matched' : '');
       el.setAttribute('data-i', String(i));
-      el.innerHTML = '<div class="card-inner"><div class="face back"></div><div class="face front"><img alt="" src="assets/heroines/' + c.pair + '-sm.webp"></div></div>';
+      el.innerHTML = '<div class="card-inner">' +
+        '<div class="face back"><div class="back-crest">✦</div></div>' +
+        '<div class="face front">' + pokerFaceHTML(c.face) + '</div>' +
+        '</div>';
       el.addEventListener('click', onCard);
       board.appendChild(el);
     });
@@ -266,7 +308,6 @@
       if (!battle || !battle.running) return;
       if (battle.frozen > 0) {
         battle.frozen -= 0.1;
-        $('timebar') && null;
         qs('.timebar').classList.add('frozen');
         updateTimeUI();
         return;
@@ -287,6 +328,10 @@
     qs('.timebar').classList.toggle('low', battle.timeLeft < 8 && battle.frozen <= 0);
   }
 
+  function boardCardEls() {
+    return qsa('#board .card');
+  }
+
   function onCard(ev) {
     if (!battle || !battle.running || battle.lock) return;
     var i = +ev.currentTarget.getAttribute('data-i');
@@ -296,10 +341,15 @@
     ev.currentTarget.classList.add('open');
     playTone(520, 0.06);
     vibe(8);
-    if (!battle.first) { battle.first = i; return; }
+    // BUGFIX: index 0 is falsy — must use null check
+    if (battle.first === null || battle.first === undefined) {
+      battle.first = i;
+      return;
+    }
     if (battle.first === i) return;
     var a = battle.cards[battle.first];
     var b = c;
+    var fi = battle.first, si = i;
     battle.lock = true;
     if (a.pair === b.pair) {
       a.matched = b.matched = true;
@@ -314,8 +364,8 @@
       var comboEl = $('b-combo');
       comboEl.textContent = '連擊 x' + battle.combo;
       comboEl.classList.remove('pop'); void comboEl.offsetWidth; comboEl.classList.add('pop');
-      qsa('.card').forEach(function (el, idx) {
-        if (idx === battle.first || idx === i) el.classList.add('matched');
+      boardCardEls().forEach(function (el, idx) {
+        if (idx === fi || idx === si) el.classList.add('matched');
       });
       battle.first = null;
       battle.lock = false;
@@ -326,10 +376,10 @@
       $('b-miss').textContent = battle.miss;
       $('b-combo').textContent = '連擊 x0';
       playTone(180, 0.12, 'sawtooth');
-      var fi = battle.first, si = i;
       setTimeout(function () {
+        if (!battle) return;
         a.open = false; b.open = false;
-        qsa('.card').forEach(function (el, idx) {
+        boardCardEls().forEach(function (el, idx) {
           if (idx === fi || idx === si) {
             el.classList.remove('open');
             el.classList.add('shake');
@@ -355,18 +405,19 @@
     if (h.skill === 'peek') {
       banner('魔眼窺視！');
       battle.cards.forEach(function (c) { if (!c.matched) c.open = true; });
-      qsa('.card').forEach(function (el, idx) {
+      boardCardEls().forEach(function (el, idx) {
         if (!battle.cards[idx].matched) el.classList.add('open');
       });
       battle.lock = true;
       setTimeout(function () {
+        if (!battle) return;
         battle.cards.forEach(function (c) { if (!c.matched) c.open = false; });
-        qsa('.card').forEach(function (el, idx) {
+        boardCardEls().forEach(function (el, idx) {
           if (!battle.cards[idx].matched) el.classList.remove('open');
         });
         battle.first = null;
         battle.lock = false;
-      }, v * 1000);
+      }, Math.round(v * 1000));
     } else if (h.skill === 'freeze') {
       battle.frozen = v;
       qs('.timebar').classList.add('frozen');
@@ -391,8 +442,9 @@
           var i1 = unmatched[pair][0], i2 = unmatched[pair][1];
           battle.cards[i1].matched = battle.cards[i1].open = true;
           battle.cards[i2].matched = battle.cards[i2].open = true;
-          qsa('.card')[i1].classList.add('flipped', 'matched');
-          qsa('.card')[i2].classList.add('flipped', 'matched');
+          var els = boardCardEls();
+          if (els[i1]) els[i1].classList.add('open', 'matched');
+          if (els[i2]) els[i2].classList.add('open', 'matched');
           battle.matched += 1;
           battle.combo += 1;
           battle.score += Math.round(100 * battle.combo * battle.comboMul);
@@ -425,6 +477,7 @@
     var total = battle.score + timeBonus + perfectBonus;
     var xpGain = win ? (40 + battle.stage * 8 + (perfect ? 30 : 0)) : 10;
     var goldGain = win ? (30 + battle.stage * 5 + Math.floor(total / 50)) : 5;
+    var hid = battle.heroine.id;
     if (win) {
       S.stats.wins += 1;
       S.stats.clears += 1;
@@ -433,12 +486,12 @@
       S.stage += 1;
       if (S.stage > S.maxStage) S.maxStage = S.stage;
       S.bestStreak = Math.max(S.bestStreak || 0, S.streak);
+      if (addBond(hid, perfect ? 2 : 1)) toast(battle.heroine.name + ' 好感提升');
     }
     S.gold += goldGain;
     S.stats.goldEarned += goldGain;
     var ups = addXp(xpGain);
     checkAchievements();
-    // unlock available heroines by level+gold purchase happens in roster; auto-hint
     save();
     showResult(win, {
       score: battle.score, timeBonus: timeBonus, perfectBonus: perfectBonus, total: total,
@@ -465,6 +518,92 @@
     if ($('r-retry')) $('r-retry').onclick = function () { startBattle(); };
   }
 
+  function heartsHTML(bond) {
+    var html = '';
+    for (var i = 1; i <= CONFIG.BOND_MAX; i++) {
+      html += '<span class="bond-heart' + (i <= bond ? ' on' : '') + '">♥</span>';
+    }
+    return html;
+  }
+
+  function pickLine(h, bond) {
+    var tier = bondTier(bond);
+    var arr = (h.lines && h.lines[tier]) || ['……'];
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function openGallery(id) {
+    var h = heroine(id);
+    if (!S.unlocked[id]) { toast('尚未解鎖'); return; }
+    galleryId = id;
+    var g = $('hero-gallery');
+    g.classList.remove('hidden');
+    renderGallery();
+  }
+
+  function closeGallery() {
+    $('hero-gallery').classList.add('hidden');
+    galleryId = null;
+    var art = $('hg-art');
+    if (art) art.classList.remove('zoomed');
+  }
+
+  function renderGallery() {
+    if (!galleryId) return;
+    var h = heroine(galleryId);
+    var bond = S.bond[h.id] || 0;
+    var art = $('hg-art');
+    art.src = 'assets/heroines/' + h.id + '.webp';
+    art.className = 'hg-art ' + outfitClass(h.id);
+    $('hg-title').textContent = h.title;
+    $('hg-name').textContent = h.name;
+    $('hg-bio').textContent = h.bio;
+    $('hg-hearts').innerHTML = heartsHTML(bond);
+    $('hg-bond-num').textContent = bond + ' / ' + CONFIG.BOND_MAX;
+    $('hg-bubble').textContent = pickLine(h, bond);
+    var outfits = $('hg-outfits');
+    outfits.innerHTML = '';
+    (h.outfits || []).forEach(function (o) {
+      var unlocked = bond >= o.reqBond;
+      var active = (S.outfit[h.id] || 'default') === o.id;
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'outfit-chip' + (unlocked ? '' : ' locked') + (active ? ' active' : '');
+      chip.textContent = unlocked ? o.name : ('🔒 ' + o.name + '（好感' + o.reqBond + '）');
+      chip.disabled = !unlocked;
+      chip.onclick = function () {
+        if (!unlocked) return;
+        S.outfit[h.id] = o.id;
+        save();
+        toast('換裝：' + o.name);
+        renderGallery();
+        renderHome();
+      };
+      outfits.appendChild(chip);
+    });
+    var talkBtn = $('hg-talk');
+    var key = todayStr() + ':' + h.id;
+    var talked = (S.talkToday[key] || 0) >= 3;
+    talkBtn.disabled = talked;
+    talkBtn.textContent = talked ? '今日已暢談' : '💬 交談';
+  }
+
+  function talkHeroine() {
+    if (!galleryId) return;
+    var h = heroine(galleryId);
+    var key = todayStr() + ':' + h.id;
+    S.talkToday[key] = (S.talkToday[key] || 0) + 1;
+    $('hg-bubble').textContent = pickLine(h, S.bond[h.id] || 0);
+    $('hg-bubble').classList.remove('pop'); void $('hg-bubble').offsetWidth; $('hg-bubble').classList.add('pop');
+    if (S.talkToday[key] === 1 || S.talkToday[key] === 3) {
+      if (addBond(h.id, 1)) toast('好感 +1');
+    }
+    playTone(640, 0.08);
+    vibe(10);
+    save();
+    renderGallery();
+  }
+
   function renderRoster() {
     var list = $('roster-list');
     list.innerHTML = '';
@@ -472,16 +611,22 @@
       var unlocked = !!S.unlocked[h.id];
       var canUnlock = !unlocked && S.lv >= h.reqLv && S.gold >= h.cost;
       var lv = S.skills[h.id] || 1;
+      var bond = S.bond[h.id] || 0;
       var card = document.createElement('div');
       card.className = 'roster-card' + (unlocked ? '' : ' locked') + (S.selected === h.id ? ' selected' : '');
       card.innerHTML =
-        '<img src="assets/heroines/' + h.id + '.webp" alt="">' +
+        '<button type="button" class="rc-img-btn" data-view="' + h.id + '">' +
+        '<img class="' + outfitClass(h.id) + '" src="assets/heroines/' + h.id + '.webp" alt="">' +
+        '<span class="rc-view-hint">鑑賞</span></button>' +
         '<div class="rc-body">' +
         '<div class="rc-title">' + h.title + '</div>' +
         '<div class="rc-name">' + h.name + '</div>' +
+        '<div class="rc-hearts">' + (unlocked ? heartsHTML(bond) : '') + '</div>' +
         '<div class="muted small">' + (unlocked ? skillDesc(h.skill, lv) + '（技等 ' + lv + '）' : '解鎖：Lv' + h.reqLv + (h.cost ? ' · ' + h.cost + ' 金' : ' · 免費')) + '</div>' +
         '<div class="rc-actions"></div></div>';
       var actions = qs('.rc-actions', card);
+      var viewBtn = qs('.rc-img-btn', card);
+      viewBtn.onclick = function () { openGallery(h.id); };
       if (!unlocked) {
         var b = document.createElement('button');
         b.className = 'btn btn-sm btn-gold';
@@ -503,6 +648,11 @@
         sel.disabled = S.selected === h.id;
         sel.onclick = function () { S.selected = h.id; save(); renderRoster(); renderHome(); toast('出戰：' + h.name); };
         actions.appendChild(sel);
+        var view = document.createElement('button');
+        view.className = 'btn btn-sm';
+        view.textContent = '互動';
+        view.onclick = function () { openGallery(h.id); };
+        actions.appendChild(view);
         if (lv < CONFIG.SKILL_MAX) {
           var cost = upgradeCost(lv);
           var up = document.createElement('button');
@@ -567,12 +717,27 @@
     qsa('#nav button').forEach(function (b) {
       b.addEventListener('click', function () {
         if (battle && battle.running) return;
+        closeGallery();
         go(b.getAttribute('data-go'));
       });
     });
     $('btn-fight').onclick = startBattle;
     $('btn-skill').onclick = useSkill;
     $('btn-pause').onclick = showPause;
+    $('home-hero-img').onclick = function () { openGallery(S.selected); };
+    $('hg-close').onclick = closeGallery;
+    $('hg-talk').onclick = talkHeroine;
+    $('hg-select').onclick = function () {
+      if (!galleryId || !S.unlocked[galleryId]) return;
+      S.selected = galleryId;
+      save();
+      toast('出戰：' + heroine(galleryId).name);
+      closeGallery();
+      renderHome();
+    };
+    $('hg-art').onclick = function () {
+      $('hg-art').classList.toggle('zoomed');
+    };
     $('set-sound').onchange = function () { S.sound = $('set-sound').checked; save(); if (S.sound) playTone(600, 0.08); };
     $('set-vibrate').onchange = function () { S.vibrate = $('set-vibrate').checked; save(); };
     $('btn-reset').onclick = function () {
@@ -585,11 +750,10 @@
   }
 
   function ensureCssExtras() {
-    // soft fallbacks if CSS missing some classes used by JS-injected UI
     if (!document.getElementById('dyn-css')) {
       var s = document.createElement('style');
       s.id = 'dyn-css';
-      s.textContent = '.toast{background:#2a1018ee;border:1px solid #e8c26a;color:#ffdf8e;padding:10px 14px;border-radius:999px;margin:6px;opacity:0;transition:opacity .2s;font-size:13px}.toast.show{opacity:1}#toasts{position:fixed;left:50%;bottom:calc(70px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;align-items:center}.result-score{font-size:42px;text-align:center;color:#ffdf8e;font-weight:900;margin:8px 0}.roster-card{display:grid;grid-template-columns:88px 1fr;gap:10px;background:#2b1119;border:1px solid #e8c26a44;border-radius:14px;padding:10px;margin-bottom:10px}.roster-card img{width:88px;height:118px;object-fit:cover;border-radius:10px;border:1px solid #e8c26a66}.roster-card.locked{opacity:.55;filter:grayscale(.6)}.roster-card.selected{border-color:#e8c26a}.rc-name{font-weight:800;font-size:16px}.rc-title{color:#e8c26a;font-size:12px}.rc-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.ach-item{display:flex;gap:10px;align-items:center;background:#2b1119;border:1px solid #e8c26a33;border-radius:12px;padding:10px;margin-bottom:8px}.ach-item.locked{opacity:.45;filter:grayscale(1)}.set-list{display:flex;flex-direction:column;gap:10px}.set-row{display:flex;justify-content:space-between;align-items:center;background:#2b1119;border:1px solid #e8c26a33;border-radius:12px;padding:12px}.modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:90;padding:20px}.modal-card{background:#2b1119;border:1px solid #e8c26a;border-radius:16px;padding:18px;width:min(360px,100%)}.modal-card h3{text-align:center;color:#ffdf8e;margin-bottom:8px}.banner{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);background:#1a0a12ee;border:1px solid #e8c26a;color:#ffdf8e;padding:10px 16px;border-radius:12px;z-index:30;font-weight:800}.card.shake{animation:shake .35s}@keyframes shake{20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}}';
+      s.textContent = '.toast{background:#2a1018ee;border:1px solid #e8c26a;color:#ffdf8e;padding:10px 14px;border-radius:999px;margin:6px;opacity:0;transition:opacity .2s;font-size:13px}.toast.show{opacity:1}.result-score{font-size:42px;text-align:center;color:#ffdf8e;font-weight:900;margin:8px 0}.roster-card{display:grid;grid-template-columns:88px 1fr;gap:10px;background:#2b1119;border:1px solid #e8c26a44;border-radius:14px;padding:10px;margin-bottom:10px}.roster-card.locked{opacity:.55;filter:grayscale(.6)}.roster-card.selected{border-color:#e8c26a}.rc-name{font-weight:800;font-size:16px}.rc-title{color:#e8c26a;font-size:12px}.rc-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.rc-img-btn{position:relative;padding:0;border:0;background:none;border-radius:10px;overflow:hidden}.rc-img-btn img{width:88px;height:118px;object-fit:cover;border-radius:10px;border:1px solid #e8c26a66;display:block}.rc-view-hint{position:absolute;left:0;right:0;bottom:0;font-size:10px;background:#000a;color:#ffdf8e;padding:2px 0}.rc-hearts{letter-spacing:1px;font-size:12px;margin:2px 0}.ach-item{display:flex;gap:10px;align-items:center;background:#2b1119;border:1px solid #e8c26a33;border-radius:12px;padding:10px;margin-bottom:8px}.ach-item.locked{opacity:.45;filter:grayscale(1)}.bond-heart{color:#5a3040;margin-right:1px}.bond-heart.on{color:#ff5a7a;text-shadow:0 0 6px #ff5a7a88}';
       document.head.appendChild(s);
     }
   }

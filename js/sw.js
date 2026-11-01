@@ -1,4 +1,4 @@
-const CACHE = 'MEMORY_RPG_v1';
+const CACHE = 'MEMORY_RPG_v2';
 const ASSETS = [
   './',
   './index.html',

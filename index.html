@@ -37,7 +37,7 @@
     <section id="scr-home" class="screen active">
       <h1 class="game-title">記憶帝國<span>女傑翻牌</span></h1>
       <div class="hero-stage">
-        <img id="home-hero-img" alt="" src="assets/heroines/verda.webp">
+        <img id="home-hero-img" alt="點擊鑑賞" title="點擊鑑賞" src="assets/heroines/verda.webp" style="cursor:pointer">
         <div class="hero-plate">
           <div id="home-hero-title" class="h-title"></div>
           <div id="home-hero-name" class="h-name"></div>
@@ -81,6 +81,7 @@
     <!-- 女傑名冊 -->
     <section id="scr-roster" class="screen">
       <h2 class="scr-title">女傑名冊</h2>
+      <p class="muted center small">點頭像或「互動」可鑑賞與交談</p>
       <div id="roster-list" class="roster"></div>
     </section>
 
@@ -100,7 +101,7 @@
         <div class="set-row"><span>📊 統計</span><span id="set-stats" class="muted small"></span></div>
         <div class="set-row"><span>📱 安裝</span><span class="muted small">於瀏覽器選單選擇「加入主畫面」即可離線遊玩</span></div>
         <button id="btn-reset" class="btn btn-danger">重置所有進度</button>
-        <p class="muted small center">記憶帝國：女傑翻牌 v1.0</p>
+        <p class="muted small center">記憶帝國：女傑翻牌 v1.1</p>
       </div>
     </section>
   </main>
@@ -114,6 +115,31 @@
   </nav>
 
   <div id="modal" class="modal hidden"><div class="modal-card" id="modal-card"></div></div>
+
+  <!-- 女傑鑑賞／互動 -->
+  <div id="hero-gallery" class="hero-gallery hidden">
+    <div class="hg-panel">
+      <button type="button" id="hg-close" class="hg-close" aria-label="關閉">✕</button>
+      <div class="hg-art-wrap">
+        <img id="hg-art" class="hg-art" alt="女傑立繪" src="assets/heroines/verda.webp">
+        <div class="hg-frame-ornament"></div>
+      </div>
+      <div class="hg-meta">
+        <div id="hg-title" class="hg-title"></div>
+        <div id="hg-name" class="hg-name"></div>
+        <div class="hg-bond-row"><span id="hg-hearts" class="bond-hearts"></span><span id="hg-bond-num" class="muted small"></span></div>
+        <p id="hg-bio" class="hg-bio muted small"></p>
+        <div id="hg-bubble" class="hg-bubble">……</div>
+        <div class="hg-outfit-label">服裝（好感解鎖）</div>
+        <div id="hg-outfits" class="hg-outfits"></div>
+        <div class="hg-actions">
+          <button type="button" id="hg-talk" class="btn btn-sm">💬 交談</button>
+          <button type="button" id="hg-select" class="btn btn-sm btn-gold">選為出戰</button>
+        </div>
+        <p class="muted small center" style="margin-top:8px">點擊立繪可放大欣賞</p>
+      </div>
+    </div>
+  </div>
   <div id="toasts"></div>
 </div>
 
